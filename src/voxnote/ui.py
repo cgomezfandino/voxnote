@@ -38,6 +38,12 @@ if __name__ == "__main__":
     with st.sidebar:
         st.header("⚙️ Configuración")
 
+        llm_provider = st.selectbox(
+            "LLM Provider",
+            ["ollama", "openai", "kimi", "glm", "google"],
+            index=["ollama", "openai", "kimi", "glm", "google"].index(settings.llm_provider),
+        )
+
         whisper_model = st.selectbox(
             "Modelo Whisper",
             ["tiny", "base", "small", "medium", "turbo", "large-v3"],
@@ -47,7 +53,7 @@ if __name__ == "__main__":
         language = st.text_input("Idioma (vacío = auto-detect)", value=settings.language)
 
         st.markdown("---")
-        st.caption(f"Ollama: `{settings.ollama_model}`")
+        st.caption(f"Provider: `{llm_provider}`")
         st.caption(f"Output: `{settings.output_dir}`")
 
     # Main tabs
@@ -84,7 +90,7 @@ if __name__ == "__main__":
 
                     # Extract insights
                     with st.status("Extrayendo insights con Ollama...", expanded=True):
-                        insights = extract_insights(transcript)
+                        insights = extract_insights(transcript, provider_name=llm_provider)
                         st.write(f"✓ Resumen: {insights.get('resumen', 'N/A')[:100]}...")
 
                     # Export
@@ -124,7 +130,7 @@ if __name__ == "__main__":
                         st.text_area("Transcripción", transcript, height=150)
 
                     with st.status("Extrayendo insights...", expanded=True):
-                        insights = extract_insights(transcript)
+                        insights = extract_insights(transcript, provider_name=llm_provider)
                         st.json(insights)
 
                     with st.status("Generando nota...", expanded=True):

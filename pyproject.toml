@@ -34,6 +34,23 @@ dev = [
 ui = [
     "streamlit>=1.30",
 ]
+openai = [
+    "openai>=1.0",
+]
+kimi = [
+    "openai>=1.0",
+]
+glm = [
+    "zhipuai>=2.0",
+]
+google = [
+    "google-generativeai>=0.3",
+]
+all-providers = [
+    "openai>=1.0",
+    "zhipuai>=2.0",
+    "google-generativeai>=0.3",
+]
 
 [project.scripts]
 voxnote = "voxnote.cli:main"

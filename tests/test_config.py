@@ -3,14 +3,19 @@
 from voxnote.config import Settings
 
 
-def test_defaults():
-    """Settings should load with sensible defaults."""
-    s = Settings()
+def test_defaults(monkeypatch):
+    """Settings should load with sensible defaults when no .env exists."""
+    # Clear any existing .env values
+    monkeypatch.delenv("VOXNOTE_WHISPER_MODEL", raising=False)
+    monkeypatch.delenv("VOXNOTE_OLLAMA_MODEL", raising=False)
+
+    s = Settings(_env_file=None)  # Don't load .env
     assert s.whisper_model == "turbo"
     assert s.language == "es"
     assert s.ollama_model == "llama3.1:8b"
     assert s.ollama_url == "http://localhost:11434"
     assert s.sample_rate == 16_000
+    assert s.llm_provider == "ollama"
 
 
 def test_env_override(monkeypatch):

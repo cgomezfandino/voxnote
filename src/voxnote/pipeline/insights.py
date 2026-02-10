@@ -1,68 +1,20 @@
-"""Insight extraction from meeting transcripts using Ollama (local LLM)."""
-
-import json
-import re
-
-import requests
-from rich.console import Console
+"""Insight extraction from meeting transcripts using configurable LLM providers."""
 
 from voxnote.config import settings
-
-console = Console()
-
-PROMPT_TEMPLATE = """\
-Analiza esta transcripción de reunión y responde SOLO con un JSON válido \
-(sin markdown, sin backticks) con esta estructura exacta:
-
-{{
-  "resumen": "resumen ejecutivo en 3-5 oraciones",
-  "decisiones": ["lista de decisiones tomadas"],
-  "action_items": [
-    {{"tarea": "descripción", "responsable": "nombre o TBD", "deadline": "fecha o TBD"}}
-  ],
-  "insights": ["observaciones clave o puntos importantes"],
-  "preguntas_abiertas": ["preguntas sin resolver"],
-  "proximos_pasos": ["siguientes pasos acordados"]
-}}
-
-TRANSCRIPCIÓN:
-{transcript}
-"""
-
-MAX_TRANSCRIPT_CHARS = 4000
+from voxnote.providers import get_provider
 
 
-def extract_insights(transcript: str) -> dict:
-    """Send transcript to Ollama and return structured insights.
+def extract_insights(transcript: str, provider_name: str | None = None) -> dict:
+    """Extract structured insights from a meeting transcript.
 
     Args:
         transcript: The meeting transcription text.
+        provider_name: Override the provider (ollama|openai|kimi|glm|google).
+                      If None, uses settings.llm_provider.
 
     Returns:
         A dict with keys: resumen, decisiones, action_items, insights,
         preguntas_abiertas, proximos_pasos.
     """
-    console.print(f"[bold blue]Extracting insights[/] with {settings.ollama_model}…")
-
-    prompt = PROMPT_TEMPLATE.format(transcript=transcript[:MAX_TRANSCRIPT_CHARS])
-
-    resp = requests.post(
-        f"{settings.ollama_url}/api/generate",
-        json={
-            "model": settings.ollama_model,
-            "prompt": prompt,
-            "stream": False,
-            "options": {"temperature": 0.1},
-        },
-        timeout=settings.ollama_timeout,
-    )
-    resp.raise_for_status()
-
-    raw: str = resp.json()["response"]
-    # Strip possible markdown fences
-    raw = re.sub(r"```json?\n?", "", raw)
-    raw = raw.replace("```", "").strip()
-
-    data: dict = json.loads(raw)
-    console.print("[green]Insights extracted[/]")
-    return data
+    provider = get_provider(provider_name or settings.llm_provider)
+    return provider.extract_insights(transcript)

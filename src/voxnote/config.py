@@ -20,7 +20,13 @@ class Settings(BaseSettings):
     )
     language: str = Field(default="es", description="Audio language (ISO 639-1) or empty for auto-detect")
 
-    # Ollama
+    # LLM Provider
+    llm_provider: str = Field(
+        default="ollama",
+        description="LLM provider: ollama|openai|kimi|glm|google",
+    )
+
+    # Ollama (when provider=ollama)
     ollama_model: str = Field(default="llama3.1:8b", description="Ollama model for insight extraction")
     ollama_url: str = Field(
         default="http://localhost:11434",
