@@ -5,7 +5,7 @@ import os
 
 from rich.console import Console
 
-from voxnote.providers.base import LLMProvider
+from voxnote.providers.base import LLMProvider, build_transcript_section
 
 console = Console()
 
@@ -28,7 +28,7 @@ USER_PROMPT_TEMPLATE = """\
 }}
 
 会议记录：
-{transcript}
+{transcript_section}
 """
 
 MAX_TRANSCRIPT_CHARS = 8000
@@ -73,7 +73,9 @@ class KimiProvider(LLMProvider):
                 {
                     "role": "user",
                     "content": USER_PROMPT_TEMPLATE.format(
-                        transcript=transcript[:MAX_TRANSCRIPT_CHARS]
+                        transcript_section=build_transcript_section(
+                            transcript[:MAX_TRANSCRIPT_CHARS], lang="zh"
+                        )
                     ),
                 },
             ],

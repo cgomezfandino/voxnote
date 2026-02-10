@@ -1,18 +1,21 @@
 """Export meeting insights as Obsidian-compatible Markdown."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from pathlib import Path
 
 from rich.console import Console
 
 from voxnote.config import settings
+from voxnote.pipeline.models import TranscriptResult
 
 console = Console()
 
 
 def export_obsidian(
     insights: dict,
-    transcript: str,
+    transcript: str | TranscriptResult,
     audio_name: str,
     output_dir: Path | None = None,
 ) -> Path:
@@ -20,13 +23,19 @@ def export_obsidian(
 
     Args:
         insights: Structured dict returned by :func:`extract_insights`.
-        transcript: Full transcription text.
+        transcript: Full transcription text or TranscriptResult with speaker info.
         audio_name: Original audio filename (used in the note title).
         output_dir: Override for settings.output_dir.
 
     Returns:
         Path to the written Markdown file.
     """
+    # Normalize transcript to string
+    if isinstance(transcript, TranscriptResult):
+        transcript_text = transcript.to_speaker_text()
+    else:
+        transcript_text = transcript
+
     output_dir = output_dir or settings.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -84,7 +93,7 @@ audio: "[[audio/{Path(audio_name).name}]]"
 
 ## Transcripción Completa
 
-{transcript}
+{transcript_text}
 """
 
     note_path = output_dir / f"{date_str}_{slug}.md"

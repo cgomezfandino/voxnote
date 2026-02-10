@@ -142,6 +142,44 @@ if __name__ == "__main__":
             st.caption(f"URL: `{settings.ollama_url}`")
 
         st.markdown("---")
+
+        # Speaker Diarization config
+        import os
+        st.subheader("Speaker Diarization")
+        diarize_enabled = st.checkbox(
+            "Identificar hablantes",
+            value=settings.diarize,
+            help="Requiere whisperx y HuggingFace token",
+        )
+
+        if diarize_enabled:
+            hf_token = st.text_input(
+                "HuggingFace Token",
+                value=os.getenv("VOXNOTE_HF_TOKEN", ""),
+                type="password",
+                help="Token para modelos pyannote de diarización",
+            )
+            if hf_token:
+                os.environ["VOXNOTE_HF_TOKEN"] = hf_token
+
+            col_min, col_max = st.columns(2)
+            with col_min:
+                min_speakers = st.number_input(
+                    "Min speakers", min_value=1, max_value=20,
+                    value=settings.diarize_min_speakers,
+                )
+            with col_max:
+                max_speakers = st.number_input(
+                    "Max speakers", min_value=1, max_value=20,
+                    value=settings.diarize_max_speakers,
+                )
+
+            if min_speakers:
+                os.environ["VOXNOTE_DIARIZE_MIN_SPEAKERS"] = str(min_speakers)
+            if max_speakers:
+                os.environ["VOXNOTE_DIARIZE_MAX_SPEAKERS"] = str(max_speakers)
+
+        st.markdown("---")
         st.caption(f"Output: `{settings.output_dir}`")
 
     # Main tabs
@@ -173,17 +211,23 @@ if __name__ == "__main__":
 
                     # Transcribe
                     with st.status("Transcribiendo con Whisper...", expanded=True):
-                        transcript = transcribe(str(audio_path), model_name=whisper_model)
-                        st.write(f"✓ {len(transcript)} caracteres")
+                        result = transcribe(
+                            str(audio_path), model_name=whisper_model, diarize=diarize_enabled,
+                        )
+                        display_text = result.to_speaker_text() if result.has_speakers else result.text
+                        st.write(f"✓ {len(result.text)} caracteres")
+                        if result.has_speakers:
+                            speakers = {s.speaker for s in result.segments if s.speaker}
+                            st.write(f"✓ {len(speakers)} hablantes detectados")
 
                     # Extract insights
-                    with st.status("Extrayendo insights con Ollama...", expanded=True):
-                        insights = extract_insights(transcript, provider_name=llm_provider)
+                    with st.status("Extrayendo insights...", expanded=True):
+                        insights = extract_insights(display_text, provider_name=llm_provider)
                         st.write(f"✓ Resumen: {insights.get('resumen', 'N/A')[:100]}...")
 
                     # Export
                     with st.status("Generando nota...", expanded=True):
-                        note_path = export_obsidian(insights, transcript, str(audio_path))
+                        note_path = export_obsidian(insights, result, str(audio_path))
                         st.write(f"✓ {note_path}")
 
                     st.success(f"✅ Listo! Nota guardada: `{note_path}`")
@@ -213,16 +257,22 @@ if __name__ == "__main__":
 
                     # Process
                     with st.status("Transcribiendo...", expanded=True):
-                        transcript = transcribe(str(audio_path), model_name=whisper_model)
-                        st.write(f"✓ {len(transcript)} caracteres")
-                        st.text_area("Transcripción", transcript, height=150)
+                        result = transcribe(
+                            str(audio_path), model_name=whisper_model, diarize=diarize_enabled,
+                        )
+                        display_text = result.to_speaker_text() if result.has_speakers else result.text
+                        st.write(f"✓ {len(result.text)} caracteres")
+                        if result.has_speakers:
+                            speakers = {s.speaker for s in result.segments if s.speaker}
+                            st.write(f"✓ {len(speakers)} hablantes detectados")
+                        st.text_area("Transcripción", display_text, height=150)
 
                     with st.status("Extrayendo insights...", expanded=True):
-                        insights = extract_insights(transcript, provider_name=llm_provider)
+                        insights = extract_insights(display_text, provider_name=llm_provider)
                         st.json(insights)
 
                     with st.status("Generando nota...", expanded=True):
-                        note_path = export_obsidian(insights, transcript, str(audio_path))
+                        note_path = export_obsidian(insights, result, str(audio_path))
                         st.write(f"✓ {note_path}")
 
                     st.success(f"✅ Nota guardada: `{note_path}`")

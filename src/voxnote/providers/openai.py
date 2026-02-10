@@ -5,7 +5,7 @@ import os
 
 from rich.console import Console
 
-from voxnote.providers.base import LLMProvider
+from voxnote.providers.base import LLMProvider, build_transcript_section
 
 console = Console()
 
@@ -30,7 +30,7 @@ Analiza esta transcripción de reunión y responde con un JSON con esta estructu
 }}
 
 TRANSCRIPCIÓN:
-{transcript}
+{transcript_section}
 """
 
 MAX_TRANSCRIPT_CHARS = 8000  # OpenAI can handle more
@@ -75,7 +75,9 @@ class OpenAIProvider(LLMProvider):
                 {
                     "role": "user",
                     "content": USER_PROMPT_TEMPLATE.format(
-                        transcript=transcript[:MAX_TRANSCRIPT_CHARS]
+                        transcript_section=build_transcript_section(
+                            transcript[:MAX_TRANSCRIPT_CHARS]
+                        )
                     ),
                 },
             ],

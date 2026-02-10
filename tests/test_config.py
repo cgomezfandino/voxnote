@@ -16,6 +16,11 @@ def test_defaults(monkeypatch):
     assert s.ollama_url == "http://localhost:11434"
     assert s.sample_rate == 16_000
     assert s.llm_provider == "ollama"
+    assert s.diarize is False
+    assert s.hf_token == ""
+    assert s.diarize_min_speakers == 2
+    assert s.diarize_max_speakers == 5
+    assert s.compute_type == "int8"
 
 
 def test_env_override(monkeypatch):

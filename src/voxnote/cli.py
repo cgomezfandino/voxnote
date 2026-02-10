@@ -34,26 +34,32 @@ def record(output: str | None, duration: float | None) -> None:
 @main.command()
 @click.argument("audio", type=click.Path(exists=True))
 @click.option("-m", "--model", default=None, help=f"Whisper model (default: {settings.whisper_model})")
-def transcribe(audio: str, model: str | None) -> None:
+@click.option("--diarize/--no-diarize", default=None, help="Enable speaker diarization")
+def transcribe(audio: str, model: str | None, diarize: bool | None) -> None:
     """Transcribe an audio file with Whisper."""
     from voxnote.pipeline.transcriber import transcribe as do_transcribe
 
-    text = do_transcribe(audio, model_name=model)
-    console.print(text)
+    result = do_transcribe(audio, model_name=model, diarize=diarize)
+    if result.has_speakers:
+        console.print(result.to_speaker_text())
+    else:
+        console.print(result.text)
 
 
 @main.command()
 @click.argument("audio", type=click.Path(exists=True))
 @click.option("-m", "--model", default=None, help="Whisper model override")
 @click.option("-o", "--output-dir", type=click.Path(), default=None, help="Output directory for the note")
-def process(audio: str, model: str | None, output_dir: str | None) -> None:
+@click.option("--diarize/--no-diarize", default=None, help="Enable speaker diarization")
+def process(audio: str, model: str | None, output_dir: str | None, diarize: bool | None) -> None:
     """Run the full pipeline: transcribe → extract insights → export note."""
     from voxnote.pipeline.exporter import export_obsidian
     from voxnote.pipeline.insights import extract_insights
     from voxnote.pipeline.transcriber import transcribe as do_transcribe
 
-    text = do_transcribe(audio, model_name=model)
-    insights = extract_insights(text)
+    result = do_transcribe(audio, model_name=model, diarize=diarize)
+    transcript_for_insights = result.to_speaker_text() if result.has_speakers else result.text
+    insights = extract_insights(transcript_for_insights)
     out = Path(output_dir) if output_dir else None
-    note = export_obsidian(insights, text, audio, output_dir=out)
+    note = export_obsidian(insights, result, audio, output_dir=out)
     console.print(f"\n[bold green]Done![/] Open in Obsidian → {note}")

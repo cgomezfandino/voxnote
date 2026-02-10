@@ -5,6 +5,7 @@ from unittest.mock import patch
 from click.testing import CliRunner
 
 from voxnote.cli import main
+from voxnote.pipeline.models import TranscriptResult
 
 
 def test_cli_help():
@@ -42,7 +43,7 @@ def test_process_command(tmp_path):
     with (
         patch(
             "voxnote.pipeline.transcriber.transcribe",
-            return_value="Transcripción de prueba",
+            return_value=TranscriptResult(text="Transcripción de prueba"),
         ),
         patch(
             "voxnote.pipeline.insights.extract_insights",

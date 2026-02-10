@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     )
     ollama_timeout: int = Field(default=120, description="Ollama request timeout in seconds")
 
+    # Speaker Diarization (whisperX)
+    diarize: bool = Field(default=False, description="Enable speaker diarization (requires whisperx + HF token)")
+    hf_token: str = Field(default="", description="HuggingFace token for pyannote diarization models")
+    diarize_min_speakers: int = Field(default=2, description="Minimum expected speakers")
+    diarize_max_speakers: int = Field(default=5, description="Maximum expected speakers")
+    compute_type: str = Field(default="int8", description="Compute type for whisperX (int8|float16|float32)")
+
     # Recording
     sample_rate: int = Field(default=16_000, description="Audio sample rate in Hz")
 

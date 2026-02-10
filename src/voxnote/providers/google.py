@@ -5,7 +5,7 @@ import os
 
 from rich.console import Console
 
-from voxnote.providers.base import LLMProvider
+from voxnote.providers.base import LLMProvider, build_transcript_section
 
 console = Console()
 
@@ -25,7 +25,7 @@ Analiza esta transcripción de reunión y responde ÚNICAMENTE con un JSON váli
 }}
 
 TRANSCRIPCIÓN:
-{transcript}
+{transcript_section}
 """
 
 MAX_TRANSCRIPT_CHARS = 10000  # Gemini has large context
@@ -70,7 +70,8 @@ class GoogleProvider(LLMProvider):
             ),
         )
 
-        prompt = PROMPT_TEMPLATE.format(transcript=transcript[:MAX_TRANSCRIPT_CHARS])
+        section = build_transcript_section(transcript[:MAX_TRANSCRIPT_CHARS])
+        prompt = PROMPT_TEMPLATE.format(transcript_section=section)
         response = model.generate_content(prompt)
 
         raw = response.text

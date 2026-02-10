@@ -98,3 +98,20 @@ def test_export_slug_from_audio_name(tmp_path, sample_insights, sample_transcrip
     )
 
     assert "weekly_sync" in note.name
+
+
+def test_export_with_diarized_transcript(tmp_path, sample_insights, sample_diarized_result):
+    """Exporter should handle TranscriptResult with speaker labels."""
+    from voxnote.pipeline.exporter import export_obsidian
+
+    note = export_obsidian(
+        insights=sample_insights,
+        transcript=sample_diarized_result,
+        audio_name="meeting.mp3",
+        output_dir=tmp_path,
+    )
+    content = note.read_text()
+
+    assert "[SPEAKER_00]:" in content
+    assert "[SPEAKER_01]:" in content
+    assert "## Transcripción Completa" in content

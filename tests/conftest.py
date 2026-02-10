@@ -2,6 +2,8 @@
 
 import pytest
 
+from voxnote.pipeline.models import Segment, TranscriptResult
+
 
 @pytest.fixture()
 def sample_insights() -> dict:
@@ -37,4 +39,17 @@ def sample_transcript() -> str:
         "Carlos dice que los endpoints de auth están al 80%. Ana propone usar JWT "
         "en lugar de sessions. El equipo está de acuerdo. Se decide lanzar el 15 de marzo. "
         "Queda pendiente definir quién hace el despliegue."
+    )
+
+
+@pytest.fixture()
+def sample_diarized_result() -> TranscriptResult:
+    """A TranscriptResult with speaker labels."""
+    return TranscriptResult(
+        text="Bueno empezamos. Los endpoints están al 80%.",
+        segments=[
+            Segment(text="Bueno empezamos.", start=0.0, end=2.5, speaker="SPEAKER_00"),
+            Segment(text="Los endpoints están al 80%.", start=3.0, end=6.0, speaker="SPEAKER_01"),
+        ],
+        has_speakers=True,
     )

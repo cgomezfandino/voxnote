@@ -2,66 +2,83 @@
 
 from unittest.mock import patch, MagicMock
 
+from voxnote.pipeline.models import TranscriptResult
 
-def test_transcribe_returns_text():
-    """transcribe should return the text from Whisper's result dict."""
+
+def test_transcribe_returns_transcript_result():
+    """transcribe should return a TranscriptResult with text."""
     fake_model = MagicMock()
     fake_model.transcribe.return_value = {"text": "Hola, esta es una prueba."}
 
-    with patch("voxnote.pipeline.transcriber.whisper") as mock_whisper:
-        mock_whisper.load_model.return_value = fake_model
+    with (
+        patch("voxnote.pipeline.transcriber._BACKEND", "whisper"),
+        patch("voxnote.pipeline.transcriber._transcribe_whisper") as mock_fn,
+    ):
+        mock_fn.return_value = TranscriptResult(text="Hola, esta es una prueba.")
         from voxnote.pipeline.transcriber import transcribe
 
         result = transcribe("fake_audio.mp3")
 
-    assert result == "Hola, esta es una prueba."
-    mock_whisper.load_model.assert_called_once()
+    assert isinstance(result, TranscriptResult)
+    assert result.text == "Hola, esta es una prueba."
+    assert not result.has_speakers
 
 
-def test_transcribe_uses_configured_model(monkeypatch):
-    """Should use the model from settings by default."""
-    monkeypatch.setenv("VOXNOTE_WHISPER_MODEL", "large-v3")
-
+def test_transcribe_whisper_backend():
+    """_transcribe_whisper should wrap vanilla Whisper result in TranscriptResult."""
     fake_model = MagicMock()
-    fake_model.transcribe.return_value = {"text": "test"}
+    fake_model.transcribe.return_value = {"text": "Test transcription"}
 
-    from voxnote.config import Settings
-    new_settings = Settings()
+    whisper_mock = MagicMock()
+    whisper_mock.load_model.return_value = fake_model
 
-    with patch("voxnote.pipeline.transcriber.settings", new_settings):
-        with patch("voxnote.pipeline.transcriber.whisper") as mock_whisper:
-            mock_whisper.load_model.return_value = fake_model
-            from voxnote.pipeline.transcriber import transcribe
+    with patch.dict("sys.modules", {"whisper": whisper_mock}):
+        from voxnote.pipeline.transcriber import _transcribe_whisper
 
-            transcribe("audio.mp3")
+        result = _transcribe_whisper("audio.mp3", "turbo")
 
-    mock_whisper.load_model.assert_called_with("large-v3")
+    assert isinstance(result, TranscriptResult)
+    assert result.text == "Test transcription"
+    assert not result.has_speakers
+    assert result.segments == []
+    whisper_mock.load_model.assert_called_with("turbo")
 
 
 def test_transcribe_model_override():
     """Passing model_name should override the default."""
-    fake_model = MagicMock()
-    fake_model.transcribe.return_value = {"text": "test"}
-
-    with patch("voxnote.pipeline.transcriber.whisper") as mock_whisper:
-        mock_whisper.load_model.return_value = fake_model
+    with (
+        patch("voxnote.pipeline.transcriber._BACKEND", "whisper"),
+        patch("voxnote.pipeline.transcriber._transcribe_whisper") as mock_fn,
+    ):
+        mock_fn.return_value = TranscriptResult(text="test")
         from voxnote.pipeline.transcriber import transcribe
 
         transcribe("audio.mp3", model_name="tiny")
 
-    mock_whisper.load_model.assert_called_with("tiny")
+    mock_fn.assert_called_once_with("audio.mp3", "tiny")
 
 
-def test_transcribe_passes_language():
-    """Should pass the configured language to Whisper."""
-    fake_model = MagicMock()
-    fake_model.transcribe.return_value = {"text": "test"}
-
-    with patch("voxnote.pipeline.transcriber.whisper") as mock_whisper:
-        mock_whisper.load_model.return_value = fake_model
+def test_transcribe_diarize_flag():
+    """diarize parameter should be passed through to whisperx backend."""
+    with (
+        patch("voxnote.pipeline.transcriber._BACKEND", "whisperx"),
+        patch("voxnote.pipeline.transcriber._transcribe_whisperx") as mock_fn,
+    ):
+        mock_fn.return_value = TranscriptResult(text="test", has_speakers=True)
         from voxnote.pipeline.transcriber import transcribe
 
-        transcribe("audio.mp3")
+        result = transcribe("audio.mp3", diarize=True)
 
-    call_kwargs = fake_model.transcribe.call_args
-    assert call_kwargs[1]["language"] == "es" or call_kwargs[0][1] if len(call_kwargs[0]) > 1 else True
+    mock_fn.assert_called_once_with("audio.mp3", "turbo", True)
+    assert result.has_speakers
+
+
+def test_transcribe_no_backend_raises():
+    """Should raise ImportError if no backend is available."""
+    import pytest
+
+    with patch("voxnote.pipeline.transcriber._BACKEND", None):
+        from voxnote.pipeline.transcriber import transcribe
+
+        with pytest.raises(ImportError, match="Neither whisperx nor openai-whisper"):
+            transcribe("audio.mp3")
