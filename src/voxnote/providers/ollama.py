@@ -56,7 +56,10 @@ class OllamaProvider(LLMProvider):
                 "model": settings.ollama_model,
                 "prompt": prompt,
                 "stream": False,
-                "options": {"temperature": 0.1},
+                "options": {
+                    "temperature": 0.1,
+                    "num_predict": 2000,  # Allow longer responses
+                },
             },
             timeout=settings.ollama_timeout,
         )
@@ -65,13 +68,27 @@ class OllamaProvider(LLMProvider):
         raw: str = resp.json()["response"]
         raw = self._clean_json(raw)
 
-        data: dict = json.loads(raw)
+        try:
+            data: dict = json.loads(raw)
+        except json.JSONDecodeError as e:
+            console.print(f"[red]JSON parse error:[/] {e}")
+            console.print(f"[yellow]Raw response:[/]\n{raw[:500]}")
+            raise ValueError(f"Failed to parse JSON from Ollama: {e}") from e
+
         console.print("[green]Insights extracted[/]")
         return data
 
     @staticmethod
     def _clean_json(raw: str) -> str:
-        """Strip markdown fences from JSON response."""
+        """Strip markdown fences and fix formatting issues."""
+        # Remove markdown code fences
         raw = re.sub(r"```json?\n?", "", raw)
         raw = raw.replace("```", "").strip()
+
+        # Remove line breaks inside strings (common Ollama formatting issue)
+        def remove_inner_newlines(match):
+            return match.group(0).replace("\n", " ")
+
+        raw = re.sub(r'"[^"]*"', remove_inner_newlines, raw)
+
         return raw

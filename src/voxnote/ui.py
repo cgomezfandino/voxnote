@@ -38,12 +38,7 @@ if __name__ == "__main__":
     with st.sidebar:
         st.header("⚙️ Configuración")
 
-        llm_provider = st.selectbox(
-            "LLM Provider",
-            ["ollama", "openai", "kimi", "glm", "google"],
-            index=["ollama", "openai", "kimi", "glm", "google"].index(settings.llm_provider),
-        )
-
+        # Whisper config
         whisper_model = st.selectbox(
             "Modelo Whisper",
             ["tiny", "base", "small", "medium", "turbo", "large-v3"],
@@ -53,7 +48,92 @@ if __name__ == "__main__":
         language = st.text_input("Idioma (vacío = auto-detect)", value=settings.language)
 
         st.markdown("---")
-        st.caption(f"Provider: `{llm_provider}`")
+
+        # LLM Provider config
+        llm_provider = st.selectbox(
+            "LLM Provider",
+            ["ollama", "openai", "kimi", "glm", "google"],
+            index=["ollama", "openai", "kimi", "glm", "google"].index(settings.llm_provider),
+        )
+
+        # Provider-specific configuration
+        if llm_provider == "openai":
+            import os
+            api_key = st.text_input(
+                "OpenAI API Key",
+                value=os.getenv("OPENAI_API_KEY", ""),
+                type="password",
+            )
+            if api_key:
+                os.environ["OPENAI_API_KEY"] = api_key
+
+            model = st.selectbox(
+                "Modelo OpenAI",
+                ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"],
+                index=0,
+            )
+            if model:
+                os.environ["OPENAI_MODEL"] = model
+
+        elif llm_provider == "kimi":
+            import os
+            api_key = st.text_input(
+                "Kimi API Key",
+                value=os.getenv("KIMI_API_KEY", ""),
+                type="password",
+            )
+            if api_key:
+                os.environ["KIMI_API_KEY"] = api_key
+
+            model = st.selectbox(
+                "Modelo Kimi",
+                ["moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"],
+                index=0,
+            )
+            if model:
+                os.environ["KIMI_MODEL"] = model
+
+        elif llm_provider == "glm":
+            import os
+            api_key = st.text_input(
+                "GLM API Key",
+                value=os.getenv("GLM_API_KEY", ""),
+                type="password",
+            )
+            if api_key:
+                os.environ["GLM_API_KEY"] = api_key
+
+            model = st.selectbox(
+                "Modelo GLM",
+                ["glm-4", "glm-4-plus", "glm-4-air"],
+                index=0,
+            )
+            if model:
+                os.environ["GLM_MODEL"] = model
+
+        elif llm_provider == "google":
+            import os
+            api_key = st.text_input(
+                "Google API Key",
+                value=os.getenv("GOOGLE_API_KEY", ""),
+                type="password",
+            )
+            if api_key:
+                os.environ["GOOGLE_API_KEY"] = api_key
+
+            model = st.selectbox(
+                "Modelo Gemini",
+                ["gemini-2.0-flash-exp", "gemini-pro", "gemini-1.5-pro"],
+                index=0,
+            )
+            if model:
+                os.environ["GOOGLE_MODEL"] = model
+
+        elif llm_provider == "ollama":
+            st.caption(f"Modelo local: `{settings.ollama_model}`")
+            st.caption(f"URL: `{settings.ollama_url}`")
+
+        st.markdown("---")
         st.caption(f"Output: `{settings.output_dir}`")
 
     # Main tabs
