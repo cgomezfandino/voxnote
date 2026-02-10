@@ -40,6 +40,17 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
+## Estructura del proyecto
+
+```
+Voxnote/
+├── recordings/        ← Archivos de audio grabados (.wav)
+├── output/           ← Notas generadas en Markdown
+├── src/voxnote/      ← Código fuente
+├── tests/            ← Tests
+└── docs/             ← Documentación
+```
+
 ## Uso
 
 ### Pipeline completo
@@ -47,27 +58,29 @@ pip install -e ".[dev]"
 Procesa un audio de principio a fin — transcribe, extrae insights y genera la nota:
 
 ```bash
-voxnote process audio/mi_reunion.mp3
+voxnote process recordings/mi_reunion.mp3
 ```
 
 ### Grabar desde el micrófono
 
 ```bash
-# Grabación manual (Ctrl-C para parar)
+# Grabación manual (Ctrl-C para parar) — se guarda en recordings/
 voxnote record
 
 # Duración fija (60 segundos)
 voxnote record --duration 60
 
 # Guardar en ruta específica
-voxnote record -o audio/standup.wav
+voxnote record -o recordings/standup.wav
 ```
+
+Los archivos se guardan automáticamente en `recordings/` con timestamp (ej: `recordings/20260210_193045.wav`).
 
 ### Solo transcribir
 
 ```bash
-voxnote transcribe audio/mi_reunion.mp3
-voxnote transcribe audio/mi_reunion.mp3 --model large-v3
+voxnote transcribe recordings/mi_reunion.mp3
+voxnote transcribe recordings/mi_reunion.mp3 --model large-v3
 ```
 
 ## Configuración

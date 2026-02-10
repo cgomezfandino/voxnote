@@ -7,7 +7,11 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    model_config = {"env_prefix": "VOXNOTE_"}
+    model_config = {
+        "env_prefix": "VOXNOTE_",
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+    }
 
     # Whisper
     whisper_model: str = Field(

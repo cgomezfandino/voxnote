@@ -31,9 +31,13 @@ dev = [
     "ruff>=0.4",
     "mypy>=1.10",
 ]
+ui = [
+    "streamlit>=1.30",
+]
 
 [project.scripts]
 voxnote = "voxnote.cli:main"
+voxnote-ui = "voxnote.ui:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -25,6 +25,10 @@ build/
 # Output
 output/
 transcripts/
+recordings/
+
+# Docs originals
+*.docx
 
 # IDE
 .vscode/
