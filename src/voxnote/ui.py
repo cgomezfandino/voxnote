@@ -103,9 +103,17 @@ if __name__ == "__main__":
             if api_key:
                 os.environ["GLM_API_KEY"] = api_key
 
+            base_url = st.text_input(
+                "GLM Base URL",
+                value=os.getenv("GLM_BASE_URL", "https://api.z.ai/api/coding/paas/v4"),
+                help="Endpoint personalizado (default: https://open.bigmodel.cn/api/paas/v4)",
+            )
+            if base_url:
+                os.environ["GLM_BASE_URL"] = base_url
+
             model = st.selectbox(
                 "Modelo GLM",
-                ["glm-4", "glm-4-plus", "glm-4-air"],
+                ["glm-4", "glm-4-plus", "glm-4-air", "glm-4.7"],
                 index=0,
             )
             if model:

@@ -40,6 +40,7 @@ class GLMProvider(LLMProvider):
             raise ValueError("GLM_API_KEY or ZHIPUAI_API_KEY environment variable not set")
 
         self.model = os.getenv("GLM_MODEL", "glm-4")
+        self.base_url = os.getenv("GLM_BASE_URL", "https://open.bigmodel.cn/api/paas/v4")
 
     @property
     def name(self) -> str:
@@ -60,7 +61,7 @@ class GLMProvider(LLMProvider):
 
         console.print(f"[bold blue]Extracting insights[/] with {self.name}…")
 
-        client = ZhipuAI(api_key=self.api_key)
+        client = ZhipuAI(api_key=self.api_key, base_url=self.base_url)
 
         response = client.chat.completions.create(
             model=self.model,
