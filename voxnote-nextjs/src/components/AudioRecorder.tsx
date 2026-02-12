@@ -25,7 +25,7 @@ export default function AudioRecorder({
   const [audioBlob, setAudioBlob] = useState<Blob | null>(initialBlob);
   const [audioUrl, setAudioUrl] = useState<string | null>(initialUrl);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [visualizerData, setVisualizerData] = useState<number[]>(Array(30).fill(4));
+  const [visualizerData, setVisualizerData] = useState<number[]>(Array(32).fill(6));
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -70,33 +70,32 @@ export default function AudioRecorder({
         setRecordingTime((prev) => prev + 1);
       }, 1000);
       
-      // Higher fftSize for better frequency resolution
-      analyser.fftSize = 256;
+      // Configure analyser for better voice detection
+      analyser.fftSize = 128; // Smaller for better performance
+      analyser.smoothingTimeConstant = 0.8; // Smooth transitions
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      const bufferLength = analyser.frequencyBinCount;
       
       const updateVisualizer = () => {
         if (!analyserRef.current) return;
         analyserRef.current.getByteFrequencyData(dataArray);
         
-        // Map 20 bars to frequency ranges using log scale for better distribution
-        const bars = Array.from({ length: 30 }, (_, i) => {
-          // Use log scale to better distribute frequency data across bars
-          // Skip very low frequencies (0-2) as they often have noise
-          const start = Math.floor(bufferLength * Math.log2(2 + i) / Math.log2(22));
-          const end = Math.floor(bufferLength * Math.log2(3 + i) / Math.log2(22));
+        // Create 32 bars from frequency data
+        const numBars = 32;
+        const bars = Array.from({ length: numBars }, (_, i) => {
+          // Map bar index to frequency data index
+          // Voice frequencies are typically 85Hz-255Hz, but we'll use full spectrum
+          const dataIndex = Math.floor((i / numBars) * (dataArray.length * 0.75));
           
-          // Average the values in this frequency range
-          let sum = 0;
-          let count = 0;
-          for (let j = start; j < end && j < bufferLength; j++) {
-            sum += dataArray[j];
-            count++;
-          }
-          const average = count > 0 ? sum / count : 0;
+          // Get raw value (0-255)
+          const value = dataArray[dataIndex] || 0;
           
-          // Scale to visual height (4px min, 48px max)
-          return (average / 255) * 44 + 4;
+          // Apply sensitivity boost for quieter sounds
+          // Use exponential curve to make quiet sounds more visible
+          const normalized = value / 255;
+          const boosted = Math.pow(normalized, 0.6); // Boost lower values
+          
+          // Scale to visual height (6px min, 64px max for more dynamic range)
+          return boosted * 58 + 6;
         });
         
         setVisualizerData(bars);
@@ -146,15 +145,15 @@ export default function AudioRecorder({
   return (
     <div className="card">
       {/* Visualizer */}
-      <div className="flex items-center justify-center gap-[2px] sm:gap-1 h-20 sm:h-24 mb-6 px-4">
+      <div className="flex items-center justify-center gap-[3px] sm:gap-1.5 h-20 sm:h-24 mb-6 px-4">
         {visualizerData.map((height, i) => (
           <motion.div
             key={i}
             animate={{
-              height: isRecording ? height : hasRecording ? 6 : 4,
+              height: isRecording ? height : hasRecording ? 8 : 6,
             }}
-            transition={{ type: "spring", stiffness: 400, damping: 15, delay: i * 0.005 }}
-            className={`w-1 sm:w-1.5 rounded-full ${isRecording ? "bg-accent" : "bg-primary/30"}`}
+            transition={{ type: "spring", stiffness: 300, damping: 12, delay: i * 0.003 }}
+            className={`w-1.5 sm:w-2 rounded-full ${isRecording ? "bg-accent" : "bg-primary/30"}`}
           />
         ))}
       </div>
