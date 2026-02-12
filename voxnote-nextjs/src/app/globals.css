@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-xl border border-border p-4 sm:p-6 shadow-card transition-shadow;
+  }
+  
+  .card:hover {
+    @apply shadow-card-hover;
+  }
+  
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-primary text-white font-medium text-sm transition-all shadow-button hover:bg-primary-hover active:scale-[0.98];
+  }
+  
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-secondary text-secondary-foreground font-medium text-sm transition-all border border-border hover:bg-muted active:scale-[0.98];
+  }
+  
+  .btn-accent {
+    @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-accent text-white font-medium text-sm transition-all shadow-button hover:opacity-90 active:scale-[0.98];
+  }
+  
+  .input {
+    @apply w-full px-3 sm:px-4 py-2.5 rounded-lg border border-border bg-white text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all;
+  }
+  
+  .select {
+    @apply w-full px-3 sm:px-4 py-2.5 rounded-lg border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 36px;
+  }
+  
+  .label {
+    @apply block text-sm font-medium text-foreground mb-1.5;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-primary {
+    @apply badge bg-primary-light text-primary;
+  }
+  
+  .badge-success {
+    @apply badge bg-success-light text-success;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .card {
+    @apply p-4;
+  }
+}
