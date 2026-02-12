@@ -19,6 +19,12 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
 
   useEffect(() => {
     if (!containerRef.current) return;
+    
+    // Reset state when audioUrl changes
+    setIsReady(false);
+    setIsPlaying(false);
+    setCurrentTime("0:00");
+    setDuration("0:00");
 
     const ws = WaveSurfer.create({
       container: containerRef.current,
@@ -46,20 +52,30 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
     ws.on("finish", () => setIsPlaying(false));
     ws.on("play", () => setIsPlaying(true));
     ws.on("pause", () => setIsPlaying(false));
+    
+    // Handle load errors gracefully
+    ws.on("error", (err) => {
+      console.warn("WaveSurfer error:", err);
+      setIsReady(false);
+    });
 
-    ws.load(audioUrl);
+    // Only load if audioUrl is valid
+    if (audioUrl && audioUrl.trim() !== "") {
+      ws.load(audioUrl).catch((err) => {
+        console.warn("Failed to load audio:", err);
+        setIsReady(false);
+      });
+    }
 
     return () => {
       // Cleanup: unsubscribe from events before destroying
       ws.unAll();
-      // Use setTimeout to avoid race conditions during rapid unmounts
-      setTimeout(() => {
-        try {
-          ws.destroy();
-        } catch {
-          // Ignore destroy errors (e.g., AbortError from fetch cancellation)
-        }
-      }, 0);
+      // Destroy synchronously to prevent race conditions
+      try {
+        ws.destroy();
+      } catch {
+        // Ignore destroy errors
+      }
     };
   }, [audioUrl]);
 

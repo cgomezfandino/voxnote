@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, FileAudio, History, Menu, X } from "lucide-react";
+import { Mic, FileAudio, History, Menu, X, Upload } from "lucide-react";
 import ConfigPanel from "@/components/ConfigPanel";
 import AudioRecorder from "@/components/AudioRecorder";
 import AudioVisualizer from "@/components/AudioVisualizer";
@@ -191,13 +191,36 @@ export default function Home() {
                   >
                     <div className="text-center mb-8">
                       <h2 className="text-xl lg:text-2xl font-semibold text-foreground mb-2">Procesar archivo</h2>
-                      <p className="text-muted-foreground">Sube un audio existente para transcribir</p>
+                      <p className="text-muted-foreground">
+                        {recordedUrl 
+                          ? "Revisa tu grabación antes de procesarla" 
+                          : "Sube un audio existente para transcribir"}
+                      </p>
                     </div>
                     
                     <div className="max-w-3xl mx-auto">
-                      <AudioVisualizer 
-                        audioUrl="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" 
-                      />
+                      {recordedUrl ? (
+                        <AudioVisualizer 
+                          audioUrl={recordedUrl}
+                          fileName="grabacion.wav"
+                        />
+                      ) : (
+                        <div className="card border-2 border-dashed border-border p-12 text-center">
+                          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                            <FileAudio className="w-8 h-8 text-muted-foreground" />
+                          </div>
+                          <h3 className="font-semibold text-foreground mb-2">No hay audio para procesar</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Graba un audio primero o sube un archivo existente
+                          </p>
+                          <button 
+                            onClick={() => setActiveTab("record")}
+                            className="btn-primary"
+                          >
+                            Ir a Grabar
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}
