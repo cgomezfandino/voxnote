@@ -59,6 +59,7 @@ if __name__ == "__main__":
         # Provider-specific configuration
         if llm_provider == "openai":
             import os
+
             api_key = st.text_input(
                 "OpenAI API Key",
                 value=os.getenv("OPENAI_API_KEY", ""),
@@ -77,6 +78,7 @@ if __name__ == "__main__":
 
         elif llm_provider == "kimi":
             import os
+
             api_key = st.text_input(
                 "Kimi API Key",
                 value=os.getenv("KIMI_API_KEY", ""),
@@ -95,6 +97,7 @@ if __name__ == "__main__":
 
         elif llm_provider == "glm":
             import os
+
             api_key = st.text_input(
                 "GLM API Key",
                 value=os.getenv("GLM_API_KEY", ""),
@@ -113,7 +116,7 @@ if __name__ == "__main__":
 
             model = st.selectbox(
                 "Modelo GLM",
-                ["glm-4", "glm-4-plus", "glm-4-air", "glm-4.7"],
+                ["glm-5", "glm-4", "glm-4-plus", "glm-4-air", "glm-4.7"],
                 index=0,
             )
             if model:
@@ -121,6 +124,7 @@ if __name__ == "__main__":
 
         elif llm_provider == "google":
             import os
+
             api_key = st.text_input(
                 "Google API Key",
                 value=os.getenv("GOOGLE_API_KEY", ""),
@@ -145,6 +149,7 @@ if __name__ == "__main__":
 
         # Speaker Diarization config
         import os
+
         st.subheader("Speaker Diarization")
         diarize_enabled = st.checkbox(
             "Identificar hablantes",
@@ -165,12 +170,16 @@ if __name__ == "__main__":
             col_min, col_max = st.columns(2)
             with col_min:
                 min_speakers = st.number_input(
-                    "Min speakers", min_value=1, max_value=20,
+                    "Min speakers",
+                    min_value=1,
+                    max_value=20,
                     value=settings.diarize_min_speakers,
                 )
             with col_max:
                 max_speakers = st.number_input(
-                    "Max speakers", min_value=1, max_value=20,
+                    "Max speakers",
+                    min_value=1,
+                    max_value=20,
                     value=settings.diarize_max_speakers,
                 )
 
@@ -212,9 +221,13 @@ if __name__ == "__main__":
                     # Transcribe
                     with st.status("Transcribiendo con Whisper...", expanded=True):
                         result = transcribe(
-                            str(audio_path), model_name=whisper_model, diarize=diarize_enabled,
+                            str(audio_path),
+                            model_name=whisper_model,
+                            diarize=diarize_enabled,
                         )
-                        display_text = result.to_speaker_text() if result.has_speakers else result.text
+                        display_text = (
+                            result.to_speaker_text() if result.has_speakers else result.text
+                        )
                         st.write(f"✓ {len(result.text)} caracteres")
                         if result.has_speakers:
                             speakers = {s.speaker for s in result.segments if s.speaker}
@@ -258,9 +271,13 @@ if __name__ == "__main__":
                     # Process
                     with st.status("Transcribiendo...", expanded=True):
                         result = transcribe(
-                            str(audio_path), model_name=whisper_model, diarize=diarize_enabled,
+                            str(audio_path),
+                            model_name=whisper_model,
+                            diarize=diarize_enabled,
                         )
-                        display_text = result.to_speaker_text() if result.has_speakers else result.text
+                        display_text = (
+                            result.to_speaker_text() if result.has_speakers else result.text
+                        )
                         st.write(f"✓ {len(result.text)} caracteres")
                         if result.has_speakers:
                             speakers = {s.speaker for s in result.segments if s.speaker}
