@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "streamlit",
+      "runtimeExecutable": "/Users/cgomezfandino/repos/Voxnote/.venv/bin/streamlit",
+      "runtimeArgs": ["run", "src/voxnote/ui.py"],
+      "port": 8501
+    }
+  ]
+}

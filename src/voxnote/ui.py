@@ -73,9 +73,7 @@ def render_sidebar_config(settings: "Settings") -> tuple:
             unsafe_allow_html=True,
         )
 
-        # Whisper Config Card
-        st.markdown('<div class="glass-card-sm">', unsafe_allow_html=True)
-
+        # Whisper Config
         whisper_model = st.selectbox(
             "🎯 Modelo Whisper",
             ["tiny", "base", "small", "medium", "turbo", "large-v3"],
@@ -83,34 +81,16 @@ def render_sidebar_config(settings: "Settings") -> tuple:
             help="Mayor tamaño = mejor precisión pero más lento",
         )
 
-        # Language con mejor contraste
-        st.markdown(
-            """
-            <div style="margin-top: 16px;">
-                <label style="
-                    color: #0F172A;
-                    font-weight: 500;
-                    font-size: 0.9rem;
-                    display: block;
-                    margin-bottom: 8px;
-                ">🌐 Idioma</label>
-            </div>
-        """,
-            unsafe_allow_html=True,
-        )
         st.text_input(
-            label="idioma_hidden",
-            label_visibility="collapsed",
+            "🌐 Idioma",
             value=settings.language,
             placeholder="ej: es, en, fr (vacío = auto-detectar)",
+            help="Código ISO del idioma (es, en, fr, etc.)",
         )
-        st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
 
-        # LLM Provider Card
-        st.markdown('<div class="glass-card-sm">', unsafe_allow_html=True)
-
+        # LLM Provider
         llm_provider = st.selectbox(
             "🤖 Proveedor LLM",
             ["ollama", "openai", "kimi", "glm", "google"],
@@ -205,10 +185,10 @@ def render_sidebar_config(settings: "Settings") -> tuple:
                     border-radius: 12px;
                     font-size: 0.875rem;
                 ">
-                    <div style="color: #34D399; font-weight: 600; margin-bottom: 8px;">
+                    <div style="color: #059669; font-weight: 600; margin-bottom: 8px;">
                         🟢 Modo Local
                     </div>
-                    <div style="color: #E2E8F0;">
+                    <div style="color: #0F172A;">
                         <strong>Modelo:</strong> {settings.ollama_model}<br>
                         <strong>URL:</strong> <span style="color: #64748B; font-size: 0.8rem;">
                             {settings.ollama_url}
@@ -219,57 +199,18 @@ def render_sidebar_config(settings: "Settings") -> tuple:
                 unsafe_allow_html=True,
             )
 
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
 
-        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
-
-        # Diarization Card
-        st.markdown('<div class="glass-card-sm">', unsafe_allow_html=True)
-        st.markdown(
-            """
-            <div style="margin-bottom: 12px;">
-                <span style="
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 6px;
-                    padding: 4px 10px;
-                    background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
-                    color: #0D0D12;
-                    border-radius: 20px;
-                    font-size: 0.7rem;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                ">👥 Diarización</span>
-            </div>
-        """,
-            unsafe_allow_html=True,
-        )
-
+        # Diarization
         diarize_enabled = st.checkbox(
-            "Identificar hablantes",
+            "👥 Identificar hablantes",
             value=settings.diarize,
             help="Requiere whisperx y HuggingFace token",
         )
 
         if diarize_enabled:
-            st.markdown(
-                """
-                <div style="margin-top: 12px;">
-                    <label style="
-                        color: #0F172A;
-                        font-weight: 500;
-                        font-size: 0.9rem;
-                        display: block;
-                        margin-bottom: 8px;
-                    ">🔑 HuggingFace Token</label>
-                </div>
-            """,
-                unsafe_allow_html=True,
-            )
             hf_token = st.text_input(
-                label="hf_hidden",
-                label_visibility="collapsed",
+                "🔑 HuggingFace Token",
                 value=os.getenv("VOXNOTE_HF_TOKEN", ""),
                 type="password",
             )
@@ -297,8 +238,6 @@ def render_sidebar_config(settings: "Settings") -> tuple:
             if max_speakers:
                 os.environ["VOXNOTE_DIARIZE_MAX_SPEAKERS"] = str(max_speakers)
 
-        st.markdown("</div>", unsafe_allow_html=True)
-
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
         # Output info
@@ -306,15 +245,26 @@ def render_sidebar_config(settings: "Settings") -> tuple:
             f"""
             <div style="
                 padding: 16px 20px;
-                background: #FFFFFF;
+                background: #F8FAFC;
                 border: 1px solid rgba(203, 213, 225, 0.6);
                 border-radius: 12px;
                 font-size: 0.8rem;
+                margin-top: 16px;
             ">
                 <div style="color: #64748B; margin-bottom: 4px;">📁 Directorio de salida</div>
-                <code style="color: #E2E8F0; font-family: 'JetBrains Mono', monospace;">
+                <div style="
+                    margin-top: 8px;
+                    padding: 8px 12px;
+                    background: #E2E8F0;
+                    border: 1px solid #CBD5E1;
+                    border-radius: 6px;
+                    font-family: 'JetBrains Mono', monospace;
+                    font-size: 0.8rem;
+                    color: #1E293B;
+                    font-weight: 600;
+                ">
                     {settings.output_dir}
-                </code>
+                </div>
             </div>
         """,
             unsafe_allow_html=True,
@@ -345,7 +295,7 @@ def render_record_tab(
         unsafe_allow_html=True,
     )
 
-    # Recorder zone - diseño simplificado y elegante
+    # Recorder zone
     st.markdown(
         """
         <div style="
@@ -376,7 +326,7 @@ def render_record_tab(
         unsafe_allow_html=True,
     )
 
-    # Audio input con mejor contexto visual
+    # Audio input
     audio_value = st.audio_input(
         label="🎙️ Grabador",
         label_visibility="collapsed",
@@ -386,7 +336,7 @@ def render_record_tab(
     if audio_value is not None:
         st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
 
-        # Audio player con contenedor visual
+        # Audio player header
         st.markdown(
             """
             <div style="
@@ -401,7 +351,6 @@ def render_record_tab(
                     display: flex;
                     align-items: center;
                     gap: 12px;
-                    margin-bottom: 12px;
                 ">
                     <div style="
                         width: 40px;
@@ -414,7 +363,7 @@ def render_record_tab(
                         font-size: 1.25rem;
                     ">✓</div>
                     <div>
-                        <div style="color: #34D399; font-weight: 600;">
+                        <div style="color: #059669; font-weight: 600;">
                             Audio capturado correctamente
                         </div>
                         <div style="color: #64748B; font-size: 0.85rem;">
@@ -422,49 +371,53 @@ def render_record_tab(
                         </div>
                     </div>
                 </div>
+            </div>
         """,
             unsafe_allow_html=True,
         )
         st.audio(audio_value)
-        st.markdown("</div>", unsafe_allow_html=True)
 
         # Process button
         if st.button("🚀 Procesar Ahora", use_container_width=True):
-            with st.spinner(""):
-                # Save audio
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                audio_path = Path("recordings") / f"{timestamp}.wav"
-                audio_path.parent.mkdir(exist_ok=True)
-                audio_path.write_bytes(audio_value.read())
+            try:
+                with st.spinner(""):
+                    # Save audio
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    audio_path = Path("recordings") / f"{timestamp}.wav"
+                    audio_path.parent.mkdir(exist_ok=True)
+                    audio_bytes = audio_value.read()
+                    audio_path.write_bytes(audio_bytes)
 
-                progress_container = st.container()
+                    progress_container = st.container()
 
-                with progress_container:
-                    # Step 1: Transcribe
-                    st.markdown(
-                        get_step_html(1, "Transcribiendo con Whisper...", "active"),
-                        unsafe_allow_html=True,
-                    )
+                    with progress_container:
+                        # Step 1: Transcribe
+                        st.markdown(
+                            get_step_html(1, "Transcribiendo con Whisper...", "active"),
+                            unsafe_allow_html=True,
+                        )
 
-                    result = transcribe(
-                        str(audio_path),
-                        model_name=whisper_model,
-                        diarize=diarize_enabled,
-                    )
-                    display_text = result.to_speaker_text() if result.has_speakers else result.text
+                        result = transcribe(
+                            str(audio_path),
+                            model_name=whisper_model,
+                            diarize=diarize_enabled,
+                        )
+                        display_text = (
+                            result.to_speaker_text() if result.has_speakers else result.text
+                        )
 
-                    st.markdown(
-                        get_step_html(
-                            1,
-                            f"✓ Transcripción: {len(result.text)} caracteres",
-                            "completed",
-                        ),
-                        unsafe_allow_html=True,
-                    )
+                        st.markdown(
+                            get_step_html(
+                                1,
+                                f"✓ Transcripción: {len(result.text)} caracteres",
+                                "completed",
+                            ),
+                            unsafe_allow_html=True,
+                        )
 
-                    if result.has_speakers:
-                        speakers = {s.speaker for s in result.segments if s.speaker}
-                        st.info(f"👥 {len(speakers)} hablantes detectados")
+                        if result.has_speakers:
+                            speakers = {s.speaker for s in result.segments if s.speaker}
+                            st.info(f"👥 {len(speakers)} hablantes detectados")
 
                     # Step 2: Extract insights
                     st.markdown(
@@ -517,6 +470,10 @@ def render_record_tab(
                 with st.expander("📄 Vista previa de la nota"):
                     st.markdown(note_path.read_text())
 
+            except Exception as e:
+                st.error(f"❌ Error al procesar el audio: {str(e)}")
+                st.info("💡 Verifica que el modelo Whisper esté instalado correctamente.")
+
 
 def render_process_tab(
     whisper_model: str,
@@ -539,8 +496,7 @@ def render_process_tab(
         unsafe_allow_html=True,
     )
 
-    # Upload zone mejorado
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    # Upload zone
     st.markdown(
         """
         <div style="margin-bottom: 16px;">
@@ -565,12 +521,10 @@ def render_process_tab(
         type=["wav", "mp3", "m4a", "ogg", "flac"],
     )
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
     if uploaded_file:
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
-        # Audio player con contenedor
+        # Audio player header
         st.markdown(
             """
             <div style="
@@ -585,7 +539,6 @@ def render_process_tab(
                     display: flex;
                     align-items: center;
                     gap: 12px;
-                    margin-bottom: 12px;
                 ">
                     <div style="
                         width: 40px;
@@ -606,11 +559,11 @@ def render_process_tab(
                         </div>
                     </div>
                 </div>
+            </div>
         """,
             unsafe_allow_html=True,
         )
         st.audio(uploaded_file)
-        st.markdown("</div>", unsafe_allow_html=True)
 
         if st.button("🚀 Procesar Archivo", use_container_width=True):
             with st.spinner(""):
