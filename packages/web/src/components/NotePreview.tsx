@@ -153,12 +153,40 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
       // Headings
       if (trimmed.startsWith("## ")) {
         flushList();
+        const headingText = trimmed.slice(3);
+
+        // Auto-collapse "Transcripción Completa" heading
+        if (/transcripci[oó]n/i.test(headingText)) {
+          const innerLines: string[] = [];
+          i++;
+          while (i < lines.length) {
+            // Stop if we hit another h2 heading or end of content
+            if (lines[i].trim().startsWith("## ")) break;
+            innerLines.push(lines[i]);
+            i++;
+          }
+          const innerContent = innerLines.join("\n").trim();
+          if (innerContent) {
+            elements.push(
+              <CollapsibleSection
+                key={`transcript-${elements.length}`}
+                title={headingText}
+              >
+                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                  {innerContent}
+                </p>
+              </CollapsibleSection>
+            );
+          }
+          continue;
+        }
+
         elements.push(
           <h2
             key={`h2-${elements.length}`}
             className="text-base font-semibold text-foreground mt-4 mb-2"
           >
-            {trimmed.slice(3)}
+            {headingText}
           </h2>
         );
         i++;
