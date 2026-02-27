@@ -2,10 +2,16 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "streamlit",
-      "runtimeExecutable": "/Users/cgomezfandino/repos/Voxnote/.venv/bin/streamlit",
-      "runtimeArgs": ["run", "src/voxnote/ui.py"],
-      "port": 8501
+      "name": "api",
+      "runtimeExecutable": "/Users/cgomezfandino/repos/Voxnote/.venv/bin/uvicorn",
+      "runtimeArgs": ["voxnote_api.main:app", "--reload", "--port", "8000", "--app-dir", "packages/api"],
+      "port": 8000
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "packages/web"],
+      "port": 3001
     }
   ]
 }

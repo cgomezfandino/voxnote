@@ -6,101 +6,130 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Voxnote is a 100% local meeting-notes pipeline. It records audio, transcribes with Whisper (or whisperX for speaker diarization), extracts structured insights via pluggable LLM providers, and exports Obsidian-compatible Markdown notes. No data leaves the machine by default.
 
+The project is organized as a **monorepo** with three packages:
+- `packages/core` — Python pipeline (CLI, transcription, insights, export)
+- `packages/api` — FastAPI backend serving the pipeline over HTTP
+- `packages/web` — Next.js 14 frontend (React, TypeScript, Tailwind CSS)
+
 ## Commands
 
 ```bash
-# Install (editable + dev tools)
-pip install -e ".[dev]"
+# Install everything
+make install
 
-# CLI
-voxnote record                        # record from mic (Ctrl-C to stop)
-voxnote transcribe audio.mp3          # transcribe only
-voxnote transcribe audio.mp3 --diarize  # transcribe with speaker identification
-voxnote process audio.mp3             # full pipeline: transcribe → insights → note
+# Run dev servers (API on :8000, Web on :3001)
+make dev
 
-# Streamlit UI
-pip install -e ".[ui]"
-voxnote-ui                            # or: streamlit run src/voxnote/ui.py
-
-# Lint & format
-ruff check src/ tests/
-ruff format src/ tests/
+# Run individual servers
+make dev-api    # uvicorn on port 8000 with --reload
+make dev-web    # next dev on port 3001
 
 # Tests
-pytest                                # all tests
-pytest tests/test_exporter.py         # single file
-pytest -k test_name                   # single test by name
+make test       # all tests (core + api)
+make test-core  # packages/core tests (26 tests)
+make test-api   # packages/api tests (10 tests)
 
-# Type check
-mypy src/
+# Lint & format
+make lint       # ruff check + eslint
+make format     # ruff format
+make typecheck  # mypy packages/core/
 
-# Makefile shortcuts: make dev | make lint | make format | make test | make typecheck
+# CLI (still works)
+voxnote record
+voxnote transcribe audio.mp3
+voxnote process audio.mp3
 ```
 
 ## Architecture
 
-Pipeline flow: **record → transcribe → extract_insights → export_obsidian**
+### Monorepo Structure
 
 ```
-src/voxnote/
-├── cli.py              ← Click CLI (voxnote command group: record, transcribe, process)
-├── config.py           ← Pydantic Settings (env vars prefixed VOXNOTE_, reads .env)
-├── ui.py               ← Streamlit web UI (voxnote-ui entry point)
-├── pipeline/
-│   ├── models.py       ← TranscriptResult + Segment dataclasses (speaker diarization data)
-│   ├── recorder.py     ← Microphone capture via sounddevice → .wav
-│   ├── transcriber.py  ← Whisper/whisperX transcription + optional diarization
-│   ├── insights.py     ← Delegates to providers via get_provider() factory
-│   └── exporter.py     ← Obsidian Markdown note with YAML frontmatter
-└── providers/
-    ├── base.py         ← LLMProvider ABC (extract_insights, name, supports_streaming)
-    ├── ollama.py       ← Local Ollama (default) — POST /api/generate, JSON repair
-    ├── openai.py       ← OpenAI API
-    ├── kimi.py         ← Moonshot/Kimi API
-    ├── glm.py          ← Zhipu GLM API
-    └── google.py       ← Google Gemini API
+Voxnote/
+├── packages/
+│   ├── core/                    # Python pipeline
+│   │   ├── voxnote/
+│   │   │   ├── cli.py           # Click CLI
+│   │   │   ├── config.py        # Pydantic Settings
+│   │   │   ├── pipeline/        # models, transcriber, insights, exporter
+│   │   │   └── providers/       # ollama, openai, kimi, glm, google
+│   │   ├── tests/
+│   │   └── pyproject.toml
+│   ├── api/                     # FastAPI backend
+│   │   ├── voxnote_api/
+│   │   │   ├── main.py          # App factory + CORS + lifespan
+│   │   │   ├── schemas.py       # Pydantic request/response models
+│   │   │   └── routes/          # health, transcribe, insights, export, config, notes
+│   │   ├── tests/
+│   │   └── pyproject.toml
+│   └── web/                     # Next.js 14 frontend
+│       ├── src/app/             # App Router (page.tsx)
+│       ├── src/components/      # AudioRecorder, ConfigPanel, ProcessingSteps, etc.
+│       ├── src/hooks/           # useVoxnote, useConfig
+│       ├── src/lib/api.ts       # Centralized API client
+│       ├── src/types/           # TypeScript interfaces
+│       └── package.json
+├── Makefile                     # Root: install, dev, test, lint
+└── CLAUDE.md
 ```
+
+### Pipeline Flow
+
+**record → transcribe → extract_insights → export_obsidian**
+
+### API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/health` | Health check |
+| POST | `/api/transcribe` | Audio upload → transcription |
+| POST | `/api/insights` | Transcript → structured insights |
+| POST | `/api/export` | Insights → Obsidian .md note |
+| GET | `/api/config` | Current settings |
+| PUT | `/api/config` | Update settings |
+| GET | `/api/notes` | List generated notes |
+| GET | `/api/notes/{filename}` | Get note content |
 
 ### Key design patterns
 
-- **Provider abstraction**: `providers/__init__.py:get_provider()` is a factory that returns an `LLMProvider` by name. All providers implement `extract_insights(transcript) → dict`. Adding a provider means subclassing `LLMProvider` and registering in the factory dict.
-- **Transcription result model**: `TranscriptResult` wraps plain text + optional speaker-labeled `Segment` list. The `to_speaker_text()` method merges consecutive same-speaker segments. Both CLI and exporter handle the `TranscriptResult` type.
-- **Backend auto-detection**: `transcriber.py` detects whisperX vs openai-whisper at import time. whisperX enables alignment + diarization; vanilla whisper is the fallback.
-- **Lazy imports**: Heavy deps (whisper, torch, provider SDKs) are imported inside functions/commands, not at module level, to keep CLI startup fast.
-- **Insights output structure**: All providers return the same JSON dict with keys: `resumen`, `decisiones`, `action_items`, `insights`, `preguntas_abiertas`, `proximos_pasos`. Output language is Spanish.
+- **Provider abstraction**: `providers/__init__.py:get_provider()` factory returns `LLMProvider` by name
+- **TranscriptResult model**: Wraps plain text + optional speaker-labeled segments
+- **Backend auto-detection**: `transcriber.py` detects whisperX vs openai-whisper at import time
+- **Lazy imports**: Heavy deps (whisper, torch) imported inside functions for fast startup
+- **Insights structure**: JSON dict with keys: `resumen`, `decisiones`, `action_items`, `insights`, `preguntas_abiertas`, `proximos_pasos`
+- **API proxy**: Next.js rewrites `/api/*` → `localhost:8000/api/*`
+- **Config sync**: Frontend config syncs to backend via `PUT /api/config` (debounced)
 
 ## Configuration
 
-All settings in `config.py` via `pydantic-settings`. Override with env vars or `.env` file (see `.env.example`):
+All settings via `pydantic-settings` with `VOXNOTE_` prefix:
 
 | Env var | Default | Purpose |
 |---------|---------|---------|
-| `VOXNOTE_LLM_PROVIDER` | `ollama` | LLM provider: ollama\|openai\|kimi\|glm\|google |
+| `VOXNOTE_LLM_PROVIDER` | `ollama` | LLM provider |
 | `VOXNOTE_WHISPER_MODEL` | `turbo` | Whisper model size |
-| `VOXNOTE_LANGUAGE` | `es` | Audio language (empty = auto-detect) |
-| `VOXNOTE_OLLAMA_MODEL` | `llama3.1:8b` | Ollama model for insights |
+| `VOXNOTE_LANGUAGE` | `es` | Audio language |
+| `VOXNOTE_OLLAMA_MODEL` | `llama3.1:8b` | Ollama model |
 | `VOXNOTE_OLLAMA_URL` | `http://localhost:11434` | Ollama server |
-| `VOXNOTE_DIARIZE` | `false` | Enable speaker diarization (requires whisperx + HF token) |
-| `VOXNOTE_HF_TOKEN` | | HuggingFace token for pyannote diarization |
+| `VOXNOTE_DIARIZE` | `false` | Enable speaker diarization |
+| `VOXNOTE_HF_TOKEN` | | HuggingFace token for diarization |
 | `VOXNOTE_OUTPUT_DIR` | `output` | Where notes are saved |
-
-Cloud provider API keys use their own env vars (e.g., `OPENAI_API_KEY`, `KIMI_API_KEY`, `GLM_API_KEY`, `GOOGLE_API_KEY`).
 
 ## Environment & Setup
 
-- **Python** >=3.10 (dev uses 3.14 via Homebrew)
+- **Python** >=3.10
+- **Node.js** >=18
 - **Virtual env**: `.venv/` → `source .venv/bin/activate`
-- **External deps**: `ffmpeg` (required by Whisper), Ollama on `localhost:11434` (for default provider)
-- **Optional extras**: `pip install -e ".[ui]"` for Streamlit, `pip install -e ".[whisperx]"` for diarization, `pip install -e ".[all-providers]"` for all LLM SDKs
+- **External deps**: `ffmpeg`, Ollama on `localhost:11434`
 
 ## Conventions
 
-- `src/` layout with `pyproject.toml` (no setup.py)
-- Formatting: `ruff format` — Linting: `ruff check` — line length 100
-- Type hints on all public functions; `mypy --strict`
-- Lazy imports for heavy deps (whisper, torch, provider SDKs) in CLI commands
+- Formatting: `ruff format` (Python), Prettier via ESLint (TypeScript) — line length 100
+- Type hints on all public functions; `mypy --strict` for Python, `strict: true` for TypeScript
+- Lazy imports for heavy deps in CLI commands
 - Console output via `rich.console.Console`
 - Paths via `pathlib.Path`
 - Documentation language: Spanish. Code and comments: English.
-- Tests mock external services (Whisper, Ollama, APIs); shared fixtures in `conftest.py`
-- CLI tests use `click.testing.CliRunner`
+- Tests mock external services; shared fixtures in `conftest.py`
+- React components use `"use client"` directive for client-side interactivity
+- API client centralized in `src/lib/api.ts`

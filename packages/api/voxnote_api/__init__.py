@@ -1,0 +1,1 @@
+"""Voxnote FastAPI backend."""
