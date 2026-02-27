@@ -72,35 +72,41 @@ export default function AudioRecorder({
         setRecordingTime((prev) => prev + 1);
       }, 1000);
       
-      // Configure analyser for better voice detection
-      analyser.fftSize = 128; // Smaller for better performance
-      analyser.smoothingTimeConstant = 0.8; // Smooth transitions
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      
+      // Configure analyser for waveform visualization
+      analyser.fftSize = 2048; // Large buffer for smooth waveform
+      const bufferLength = analyser.fftSize;
+      const dataArray = new Uint8Array(bufferLength);
+      const smoothBars = new Array(32).fill(6);
+
       const updateVisualizer = () => {
         if (!analyserRef.current) return;
-        analyserRef.current.getByteFrequencyData(dataArray);
-        
-        // Create 32 bars from frequency data
+        // Use time-domain data (actual waveform) instead of frequency data
+        analyserRef.current.getByteTimeDomainData(dataArray);
+
         const numBars = 32;
-        const bars = Array.from({ length: numBars }, (_, i) => {
-          // Map bar index to frequency data index
-          // Voice frequencies are typically 85Hz-255Hz, but we'll use full spectrum
-          const dataIndex = Math.floor((i / numBars) * (dataArray.length * 0.75));
-          
-          // Get raw value (0-255)
-          const value = dataArray[dataIndex] || 0;
-          
-          // Apply sensitivity boost for quieter sounds
-          // Use exponential curve to make quiet sounds more visible
-          const normalized = value / 255;
-          const boosted = Math.pow(normalized, 0.6); // Boost lower values
-          
-          // Scale to visual height (6px min, 64px max for more dynamic range)
-          return boosted * 58 + 6;
-        });
-        
-        setVisualizerData(bars);
+        const step = Math.floor(bufferLength / numBars);
+
+        for (let i = 0; i < numBars; i++) {
+          // Find peak amplitude in this segment of the waveform
+          let peak = 0;
+          for (let j = 0; j < step; j++) {
+            const amp = Math.abs(dataArray[i * step + j] - 128);
+            if (amp > peak) peak = amp;
+          }
+
+          const normalized = peak / 128;
+          const boosted = Math.pow(normalized, 0.5);
+          const target = boosted * 58 + 6;
+
+          // Smooth interpolation: fast attack, slow decay for fluid motion
+          if (target > smoothBars[i]) {
+            smoothBars[i] += (target - smoothBars[i]) * 0.7; // Fast attack
+          } else {
+            smoothBars[i] += (target - smoothBars[i]) * 0.12; // Slow decay
+          }
+        }
+
+        setVisualizerData([...smoothBars]);
         animationFrameRef.current = requestAnimationFrame(updateVisualizer);
       };
       updateVisualizer();
@@ -149,12 +155,12 @@ export default function AudioRecorder({
       {/* Visualizer */}
       <div className="flex items-center justify-center gap-[3px] sm:gap-1.5 h-20 sm:h-24 mb-6 px-4">
         {visualizerData.map((height, i) => (
-          <motion.div
+          <div
             key={i}
-            animate={{
-              height: isRecording ? height : hasRecording ? 8 : 6,
+            style={{
+              height: isRecording ? `${height}px` : hasRecording ? "8px" : "6px",
+              transition: isRecording ? "none" : "height 0.3s ease",
             }}
-            transition={{ type: "spring", stiffness: 300, damping: 12, delay: i * 0.003 }}
             className={`w-1.5 sm:w-2 rounded-full ${isRecording ? "bg-accent" : "bg-primary/30"}`}
           />
         ))}
