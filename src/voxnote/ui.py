@@ -209,9 +209,10 @@ def render_sidebar_config(settings: "Settings") -> tuple:
         )
 
         if diarize_enabled:
+            # Auto-load from settings (reads .env via pydantic-settings)
             hf_token = st.text_input(
                 "🔑 HuggingFace Token",
-                value=os.getenv("VOXNOTE_HF_TOKEN", ""),
+                value=settings.hf_token or os.getenv("VOXNOTE_HF_TOKEN", ""),
                 type="password",
             )
             if hf_token:
@@ -248,6 +249,19 @@ def render_sidebar_config(settings: "Settings") -> tuple:
         )
 
     return whisper_model, llm_provider, diarize_enabled
+
+
+def _render_note_preview(note_path: Path) -> None:
+    """Render a note preview stripping YAML frontmatter for clean display."""
+    content = note_path.read_text(encoding="utf-8")
+
+    # Strip YAML frontmatter (between --- delimiters)
+    if content.startswith("---"):
+        parts = content.split("---", 2)
+        if len(parts) >= 3:
+            content = parts[2].strip()
+
+    st.markdown(content, unsafe_allow_html=True)
 
 
 def render_record_tab(
@@ -445,7 +459,7 @@ def render_record_tab(
 
                 # Preview
                 with st.expander("📄 Vista previa de la nota"):
-                    st.markdown(note_path.read_text())
+                    _render_note_preview(note_path)
 
             except Exception as e:
                 st.error(f"❌ Error al procesar el audio: {str(e)}")
@@ -612,7 +626,7 @@ def render_process_tab(
                 st.success(f"✅ Nota guardada: `{note_path}`")
 
                 with st.expander("📄 Vista previa"):
-                    st.markdown(note_path.read_text())
+                    _render_note_preview(note_path)
 
 
 def render_history_tab(settings: "Settings") -> None:
@@ -719,8 +733,7 @@ def render_history_tab(settings: "Settings") -> None:
             for note in notes[:10]:
                 mod_time = datetime.fromtimestamp(note.stat().st_mtime)
                 with st.expander(f"📝 {note.name} — {mod_time.strftime('%d/%m/%Y %H:%M')}"):
-                    content = note.read_text()
-                    st.markdown(content)
+                    _render_note_preview(note)
         else:
             st.info("📭 No hay notas todavía. ¡Graba tu primera reunión!")
     else:

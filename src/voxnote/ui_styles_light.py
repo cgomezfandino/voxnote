@@ -328,13 +328,32 @@ def get_custom_css() -> str:
     /* ========================================
        AUDIO PLAYER - CLARO
        ======================================== */
-    
+
     .stAudio {{
-        background: {c["bg_card"]};
-        border: 1px solid {c["border_default"]};
-        border-radius: 16px;
-        padding: 16px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        background: {c["bg_card"]} !important;
+        border: 1px solid {c["border_default"]} !important;
+        border-radius: 16px !important;
+        padding: 16px !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
+        margin-top: -12px !important;
+        overflow: hidden !important;
+    }}
+
+    .stAudio audio {{
+        width: 100% !important;
+        border-radius: 8px !important;
+    }}
+
+    /* Expander inside note preview - better markdown rendering */
+    .stExpander {{
+        border: 1px solid {c["border_default"]} !important;
+        border-radius: 16px !important;
+        overflow: hidden !important;
+    }}
+
+    .stExpander [data-testid="stExpanderDetails"] {{
+        background: {c["bg_elevated"]} !important;
+        padding: 24px !important;
     }}
     
     /* ========================================

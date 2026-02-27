@@ -49,9 +49,16 @@ def test_export_contains_all_sections(tmp_path, sample_insights, sample_transcri
     )
     content = note.read_text()
 
-    for heading in ["Resumen", "Decisiones", "Action Items", "Insights Clave",
-                    "Preguntas Abiertas", "Próximos Pasos", "Transcripción Completa"]:
-        assert f"## {heading}" in content
+    for heading in [
+        "📝 Resumen",
+        "✅ Decisiones tomadas",
+        "🎯 Tareas pendientes",
+        "💡 Insights clave",
+        "❓ Preguntas abiertas",
+        "🔜 Próximos pasos",
+        "Transcripción completa",
+    ]:
+        assert heading in content
 
 
 def test_export_action_items_as_checkboxes(tmp_path, sample_insights, sample_transcript):
@@ -83,7 +90,7 @@ def test_export_empty_insights(tmp_path, sample_transcript):
     content = note.read_text()
 
     assert "N/A" in content  # resumen fallback
-    assert "- [ ] Sin action items identificados" in content
+    assert "- [ ] Sin tareas identificadas" in content
 
 
 def test_export_slug_from_audio_name(tmp_path, sample_insights, sample_transcript):
@@ -114,4 +121,4 @@ def test_export_with_diarized_transcript(tmp_path, sample_insights, sample_diari
 
     assert "[SPEAKER_00]:" in content
     assert "[SPEAKER_01]:" in content
-    assert "## Transcripción Completa" in content
+    assert "Transcripción completa" in content

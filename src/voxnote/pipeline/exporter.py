@@ -63,37 +63,54 @@ time: {time_str}
 audio: "[[audio/{Path(audio_name).name}]]"
 ---
 
-# Reunión {date_str} — {slug}
+# 📋 Reunión — {slug}
 
-## Resumen
+> 🗓️ **Fecha:** {date_str} · ⏰ **Hora:** {time_str} · 🎧 `{Path(audio_name).name}`
+
+---
+
+## 📝 Resumen
 
 {insights.get("resumen", "N/A")}
 
-## Decisiones
+---
+
+## ✅ Decisiones tomadas
 
 {decisions}
 
-## Action Items
+---
 
-{tasks if tasks else "- [ ] Sin action items identificados"}
+## 🎯 Tareas pendientes
 
-## Insights Clave
+{tasks if tasks else "- [ ] Sin tareas identificadas"}
+
+---
+
+## 💡 Insights clave
 
 {insight_lines}
 
-## Preguntas Abiertas
+---
+
+## ❓ Preguntas abiertas
 
 {questions}
 
-## Próximos Pasos
+---
+
+## 🔜 Próximos pasos
 
 {next_steps}
 
 ---
 
-## Transcripción Completa
+<details>
+<summary>📄 Transcripción completa</summary>
 
 {transcript_text}
+
+</details>
 """
 
     note_path = output_dir / f"{date_str}_{slug}.md"
