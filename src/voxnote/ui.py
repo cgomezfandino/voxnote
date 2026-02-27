@@ -241,33 +241,10 @@ def render_sidebar_config(settings: "Settings") -> tuple:
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
         # Output info
-        st.markdown(
-            f"""
-            <div style="
-                padding: 16px 20px;
-                background: #F8FAFC;
-                border: 1px solid rgba(203, 213, 225, 0.6);
-                border-radius: 12px;
-                font-size: 0.8rem;
-                margin-top: 16px;
-            ">
-                <div style="color: #64748B; margin-bottom: 4px;">📁 Directorio de salida</div>
-                <div style="
-                    margin-top: 8px;
-                    padding: 8px 12px;
-                    background: #E2E8F0;
-                    border: 1px solid #CBD5E1;
-                    border-radius: 6px;
-                    font-family: 'JetBrains Mono', monospace;
-                    font-size: 0.8rem;
-                    color: #1E293B;
-                    font-weight: 600;
-                ">
-                    {settings.output_dir}
-                </div>
-            </div>
-        """,
-            unsafe_allow_html=True,
+        st.text_input(
+            "📁 Directorio de salida",
+            value=str(settings.output_dir),
+            disabled=True,
         )
 
     return whisper_model, llm_provider, diarize_enabled

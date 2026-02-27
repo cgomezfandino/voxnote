@@ -78,7 +78,12 @@ def get_custom_css() -> str:
     /* ========================================
        BASE & RESET
        ======================================== */
-    
+
+    /* Force light backgrounds everywhere */
+    html, body {{
+        background: {c["bg_base"]} !important;
+    }}
+
     .stApp {{
         background: {c["bg_base"]};
         background-image: {g["hero"]};
@@ -86,7 +91,7 @@ def get_custom_css() -> str:
         font-family: 'Inter', sans-serif;
         color: {c["text_primary"]};
     }}
-    
+
     /* Ocultar solo menú de Streamlit y footer, NO el header del sidebar */
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
@@ -160,6 +165,28 @@ def get_custom_css() -> str:
         padding: 12px 16px !important;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255,255,255,0.8) !important;
     }}
+
+    /* Number inputs más compactos en sidebar */
+    section[data-testid="stSidebar"] .stNumberInput input {{
+        padding: 8px 10px !important;
+        text-align: center !important;
+        min-width: 0 !important;
+        width: 56px !important;
+    }}
+
+    section[data-testid="stSidebar"] .stNumberInput {{
+        max-width: 100% !important;
+    }}
+
+    section[data-testid="stSidebar"] .stNumberInput > div {{
+        flex-wrap: nowrap !important;
+    }}
+
+    /* Botones +/- más compactos */
+    section[data-testid="stSidebar"] .stNumberInput button {{
+        padding: 6px 10px !important;
+        min-width: 32px !important;
+    }}
     
     .stTextInput input:hover,
     .stNumberInput input:hover {{
@@ -214,22 +241,35 @@ def get_custom_css() -> str:
         box-shadow: 0 6px 20px {c["primary_glow"]} !important;
     }}
 
-    /* Timer y controles - MÁXIMA VISIBILIDAD */
+    /* Timer y controles */
     .stAudioInput div[data-testid="stAudioInputTimer"],
     .stAudioInput time,
     .stAudioInput [role="timer"] {{
-        color: {c["text_primary"]} !important;
-        font-weight: 600 !important;
+        color: {c["text_muted"]} !important;
+        font-weight: 500 !important;
         font-family: 'JetBrains Mono', monospace !important;
-        background: rgba(255, 255, 255, 0.9) !important;
-        padding: 4px 12px !important;
-        border-radius: 8px !important;
-        border: 1px solid {c["border_default"]} !important;
+        background: transparent !important;
+        border: none !important;
     }}
 
-    /* Asegurar que todo el texto dentro del audio input sea visible */
-    .stAudioInput * {{
-        color: {c["text_primary"]} !important;
+    /* Waveform time code */
+    [data-testid="stAudioInputWaveformTimeCode"] {{
+        background: #F1F5F9 !important;
+        color: {c["text_muted"]} !important;
+        border-radius: 6px !important;
+        padding: 2px 8px !important;
+        border: none !important;
+    }}
+
+    /* Texto dentro del audio input */
+    .stAudioInput span,
+    .stAudioInput div {{
+        color: {c["text_muted"]} !important;
+    }}
+
+    /* Audio input button must keep white text */
+    .stAudioInput button {{
+        color: white !important;
     }}
     
     .stTextInput input::placeholder {{
@@ -254,9 +294,14 @@ def get_custom_css() -> str:
         color: {c["text_primary"]} !important;
     }}
 
-    /* SVG del selectbox (flecha) */
-    .stSelectbox svg {{
-        fill: {c["text_primary"]} !important;
+    /* SVG del selectbox (flecha dropdown solamente) */
+    .stSelectbox [data-baseweb="select"] svg {{
+        fill: {c["text_secondary"]} !important;
+    }}
+
+    /* Excluir tooltip icons dentro de selectbox */
+    .stSelectbox .stTooltipIcon svg {{
+        fill: none !important;
     }}
     
     .stSelectbox [data-baseweb="popover"] {{
@@ -387,8 +432,70 @@ def get_custom_css() -> str:
         color: {c["text_primary"]} !important;
     }}
 
+    .stCheckbox label span[class*="st-"] {{
+        background-color: {c["bg_input"]} !important;
+        border-color: {c["border_default"]} !important;
+    }}
+
     .stCheckbox input[type="checkbox"] {{
         accent-color: {c["primary"]} !important;
+    }}
+
+    .stCheckbox input[type="checkbox"]:checked + span[class*="st-"] {{
+        background-color: {c["primary"]} !important;
+        border-color: {c["primary"]} !important;
+    }}
+
+    /* ========================================
+       TOOLTIP / HELP ICONS
+       ======================================== */
+
+    .stTooltipIcon,
+    .stTooltipIcon * {{
+        color: {c["text_muted"]} !important;
+    }}
+
+    .stTooltipIcon svg,
+    .stSelectbox .stTooltipIcon svg,
+    .stCheckbox .stTooltipIcon svg,
+    .stTextInput .stTooltipIcon svg,
+    section[data-testid="stSidebar"] .stTooltipIcon svg {{
+        fill: none !important;
+        stroke: {c["primary_light"]} !important;
+        color: {c["primary_light"]} !important;
+    }}
+
+    .stTooltipIcon svg circle,
+    .stTooltipIcon svg path,
+    .stTooltipIcon svg line,
+    .stSelectbox .stTooltipIcon svg circle,
+    .stSelectbox .stTooltipIcon svg path,
+    .stSelectbox .stTooltipIcon svg line {{
+        fill: none !important;
+        stroke: {c["primary_light"]} !important;
+    }}
+
+    .stTooltipIcon button {{
+        color: {c["text_muted"]} !important;
+    }}
+
+    /* ========================================
+       ELEMENT TOOLBAR - LIGHT
+       ======================================== */
+
+    [data-testid="stElementToolbarButtonContainer"] {{
+        background: {c["bg_elevated"]} !important;
+        border: 1px solid {c["border_default"]} !important;
+        border-radius: 6px !important;
+    }}
+
+    [data-testid="stElementToolbarButtonContainer"] button {{
+        color: {c["text_muted"]} !important;
+    }}
+
+    [data-testid="stElementToolbarButtonContainer"] svg {{
+        color: {c["text_muted"]} !important;
+        fill: {c["text_muted"]} !important;
     }}
 
     /* ========================================
