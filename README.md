@@ -8,13 +8,15 @@ Pipeline local para grabar reuniones, transcribirlas, extraer insights y organiz
 
 - [Requisitos](#requisitos)
 - [Instalación](#instalación)
-- [Iniciar y detener servicios](#iniciar-y-detener-servicios)
-- [Casos de uso](#casos-de-uso)
+- [Iniciar servicios](#iniciar-servicios)
+- [Uso](#uso)
 - [CLI](#cli)
 - [Interfaz web](#interfaz-web)
+- [API](#api)
 - [Configuración](#configuración)
 - [Proveedores LLM](#proveedores-llm)
 - [Integración con Obsidian](#integración-con-obsidian)
+- [Arquitectura](#arquitectura)
 - [Desarrollo](#desarrollo)
 
 ---
@@ -22,6 +24,7 @@ Pipeline local para grabar reuniones, transcribirlas, extraer insights y organiz
 ## Requisitos
 
 - Python ≥ 3.10
+- Node.js ≥ 18
 - [FFmpeg](https://ffmpeg.org/) — procesamiento de audio
 - [Ollama](https://ollama.com/) — LLM local (opcional si usas otros proveedores)
 
@@ -52,14 +55,40 @@ ollama pull llama3.1:8b
 ```bash
 git clone https://github.com/cgomezfandino/Voxnote.git
 cd Voxnote
-python -m venv .venv
+
+# Crear entorno virtual
+python3 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+
+# Instalar todos los paquetes
+make install
 ```
 
 ---
 
-## Iniciar y detener servicios
+## Iniciar servicios
+
+### Desarrollo (API + Web)
+
+```bash
+source .venv/bin/activate
+make dev
+```
+
+- **API**: http://127.0.0.1:8000
+- **Web**: http://localhost:3001
+
+### Solo API
+
+```bash
+make dev-api
+```
+
+### Solo Web
+
+```bash
+make dev-web
+```
 
 ### Ollama (LLM local)
 
@@ -69,34 +98,11 @@ ollama serve
 
 # Verificar que está corriendo
 curl http://localhost:11434/api/tags
-
-# Detener
-pkill ollama
-```
-
-### Interfaz web (Streamlit)
-
-```bash
-# Iniciar UI en http://localhost:8501
-voxnote-ui
-
-# O directamente con streamlit
-.venv/bin/python -m streamlit run src/voxnote/ui.py --server.port 8501 --server.headless true
-
-# Detener
-pkill -f "streamlit run"
-```
-
-### Verificar puertos activos
-
-```bash
-lsof -i :11434   # Ollama
-lsof -i :8501    # Streamlit UI
 ```
 
 ---
 
-## Casos de uso
+## Uso
 
 ### 1. Reunión de equipo (standup, sprint planning)
 
@@ -108,29 +114,20 @@ voxnote record --duration 900  # 15 minutos
 voxnote process recordings/20260212_193045.wav
 ```
 
-**Resultado:** Nota en `output/` con resumen, decisiones y action items.
-
----
-
-### 2. Entrevista o podcast
+### 2. Entrevista o podcast (con diarización)
 
 ```bash
-# Transcribir archivo existente con diarización (identificar hablantes)
+# Transcribir con identificación de hablantes
 voxnote process entrevista.mp3 --diarize
 ```
 
 **Requisito:** Configurar `VOXNOTE_HF_TOKEN` para diarización.
 
----
-
-### 3. Notas de clase o conferencia
+### 3. Solo transcribir
 
 ```bash
-# Usar modelo grande para mayor precisión
-VOXNOTE_WHISPER_MODEL=large-v3 voxnote process conferencia.m4a
+voxnote transcribe audio.mp3 > transcript.txt
 ```
-
----
 
 ### 4. Procesar múltiples archivos
 
@@ -138,14 +135,6 @@ VOXNOTE_WHISPER_MODEL=large-v3 voxnote process conferencia.m4a
 for file in recordings/*.wav; do
     voxnote process "$file"
 done
-```
-
----
-
-### 5. Solo transcribir (sin insights)
-
-```bash
-voxnote transcribe audio.mp3 > transcript.txt
 ```
 
 ---
@@ -187,10 +176,10 @@ opciones:
 
 ## Interfaz web
 
-UI interactiva en **http://localhost:8501**:
+UI moderna en **http://localhost:3001**:
 
 ```bash
-voxnote-ui
+make dev
 ```
 
 Funcionalidades:
@@ -199,6 +188,45 @@ Funcionalidades:
 - Seleccionar modelo Whisper y proveedor LLM
 - Ver historial de notas generadas
 - Configurar diarización de hablantes
+- Preview de notas estilo Obsidian
+
+---
+
+## API
+
+Backend FastAPI en **http://127.0.0.1:8000**
+
+### Endpoints
+
+| Method | Path | Descripción |
+|--------|------|-------------|
+| GET | `/api/health` | Health check |
+| POST | `/api/transcribe` | Audio upload → transcripción |
+| POST | `/api/insights` | Transcript → insights estructurados |
+| POST | `/api/export` | Insights → nota Obsidian .md |
+| GET | `/api/config` | Configuración actual |
+| PUT | `/api/config` | Actualizar configuración |
+| GET | `/api/notes` | Listar notas generadas |
+| GET | `/api/notes/{filename}` | Obtener contenido de nota |
+
+### Ejemplo
+
+```bash
+# Transcribir audio
+curl -X POST "http://127.0.0.1:8000/api/transcribe" \
+  -F "file=@audio.mp3" \
+  -F "model=turbo"
+
+# Extraer insights
+curl -X POST "http://127.0.0.1:8000/api/insights" \
+  -H "Content-Type: application/json" \
+  -d '{"transcript": "...", "provider": "ollama"}'
+
+# Exportar nota
+curl -X POST "http://127.0.0.1:8000/api/export" \
+  -H "Content-Type: application/json" \
+  -d '{"insights": {...}, "title": "Standup 2026-03-02"}'
+```
 
 ---
 
@@ -213,7 +241,6 @@ Variables de entorno (prefijo `VOXNOTE_`):
 | `VOXNOTE_LLM_PROVIDER` | `ollama` | Proveedor LLM |
 | `VOXNOTE_OLLAMA_MODEL` | `llama3.1:8b` | Modelo Ollama |
 | `VOXNOTE_OLLAMA_URL` | `http://localhost:11434` | URL Ollama |
-| `VOXNOTE_OLLAMA_TIMEOUT` | `120` | Timeout en segundos |
 | `VOXNOTE_OUTPUT_DIR` | `output` | Directorio de notas |
 | `VOXNOTE_DIARIZE` | `false` | Habilitar diarización |
 | `VOXNOTE_HF_TOKEN` | | Token HuggingFace para diarización |
@@ -274,6 +301,8 @@ VOXNOTE_LLM_PROVIDER=google
 GOOGLE_API_KEY=...
 ```
 
+Ver [docs/multi-provider-setup.md](docs/multi-provider-setup.md) para más detalles.
+
 ---
 
 ## Integración con Obsidian
@@ -283,10 +312,23 @@ Las notas incluyen YAML frontmatter compatible con Obsidian:
 ```yaml
 ---
 tags: [meeting, reunion]
-date: 2026-02-12
-time: "19:30"
-audio: "[[audio/20260212_193045.wav]]"
+date: 2026-03-02
+time: "10:30"
+audio: "[[audio/20260302_103000.wav]]"
 ---
+```
+
+### Estructura de vault recomendada
+
+```
+MiVault/
+├── meetings/     ← VOXNOTE_OUTPUT_DIR apunta aquí
+├── audio/        ← Archivos de audio originales
+└── templates/
+```
+
+```bash
+export VOXNOTE_OUTPUT_DIR=~/MiVault/meetings
 ```
 
 ### Plugins recomendados
@@ -298,42 +340,68 @@ audio: "[[audio/20260212_193045.wav]]"
 ### Query Dataview para action items pendientes
 
 ```dataview
-TASK FROM "output" WHERE !completed
+TASK FROM "meetings" WHERE !completed
 SORT date DESC
 ```
 
 ---
 
-## Estructura del proyecto
+## Arquitectura
+
+### Monorepo Structure
 
 ```
 Voxnote/
-├── src/voxnote/
-│   ├── cli.py              # Comandos CLI
-│   ├── config.py           # Configuración
-│   ├── ui.py               # Interfaz Streamlit
-│   ├── pipeline/
-│   │   ├── recorder.py     # Grabación de audio
-│   │   ├── transcriber.py  # Transcripción Whisper
-│   │   ├── insights.py     # Extracción de insights
-│   │   └── exporter.py     # Exportar a Markdown
-│   └── providers/          # Proveedores LLM
-├── recordings/             # Archivos de audio
-├── output/                 # Notas generadas
-├── tests/                  # Tests
-└── docs/                   # Documentación
+├── packages/
+│   ├── core/                    # Python pipeline
+│   │   ├── voxnote/
+│   │   │   ├── cli.py           # Click CLI
+│   │   │   ├── config.py        # Pydantic Settings
+│   │   │   └── pipeline/        # models, transcriber, insights, exporter
+│   │   │   └── providers/       # ollama, openai, kimi, glm, google
+│   │   ├── tests/
+│   │   └── pyproject.toml
+│   ├── api/                     # FastAPI backend
+│   │   ├── voxnote_api/
+│   │   │   ├── main.py          # App factory + CORS + lifespan
+│   │   │   ├── schemas.py       # Pydantic request/response models
+│   │   │   └── routes/          # health, transcribe, insights, export, config, notes
+│   │   ├── tests/
+│   │   └── pyproject.toml
+│   └── web/                     # Next.js 14 frontend
+│       ├── src/app/             # App Router
+│       ├── src/components/      # AudioRecorder, ConfigPanel, etc.
+│       ├── src/hooks/           # useVoxnote, useConfig
+│       ├── src/lib/api.ts       # Centralized API client
+│       └── package.json
+├── docs/                        # Documentación
+├── recordings/                  # Archivos de audio
+├── output/                      # Notas generadas
+├── Makefile
+└── CLAUDE.md
 ```
+
+### Pipeline Flow
+
+**record → transcribe → extract_insights → export_obsidian**
 
 ---
 
 ## Desarrollo
 
 ```bash
-make lint       # ruff check src/ tests/
-make format     # ruff format src/ tests/
-make typecheck  # mypy src/
-make test       # pytest
-make dev        # instalar con dependencias de desarrollo
+# Instalar dependencias
+make install
+
+# Ejecutar tests
+make test        # todos
+make test-core   # solo core
+make test-api    # solo api
+
+# Lint y formato
+make lint        # ruff check + eslint
+make format      # ruff format
+make typecheck   # mypy packages/core/
 ```
 
 ---

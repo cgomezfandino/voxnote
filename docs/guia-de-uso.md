@@ -4,13 +4,14 @@
 
 1. [Requisitos previos](#1-requisitos-previos)
 2. [Instalación](#2-instalación)
-3. [Verificar que todo funciona](#3-verificar-que-todo-funciona)
+3. [Iniciar servicios](#3-iniciar-servicios)
 4. [Grabar una reunión](#4-grabar-una-reunión)
 5. [Procesar un audio existente](#5-procesar-un-audio-existente)
 6. [Solo transcribir](#6-solo-transcribir)
-7. [Configurar Obsidian](#7-configurar-obsidian)
-8. [Configuración avanzada](#8-configuración-avanzada)
-9. [Troubleshooting](#9-troubleshooting)
+7. [Interfaz web](#7-interfaz-web)
+8. [Configurar Obsidian](#8-configurar-obsidian)
+9. [Configuración avanzada](#9-configuración-avanzada)
+10. [Troubleshooting](#10-troubleshooting)
 
 ---
 
@@ -51,10 +52,11 @@ ollama run llama3.1:8b "Dime hola"
 
 > Ollama debe estar corriendo antes de usar `voxnote process`. En macOS se inicia como servicio automáticamente al instalar. En Linux: `ollama serve &`
 
-### Python ≥ 3.10
+### Python ≥ 3.10 y Node.js ≥ 18
 
 ```bash
 python3 --version  # debe ser 3.10+
+node --version     # debe ser 18+
 ```
 
 ---
@@ -70,10 +72,10 @@ cd Voxnote
 python3 -m venv .venv
 source .venv/bin/activate
 
-# Instalar Voxnote en modo editable
-pip install -e ".[dev]"
+# Instalar todos los paquetes (core + api + web)
+make install
 
-# Verificar
+# Verificar CLI
 voxnote --help
 ```
 
@@ -81,9 +83,32 @@ La primera vez que uses Whisper, el modelo se descarga automáticamente (~6 GB p
 
 ---
 
-## 3. Verificar que todo funciona
+## 3. Iniciar servicios
 
-### Checklist rápido
+### Desarrollo completo (API + Web)
+
+```bash
+source .venv/bin/activate
+make dev
+```
+
+Esto inicia:
+- **API** en http://127.0.0.1:8000
+- **Web** en http://localhost:3001
+
+### Solo API
+
+```bash
+make dev-api
+```
+
+### Solo Web
+
+```bash
+make dev-web
+```
+
+### Verificar que todo funciona
 
 ```bash
 # 1. FFmpeg instalado
@@ -92,8 +117,8 @@ ffmpeg -version
 # 2. Ollama corriendo
 curl -s http://localhost:11434/api/tags | python3 -m json.tool
 
-# 3. Voxnote instalado
-voxnote --help
+# 3. API activa
+curl http://127.0.0.1:8000/api/health
 
 # 4. Micrófono accesible (graba 3 segundos de prueba)
 voxnote record --duration 3
@@ -123,12 +148,10 @@ voxnote record --duration 1800
 ### Guardar en ruta específica
 
 ```bash
-voxnote record -o audio/standup_2025-01-15.wav
+voxnote record -o audio/standup_2026-03-02.wav
 ```
 
 ### Grabar y procesar en un solo paso
-
-Primero graba, luego procesa el archivo generado:
 
 ```bash
 voxnote record -o audio/reunion.wav
@@ -169,7 +192,7 @@ Un archivo Markdown en `output/` (o el directorio que especifiques) con:
 - **Próximos pasos**
 - **Transcripción completa** al final
 
-Ejemplo de nombre: `2025-01-15_standup.md`
+Ejemplo de nombre: `2026-03-02_standup.md`
 
 ---
 
@@ -192,7 +215,25 @@ voxnote transcribe audio/mi_reunion.mp3 > transcripcion.txt
 
 ---
 
-## 7. Configurar Obsidian
+## 7. Interfaz web
+
+UI moderna disponible en **http://localhost:3001**:
+
+```bash
+make dev
+```
+
+Funcionalidades:
+- Grabar audio directamente desde el navegador
+- Subir archivos existentes
+- Seleccionar modelo Whisper y proveedor LLM
+- Ver historial de notas generadas
+- Configurar diarización de hablantes
+- Preview de notas estilo Obsidian
+
+---
+
+## 8. Configurar Obsidian
 
 ### Estructura de vault recomendada
 
@@ -242,20 +283,9 @@ SORT date DESC
 ```
 ````
 
-**Reuniones con preguntas abiertas:**
-
-````markdown
-```dataview
-LIST
-FROM "meetings" AND #meeting
-WHERE contains(file.content, "Preguntas Abiertas")
-SORT date DESC
-```
-````
-
 ---
 
-## 8. Configuración avanzada
+## 9. Configuración avanzada
 
 ### Variables de entorno
 
@@ -265,8 +295,11 @@ Crea un archivo `.env` en la raíz del proyecto o expórtalas en tu shell:
 # Modelo de Whisper (tiny|base|small|medium|turbo|large-v3)
 export VOXNOTE_WHISPER_MODEL=turbo
 
-# Idioma del audio (vacío = auto-detect, útil para reuniones mixtas ES/EN)
+# Idioma del audio (vacío = auto-detect)
 export VOXNOTE_LANGUAGE=es
+
+# Proveedor LLM (ollama|openai|kimi|glm|google)
+export VOXNOTE_LLM_PROVIDER=ollama
 
 # Modelo de Ollama para insights
 export VOXNOTE_OLLAMA_MODEL=llama3.1:8b
@@ -277,20 +310,21 @@ export VOXNOTE_OLLAMA_URL=http://localhost:11434
 # Directorio de salida para las notas
 export VOXNOTE_OUTPUT_DIR=output
 
-# Sample rate para grabación
-export VOXNOTE_SAMPLE_RATE=16000
+# Diarización (identificar hablantes)
+export VOXNOTE_DIARIZE=false
+export VOXNOTE_HF_TOKEN=your_huggingface_token
 ```
 
 ### Elegir modelo de Whisper
 
 | Modelo | VRAM | Velocidad | Cuándo usarlo |
 |--------|------|-----------|---------------|
-| `tiny` | ~1 GB | Muy rápido | Pruebas rápidas, transcripción de baja calidad |
+| `tiny` | ~1 GB | Muy rápido | Pruebas rápidas |
 | `base` | ~1 GB | Rápido | Audio claro en inglés |
-| `small` | ~2 GB | Medio | Buen balance para inglés |
+| `small` | ~2 GB | Medio | Buen balance |
 | `medium` | ~5 GB | Lento | Reuniones en español — mínimo recomendado |
 | `turbo` | ~6 GB | Rápido | **Recomendado** — velocidad de small, calidad de large |
-| `large-v3` | ~10 GB | Muy lento | Máxima precisión, idiomas difíciles |
+| `large-v3` | ~10 GB | Muy lento | Máxima precisión |
 
 > En Apple Silicon (M1/M2/M3/M4), Whisper usa la GPU automáticamente.
 
@@ -302,24 +336,29 @@ Si tus reuniones mezclan español e inglés:
 export VOXNOTE_LANGUAGE=
 ```
 
-Dejar el idioma vacío activa la auto-detección de Whisper. Usa al menos `medium` o `turbo` para buenos resultados en code-switching.
+Dejar el idioma vacío activa la auto-detección de Whisper. Usa al menos `medium` o `turbo` para buenos resultados.
 
-### Usar un modelo de Ollama diferente
+### Cambiar proveedor LLM
 
 ```bash
-# Más potente (requiere 16+ GB RAM)
-export VOXNOTE_OLLAMA_MODEL=llama3.1:70b
+# OpenAI
+VOXNOTE_LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-...
 
-# Más ligero
-export VOXNOTE_OLLAMA_MODEL=mistral:7b
-export VOXNOTE_OLLAMA_MODEL=phi3:mini
+# Google Gemini
+VOXNOTE_LLM_PROVIDER=google
+GOOGLE_API_KEY=...
+
+# Kimi
+VOXNOTE_LLM_PROVIDER=kimi
+KIMI_API_KEY=...
 ```
 
-Recuerda descargar el modelo primero: `ollama pull <modelo>`
+Ver [multi-provider-setup.md](multi-provider-setup.md) para más detalles.
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 ### "No se encuentra ffmpeg"
 
@@ -339,6 +378,21 @@ ollama serve &
 
 Verifica: `curl http://localhost:11434/api/tags`
 
+### API no responde
+
+Verifica que el servidor esté corriendo:
+
+```bash
+curl http://127.0.0.1:8000/api/health
+```
+
+Si no responde, inicia el servidor:
+
+```bash
+source .venv/bin/activate
+make dev-api
+```
+
 ### Transcripción de baja calidad
 
 - Sube el modelo: `--model medium` o `--model large-v3`
@@ -357,4 +411,4 @@ Es normal. Whisper descarga el modelo (~6 GB para `turbo`) la primera vez. Se gu
 
 A veces el LLM no genera JSON limpio. Si pasa frecuentemente:
 - Usa un modelo más grande: `llama3.1:70b`
-- Vuelve a ejecutar el comando — la temperatura baja (0.1) minimiza variabilidad pero no la elimina
+- Vuelve a ejecutar el comando — la temperatura baja (0.1) minimiza variabilidad

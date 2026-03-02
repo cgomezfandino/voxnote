@@ -9,45 +9,64 @@ Voxnote soporta múltiples proveedores de LLM para la extracción de insights. P
 | **ollama** | LLM local (Llama, Mistral, etc.) | ✅ Gratis<br>✅ 100% privado<br>✅ Sin límites | ❌ No |
 | **openai** | OpenAI (GPT-4, GPT-3.5) | ✅ Alta calidad<br>✅ JSON mode nativo | ✅ Sí |
 | **kimi** | Moonshot AI (Kimi) | ✅ Contexto largo<br>✅ Buen español/chino | ✅ Sí |
-| **glm** | Zhipu AI (GLM-4) | ✅ Chino nativo<br>✅ Buena calidad | ✅ Sí |
+| **glm** | Zhipu AI (GLM-4, GLM-5) | ✅ Chino nativo<br>✅ Buena calidad | ✅ Sí |
 | **google** | Google Gemini | ✅ Contexto muy largo<br>✅ Multimodal | ✅ Sí |
 
 ---
 
-## Instalación por provider
+## Configuración por provider
 
-### 1. Ollama (default — ya instalado)
+### 1. Ollama (default)
 
 ```bash
-# Ya está instalado por defecto
-# Solo asegúrate de que Ollama esté corriendo
+# Asegúrate de que Ollama esté corriendo
 ollama serve &
+
+# Descargar modelo (si no lo tienes)
+ollama pull llama3.1:8b
+```
+
+Configuración en `.env`:
+
+```bash
+VOXNOTE_LLM_PROVIDER=ollama
+VOXNOTE_OLLAMA_MODEL=llama3.1:8b
+VOXNOTE_OLLAMA_URL=http://localhost:11434
 ```
 
 ### 2. OpenAI
 
 ```bash
-# Instalar SDK
-pip install -e ".[openai]"
-
 # Configurar API key
 export OPENAI_API_KEY="sk-..."
+```
+
+Configuración en `.env`:
+
+```bash
+VOXNOTE_LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-...
 
 # Opcional: cambiar modelo (default: gpt-4o-mini)
-export OPENAI_MODEL="gpt-4o"
+OPENAI_MODEL=gpt-4o
 ```
+
+Obtén tu API key en: https://platform.openai.com/api-keys
 
 ### 3. Kimi (Moonshot AI)
 
 ```bash
-# Instalar SDK (usa OpenAI SDK)
-pip install -e ".[kimi]"
-
-# Configurar API key
 export KIMI_API_KEY="sk-..."
+```
+
+Configuración en `.env`:
+
+```bash
+VOXNOTE_LLM_PROVIDER=kimi
+KIMI_API_KEY=sk-...
 
 # Opcional: cambiar modelo (default: moonshot-v1-8k)
-export KIMI_MODEL="moonshot-v1-32k"
+KIMI_MODEL=moonshot-v1-32k
 ```
 
 Obtén tu API key en: https://platform.moonshot.cn/
@@ -55,14 +74,17 @@ Obtén tu API key en: https://platform.moonshot.cn/
 ### 4. GLM (Zhipu AI)
 
 ```bash
-# Instalar SDK
-pip install -e ".[glm]"
-
-# Configurar API key
 export GLM_API_KEY="..."
+```
 
-# Opcional: cambiar modelo (default: glm-4)
-export GLM_MODEL="glm-4-plus"
+Configuración en `.env`:
+
+```bash
+VOXNOTE_LLM_PROVIDER=glm
+GLM_API_KEY=...
+
+# Modelos disponibles: glm-4, glm-4-plus, glm-4-air, glm-4.7, glm-5
+GLM_MODEL=glm-5
 ```
 
 Obtén tu API key en: https://open.bigmodel.cn/
@@ -70,23 +92,20 @@ Obtén tu API key en: https://open.bigmodel.cn/
 ### 5. Google Gemini
 
 ```bash
-# Instalar SDK
-pip install -e ".[google]"
-
-# Configurar API key
 export GOOGLE_API_KEY="..."
+```
+
+Configuración en `.env`:
+
+```bash
+VOXNOTE_LLM_PROVIDER=google
+GOOGLE_API_KEY=...
 
 # Opcional: cambiar modelo (default: gemini-2.0-flash-exp)
-export GOOGLE_MODEL="gemini-pro"
+GOOGLE_MODEL=gemini-pro
 ```
 
 Obtén tu API key en: https://makersuite.google.com/app/apikey
-
-### Instalar todos los providers
-
-```bash
-pip install -e ".[all-providers]"
-```
 
 ---
 
@@ -113,7 +132,7 @@ VOXNOTE_LLM_PROVIDER=glm voxnote process recordings/reunion.wav
 VOXNOTE_LLM_PROVIDER=google voxnote process recordings/reunion.wav
 ```
 
-### .env
+### Archivo .env
 
 Configura permanentemente en `.env`:
 
@@ -126,13 +145,19 @@ VOXNOTE_LLM_PROVIDER=openai
 OPENAI_API_KEY=sk-...
 ```
 
-### UI (Streamlit)
+### API
 
-La UI tiene un selector de provider en el sidebar. Selecciona el que quieras usar antes de procesar.
+Incluye el campo `provider` en las peticiones:
 
 ```bash
-voxnote-ui
+curl -X POST "http://127.0.0.1:8000/api/insights" \
+  -H "Content-Type: application/json" \
+  -d '{"transcript": "...", "provider": "openai"}'
 ```
+
+### Interfaz web
+
+La UI tiene un selector de provider en el panel de configuración. Selecciona el que quieras usar antes de procesar.
 
 ---
 
@@ -169,14 +194,6 @@ O agrégala a tu `.env`:
 OPENAI_API_KEY=sk-...
 ```
 
-### Error: "openai package not installed"
-
-Instala el provider:
-
-```bash
-pip install -e ".[openai]"
-```
-
 ### Error: "Unknown provider 'xxx'"
 
 Verifica el nombre del provider. Válidos: `ollama`, `openai`, `kimi`, `glm`, `google`.
@@ -190,12 +207,18 @@ ollama serve &
 curl http://localhost:11434/api/tags
 ```
 
+### API key inválida
+
+Verifica que la API key sea correcta y no haya expirado. Cada proveedor muestra el estado en su dashboard.
+
 ---
 
 ## Recomendaciones
 
-- **Desarrollo/pruebas**: Usa `ollama` (gratis, ilimitado)
-- **Producción/mejor calidad**: Usa `openai` (gpt-4o-mini o gpt-4o)
-- **Privacidad máxima**: Usa `ollama` (100% local)
-- **Contexto muy largo** (>1 hora): Usa `google` (gemini-2.0-flash) o `kimi` (moonshot-v1-128k)
-- **Español/Chino**: Todos funcionan bien, pero `glm` y `kimi` son nativos en chino
+| Escenario | Provider recomendado |
+|-----------|---------------------|
+| **Desarrollo/pruebas** | `ollama` (gratis, ilimitado) |
+| **Producción/mejor calidad** | `openai` (gpt-4o-mini o gpt-4o) |
+| **Privacidad máxima** | `ollama` (100% local) |
+| **Contexto muy largo** (>1 hora) | `google` (gemini-2.0-flash) o `kimi` (moonshot-v1-128k) |
+| **Español/Chino** | Todos funcionan bien, pero `glm` y `kimi` son nativos en chino |
