@@ -56,13 +56,11 @@ export interface AppConfig {
   llm_provider: string;
   ollama_model: string;
   ollama_url: string;
+  ollama_api_key?: string;
   openai_model: string;
-  kimi_model: string;
-  glm_model: string;
   google_model: string;
   output_dir: string;
   diarize: boolean;
-  hf_token: string;
 }
 
 // Processing steps

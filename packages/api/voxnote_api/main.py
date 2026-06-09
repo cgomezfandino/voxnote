@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from voxnote_api.routes import config, export, health, insights, notes, transcribe
+from voxnote_api.routes import config, export, health, insights, notes, transcribe, ollama
 
 
 @asynccontextmanager
@@ -34,6 +34,7 @@ def create_app() -> FastAPI:
         allow_origins=[
             "http://localhost:3000",
             "http://localhost:3001",
+            "http://localhost:3003",
         ],
         allow_credentials=True,
         allow_methods=["*"],
@@ -46,6 +47,7 @@ def create_app() -> FastAPI:
     app.include_router(export.router, prefix="/api", tags=["export"])
     app.include_router(config.router, prefix="/api", tags=["config"])
     app.include_router(notes.router, prefix="/api", tags=["notes"])
+    app.include_router(ollama.router, prefix="/api/ollama", tags=["ollama"])
 
     return app
 
@@ -57,4 +59,4 @@ def run() -> None:
     """Entry point for voxnote-api command."""
     import uvicorn
 
-    uvicorn.run("voxnote_api.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("voxnote_api.main:app", host="0.0.0.0", port=8003, reload=True)

@@ -9,7 +9,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     model_config = {
         "env_prefix": "VOXNOTE_",
-        "env_file": ".env",
+        "env_file": str(Path(__file__).resolve().parents[3] / ".env"),
         "env_file_encoding": "utf-8",
     }
 
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     # LLM Provider
     llm_provider: str = Field(
         default="ollama",
-        description="LLM provider: ollama|openai|kimi|glm|google",
+        description="LLM provider: ollama|openai|google",
     )
 
     # Ollama (when provider=ollama)
@@ -32,6 +32,7 @@ class Settings(BaseSettings):
         default="http://localhost:11434",
         description="Ollama server base URL",
     )
+    ollama_api_key: str = Field(default="", description="Ollama API key for cloud / proxy authentication")
     ollama_timeout: int = Field(default=120, description="Ollama request timeout in seconds")
 
     # Speaker Diarization (whisperX)

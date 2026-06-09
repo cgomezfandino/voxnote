@@ -85,10 +85,9 @@ class ConfigResponse(BaseModel):
     llm_provider: str
     ollama_model: str
     ollama_url: str
+    ollama_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
-    kimi_model: str = "moonshot-v1-8k"
-    glm_model: str = "glm-4"
-    google_model: str = "gemini-2.0-flash-exp"
+    google_model: str = "gemini-2.0-flash"
     diarize: bool
     hf_token: str = ""
     output_dir: str
@@ -102,9 +101,8 @@ class ConfigUpdateRequest(BaseModel):
     language: str | None = None
     llm_provider: str | None = None
     ollama_model: str | None = None
+    ollama_api_key: str | None = None
     openai_model: str | None = None
-    kimi_model: str | None = None
-    glm_model: str | None = None
     google_model: str | None = None
     diarize: bool | None = None
 

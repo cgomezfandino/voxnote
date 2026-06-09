@@ -84,18 +84,18 @@ def _transcribe_whisper(audio_path: str, model_name: str) -> TranscriptResult:
     return TranscriptResult(text=text)
 
 
-def _patch_torch_serialization() -> None:
+import contextlib
+
+@contextlib.contextmanager
+def _patch_torch_serialization_ctx():
     """Allow pyannote checkpoint loading with PyTorch >= 2.6.
 
     PyTorch 2.6 defaults torch.load to weights_only=True which
     rejects omegaconf types used by pyannote/speechbrain checkpoints.
-    We patch torch.load to default weights_only=False for these
+    We temporarily patch torch.load to default weights_only=False for these
     trusted model files.
     """
     import torch
-
-    if getattr(torch, "_voxnote_patched", False):
-        return
 
     _original_load = torch.load
 
@@ -104,7 +104,10 @@ def _patch_torch_serialization() -> None:
         return _original_load(*args, **kwargs)
 
     torch.load = _patched_load  # type: ignore[assignment]
-    torch._voxnote_patched = True  # type: ignore[attr-defined]
+    try:
+        yield
+    finally:
+        torch.load = _original_load  # type: ignore[assignment]
 
 
 def _transcribe_whisperx(
@@ -112,8 +115,6 @@ def _transcribe_whisperx(
 ) -> TranscriptResult:
     """Transcribe using whisperX with optional alignment and diarization."""
     import whisperx
-
-    _patch_torch_serialization()
 
     device = _get_device()
     compute_type = settings.compute_type
@@ -160,14 +161,15 @@ def _transcribe_whisperx(
             )
         else:
             console.print("[bold blue]Running speaker diarization…[/]")
-            diarize_model = whisperx.DiarizationPipeline(
-                use_auth_token=hf_token, device=device
-            )
-            diarize_segments = diarize_model(
-                audio,
-                min_speakers=settings.diarize_min_speakers,
-                max_speakers=settings.diarize_max_speakers,
-            )
+            with _patch_torch_serialization_ctx():
+                diarize_model = whisperx.DiarizationPipeline(
+                    use_auth_token=hf_token, device=device
+                )
+                diarize_segments = diarize_model(
+                    audio,
+                    min_speakers=settings.diarize_min_speakers,
+                    max_speakers=settings.diarize_max_speakers,
+                )
             result = whisperx.assign_word_speakers(diarize_segments, result)
             has_speakers = True
             del diarize_model

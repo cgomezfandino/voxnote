@@ -21,7 +21,10 @@ async def transcribe_audio(
     diarize: str = Form("false"),
 ) -> TranscriptionResponse:
     """Transcribe an uploaded audio file with Whisper."""
-    suffix = Path(audio.filename or "audio.wav").suffix or ".wav"
+    suffix = Path(audio.filename or "audio.wav").suffix.lower() or ".wav"
+    allowed_extensions = {".wav", ".mp3", ".m4a", ".ogg", ".flac", ".webm"}
+    if suffix not in allowed_extensions:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type. Allowed: {', '.join(allowed_extensions)}")
 
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         content = await audio.read()

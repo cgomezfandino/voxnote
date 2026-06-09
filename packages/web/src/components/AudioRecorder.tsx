@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, Square, RefreshCw, Play, Pause } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
@@ -32,22 +32,35 @@ export default function AudioRecorder({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const recordingTimeRef = useRef(initialDuration);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (audioContextRef.current) audioContextRef.current.close();
+      mediaRecorderRef.current?.stream?.getTracks().forEach(t => t.stop());
+    };
+  }, []);
 
   const startRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
       const audioContext = new AudioContext();
+      await audioContext.resume();
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
       source.connect(analyser);
       
       audioContextRef.current = audioContext;
       analyserRef.current = analyser;
+      sourceRef.current = source;
       
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
@@ -62,14 +75,17 @@ export default function AudioRecorder({
         const url = URL.createObjectURL(blob);
         setAudioBlob(blob);
         setAudioUrl(url);
-        onRecordingComplete(blob, recordingTime);
+        onRecordingComplete(blob, recordingTimeRef.current);
       };
       
       mediaRecorder.start();
       setIsRecording(true);
       
       timerRef.current = setInterval(() => {
-        setRecordingTime((prev) => prev + 1);
+        setRecordingTime((prev) => {
+          recordingTimeRef.current = prev + 1;
+          return prev + 1;
+        });
       }, 1000);
       
       // Configure analyser for waveform visualization

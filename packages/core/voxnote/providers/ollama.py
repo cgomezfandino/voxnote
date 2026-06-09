@@ -40,9 +40,7 @@ class OllamaProvider(LLMProvider):
     def name(self) -> str:
         return f"Ollama ({settings.ollama_model})"
 
-    @property
-    def supports_streaming(self) -> bool:
-        return True
+
 
     def extract_insights(self, transcript: str) -> dict:
         """Extract insights using Ollama."""
@@ -51,8 +49,13 @@ class OllamaProvider(LLMProvider):
         section = build_transcript_section(transcript[:MAX_TRANSCRIPT_CHARS])
         prompt = PROMPT_TEMPLATE.format(transcript_section=section)
 
+        headers = {}
+        if settings.ollama_api_key:
+            headers["Authorization"] = f"Bearer {settings.ollama_api_key}"
+
         resp = requests.post(
-            f"{settings.ollama_url}/api/generate",
+            f"{settings.ollama_url.rstrip('/')}/api/generate",
+            headers=headers,
             json={
                 "model": settings.ollama_model,
                 "prompt": prompt,

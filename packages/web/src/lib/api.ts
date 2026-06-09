@@ -1,6 +1,6 @@
 /**
  * Centralized API client for Voxnote backend.
- * All requests go through Next.js rewrites → FastAPI on :8000.
+ * All requests go through Next.js rewrites → FastAPI on :8003.
  */
 
 import type {
@@ -12,7 +12,7 @@ import type {
   NoteDetail,
 } from "@/types";
 
-const API_BASE = "/api";
+const API_BASE = "http://localhost:8003/api";
 
 class ApiError extends Error {
   constructor(
@@ -99,7 +99,7 @@ export async function exportNote(
   const res = await fetch(`${API_BASE}/export`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ transcript, insights, audio_filename }),
+    body: JSON.stringify({ transcript_text: transcript, insights, audio_name: audio_filename }),
   });
   return handleResponse(res);
 }
@@ -133,5 +133,17 @@ export async function getNote(filename: string): Promise<NoteDetail> {
   const res = await fetch(
     `${API_BASE}/notes/${encodeURIComponent(filename)}`
   );
+  return handleResponse(res);
+}
+
+// --- Ollama ---
+
+export interface OllamaModel {
+  value: string;
+  label: string;
+}
+
+export async function listOllamaModels(): Promise<OllamaModel[]> {
+  const res = await fetch(`${API_BASE}/ollama/models`);
   return handleResponse(res);
 }

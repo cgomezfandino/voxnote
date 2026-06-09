@@ -51,9 +51,7 @@ class OpenAIProvider(LLMProvider):
     def name(self) -> str:
         return f"OpenAI ({self.model})"
 
-    @property
-    def supports_streaming(self) -> bool:
-        return True
+
 
     def extract_insights(self, transcript: str) -> dict:
         """Extract insights using OpenAI API."""

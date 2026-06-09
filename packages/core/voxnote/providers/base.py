@@ -48,8 +48,4 @@ class LLMProvider(ABC):
         """Return the provider name."""
         pass
 
-    @property
-    @abstractmethod
-    def supports_streaming(self) -> bool:
-        """Whether this provider supports streaming responses."""
-        pass
+

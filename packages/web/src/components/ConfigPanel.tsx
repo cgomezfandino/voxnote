@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Mic, Brain, Users, Key, Link, Eye, EyeOff } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Mic, Brain, Users, Link } from "lucide-react";
 
 import type { AppConfig } from "@/types";
+import { listOllamaModels, type OllamaModel } from "@/lib/api";
 
 interface ConfigPanelProps {
   config: AppConfig;
@@ -24,63 +25,42 @@ const llmProviders = [
   {
     value: "ollama",
     label: "Ollama (Local)",
-    needsKey: false,
     needsUrl: true,
     models: [
+      { value: "gemma4:31b-cloud", label: "Gemma 4 31B (Cloud)" },
+      { value: "gemma4:12b", label: "Gemma 4 12B" },
       { value: "llama3.1:8b", label: "Llama 3.1 8B" },
-      { value: "llama3.2:3b", label: "Llama 3.2 3B" },
-      { value: "mistral:7b", label: "Mistral 7B" },
-      { value: "gemma2:9b", label: "Gemma 2 9B" },
-      { value: "qwen2.5:7b", label: "Qwen 2.5 7B" },
+      { value: "qwen3:8b", label: "Qwen 3 8B" },
+      { value: "gemma3:12b", label: "Gemma 3 12B" },
+      { value: "phi4:14b", label: "Phi-4 14B" },
+      { value: "deepseek-r1:8b", label: "DeepSeek R1 8B" },
+      { value: "mistral-small3.2:24b", label: "Mistral Small 3.2 24B" },
+      { value: "llama3.3:70b", label: "Llama 3.3 70B" },
     ],
     modelKey: "ollama_model" as const,
   },
   {
     value: "openai",
     label: "OpenAI",
-    needsKey: true,
     needsUrl: false,
     models: [
+      { value: "gpt-4.1-mini", label: "GPT-4.1 Mini" },
+      { value: "gpt-4.1", label: "GPT-4.1" },
+      { value: "o4-mini", label: "o4 Mini" },
       { value: "gpt-4o-mini", label: "GPT-4o Mini" },
       { value: "gpt-4o", label: "GPT-4o" },
       { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
-      { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
     ],
     modelKey: "openai_model" as const,
   },
   {
-    value: "kimi",
-    label: "Kimi (Moonshot)",
-    needsKey: true,
-    needsUrl: true,
-    models: [
-      { value: "moonshot-v1-8k", label: "Moonshot v1 8K" },
-      { value: "moonshot-v1-32k", label: "Moonshot v1 32K" },
-      { value: "moonshot-v1-128k", label: "Moonshot v1 128K" },
-    ],
-    modelKey: "kimi_model" as const,
-  },
-  {
-    value: "glm",
-    label: "GLM (Zhipu)",
-    needsKey: true,
-    needsUrl: true,
-    models: [
-      { value: "glm-4", label: "GLM-4" },
-      { value: "glm-4-plus", label: "GLM-4 Plus" },
-      { value: "glm-4-air", label: "GLM-4 Air" },
-      { value: "glm-4.7", label: "GLM-4.7" },
-      { value: "glm-5", label: "GLM-5" },
-    ],
-    modelKey: "glm_model" as const,
-  },
-  {
     value: "google",
     label: "Google",
-    needsKey: true,
     needsUrl: false,
     models: [
-      { value: "gemini-2.0-flash-exp", label: "Gemini 2.0 Flash" },
+      { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+      { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+      { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
       { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
       { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash" },
     ],
@@ -90,8 +70,6 @@ const llmProviders = [
 
 const defaultBaseUrls: Record<string, string> = {
   ollama: "http://localhost:11434",
-  glm: "https://open.bigmodel.cn/api/paas/v4",
-  kimi: "https://api.moonshot.cn",
 };
 
 export default function ConfigPanel({
@@ -99,13 +77,41 @@ export default function ConfigPanel({
   onUpdate,
   isSyncing,
 }: ConfigPanelProps) {
-  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
-
   const currentProvider = llmProviders.find(p => p.value === config.llm_provider);
+  const [dynamicOllamaModels, setDynamicOllamaModels] = useState<any[]>([]);
 
-  const toggleKeyVisibility = (provider: string) => {
-    setShowKeys(prev => ({ ...prev, [provider]: !prev[provider] }));
-  };
+  useEffect(() => {
+    if (config.llm_provider === "ollama") {
+      listOllamaModels()
+        .then((models) => {
+          setDynamicOllamaModels(models);
+        })
+        .catch(() => setDynamicOllamaModels([]));
+    }
+  }, [config.llm_provider]);
+
+  useEffect(() => {
+    if (config.llm_provider === "ollama" && dynamicOllamaModels.length > 0) {
+      const currentModelExists = dynamicOllamaModels.some((m) => m.value === config.ollama_model);
+      if (!currentModelExists) {
+        // @ts-ignore - we know ollama_model is a valid key
+        onUpdate("ollama_model", dynamicOllamaModels[0].value);
+      }
+    }
+  }, [config.llm_provider, config.ollama_model, dynamicOllamaModels, onUpdate]);
+
+  let modelsToDisplay = currentProvider?.models || [];
+  if (currentProvider?.value === "ollama" && dynamicOllamaModels.length > 0) {
+    modelsToDisplay = dynamicOllamaModels;
+  }
+
+  let selectedModel = "";
+  if (currentProvider && currentProvider.modelKey) {
+    selectedModel = config[currentProvider.modelKey as keyof AppConfig] as string;
+  }
+  if (!selectedModel && modelsToDisplay.length > 0) {
+    selectedModel = modelsToDisplay[0].value;
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -165,102 +171,87 @@ export default function ConfigPanel({
           <span className="badge-primary text-xs">LLM Provider</span>
         </div>
         
-        <div className="space-y-1.5">
-          {llmProviders.map((provider) => (
-            <button
-              key={provider.value}
-              onClick={() => onUpdate("llm_provider", provider.value)}
-              className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg border text-xs font-medium transition-all ${
-                config.llm_provider === provider.value
-                  ? "border-primary bg-primary-light text-primary"
-                  : "border-border bg-white text-foreground hover:bg-muted"
-              }`}
-            >
-              {provider.label}
-              {config.llm_provider === provider.value && (
-                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Model selector per provider */}
-        {currentProvider?.models && currentProvider.models.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-border">
-            <label className="label text-xs mb-1">Modelo</label>
+        <div className="space-y-3">
+          <div>
+            <label className="label text-xs mb-1">Proveedor</label>
             <select
-              value={config[currentProvider.modelKey as keyof AppConfig] as string || currentProvider.models[0].value}
-              onChange={(e) => onUpdate(currentProvider.modelKey as keyof AppConfig, e.target.value as never)}
+              value={config.llm_provider}
+              onChange={(e) => onUpdate("llm_provider", e.target.value)}
               className="select text-sm py-1.5"
             >
-              {currentProvider.models.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
+              {llmProviders.map((provider) => (
+                <option key={provider.value} value={provider.value}>{provider.label}</option>
               ))}
             </select>
           </div>
-        )}
 
-        {/* API Key Input */}
-        {currentProvider?.needsKey && (
-          <div className="mt-3 pt-3 border-t border-border">
-            <label className="label text-xs flex items-center gap-1.5 mb-1.5">
-              <Key className="w-3.5 h-3.5" />
-              API Key
-            </label>
-            <div className="relative">
-              <input
-                type={showKeys[config.llm_provider] ? "text" : "password"}
-                value=""
-                onChange={() => {}}
-                placeholder={`API key de ${currentProvider.label}`}
-                className="input pr-9 text-sm py-1.5"
-              />
-              <button
-                type="button"
-                onClick={() => toggleKeyVisibility(config.llm_provider)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          {/* Model selector per provider */}
+          {modelsToDisplay.length > 0 && (
+            <div className="pt-3 border-t border-border">
+              <label className="label text-xs mb-1">Modelo</label>
+              <select
+                value={selectedModel}
+                onChange={(e) => onUpdate(currentProvider!.modelKey as keyof AppConfig, e.target.value as never)}
+                className="select text-sm py-1.5"
               >
-                {showKeys[config.llm_provider] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              </button>
+                {modelsToDisplay.map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Base URL Input */}
-        {currentProvider?.needsUrl && (
-          <div className="mt-3 pt-3 border-t border-border">
-            <label className="label text-xs flex items-center gap-1.5 mb-1.5">
-              <Link className="w-3.5 h-3.5" />
-              URL Base
-            </label>
-            <input
-              type="text"
-              value={config.ollama_url || defaultBaseUrls[config.llm_provider] || ""}
-              onChange={(e) => onUpdate("ollama_url", e.target.value)}
-              placeholder="https://api.ejemplo.com/v1"
-              className="input text-sm py-1.5"
-            />
-            {config.llm_provider === "ollama" && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Por defecto: http://localhost:11434
-              </p>
-            )}
-            {config.llm_provider === "kimi" && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Por defecto: https://api.moonshot.cn
-              </p>
-            )}
-          </div>
-        )}
+          {/* Base URL Input */}
+          {currentProvider?.needsUrl && (
+            <div className="pt-3 border-t border-border space-y-3">
+              <div>
+                <label className="label text-xs flex items-center gap-1.5 mb-1.5">
+                  <Link className="w-3.5 h-3.5" />
+                  URL Base
+                </label>
+                <input
+                  type="text"
+                  value={config.ollama_url || defaultBaseUrls[config.llm_provider] || ""}
+                  onChange={(e) => onUpdate("ollama_url", e.target.value)}
+                  placeholder="http://localhost:11434"
+                  className="input text-sm py-1.5"
+                />
+                {config.llm_provider === "ollama" && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Por defecto: http://localhost:11434
+                  </p>
+                )}
+              </div>
 
-        {config.llm_provider === "ollama" && !currentProvider?.needsKey && (
-          <div className="mt-3 p-2 rounded-lg bg-success-light border border-success/20">
-            <div className="flex items-center gap-1.5 text-xs text-success">
-              <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-              Modo local activo
+              <div>
+                <label className="label text-xs flex items-center gap-1.5 mb-1.5">
+                  Token / API Key (Cloud)
+                </label>
+                <input
+                  type="password"
+                  value={config.ollama_api_key || ""}
+                  onChange={(e) => onUpdate("ollama_api_key", e.target.value)}
+                  placeholder="Bearer token o API key (opcional)"
+                  className="input text-sm py-1.5"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Opcional. Para endpoints de Ollama que requieran autenticación.
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {config.llm_provider === "ollama" && (
+            <div className="pt-2">
+              <div className="p-2 rounded-lg bg-success-light border border-success/20">
+                <div className="flex items-center gap-1.5 text-xs text-success">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                  Modo local activo
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Diarization */}

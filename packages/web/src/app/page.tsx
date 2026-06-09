@@ -33,7 +33,7 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Config from backend
-  const { config, updateField, isSyncing } = useConfig();
+  const { config, updateField, isSyncing, isLoaded } = useConfig();
 
   // Pipeline hook
   const { processAudio, steps, isLoading, error, reset } = useVoxnote();
@@ -246,6 +246,12 @@ export default function Home() {
           {/* Content */}
           <div className="flex-1 px-4 lg:px-8 pb-8">
             <div className="max-w-5xl mx-auto w-full">
+              {!isLoaded ? (
+                <div className="text-center py-20 text-muted-foreground">
+                  <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto mb-4"></div>
+                  Cargando configuración...
+                </div>
+              ) : (
               <AnimatePresence mode="wait">
                 {/* ==================== RECORD TAB ==================== */}
                 {activeTab === "record" && (
@@ -484,6 +490,7 @@ export default function Home() {
                   </motion.div>
                 )}
               </AnimatePresence>
+              )}
             </div>
           </div>
         </main>

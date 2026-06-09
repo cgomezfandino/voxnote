@@ -39,40 +39,40 @@ class GoogleProvider(LLMProvider):
         if not self.api_key:
             raise ValueError("GOOGLE_API_KEY or GEMINI_API_KEY environment variable not set")
 
-        self.model = os.getenv("GOOGLE_MODEL", "gemini-2.0-flash-exp")
+        self.model = os.getenv("GOOGLE_MODEL", "gemini-2.0-flash")
 
     @property
     def name(self) -> str:
         return f"Google ({self.model})"
 
-    @property
-    def supports_streaming(self) -> bool:
-        return True
+
 
     def extract_insights(self, transcript: str) -> dict:
         """Extract insights using Google Gemini API."""
         try:
-            import google.generativeai as genai
+            from google import genai
+            from google.genai import types
         except ImportError:
             raise ImportError(
-                "google-generativeai package not installed. "
-                "Install with: pip install google-generativeai"
+                "google-genai package not installed. "
+                "Install with: pip install google-genai"
             )
 
         console.print(f"[bold blue]Extracting insights[/] with {self.name}…")
 
-        genai.configure(api_key=self.api_key)
-        model = genai.GenerativeModel(
-            self.model,
-            generation_config=genai.GenerationConfig(
-                temperature=0.1,
-                response_mime_type="application/json",
-            ),
-        )
+        client = genai.Client(api_key=self.api_key)
 
         section = build_transcript_section(transcript[:MAX_TRANSCRIPT_CHARS])
         prompt = PROMPT_TEMPLATE.format(transcript_section=section)
-        response = model.generate_content(prompt)
+        
+        response = client.models.generate_content(
+            model=self.model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.1,
+                response_mime_type="application/json",
+            )
+        )
 
         raw = response.text
         data: dict = json.loads(raw)

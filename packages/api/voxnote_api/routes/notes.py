@@ -14,9 +14,9 @@ router = APIRouter()
 
 def _get_output_dir() -> Path:
     """Get the configured output directory."""
-    from voxnote.config import Settings
+    from voxnote.config import settings
 
-    return Settings().output_dir
+    return settings.output_dir
 
 
 def _extract_preview(content: str, max_len: int = 150) -> str:

@@ -10,13 +10,11 @@ const DEFAULT_CONFIG: AppConfig = {
   llm_provider: "ollama",
   ollama_model: "llama3.1:8b",
   ollama_url: "http://localhost:11434",
+  ollama_api_key: "",
   openai_model: "gpt-4o-mini",
-  kimi_model: "moonshot-v1-8k",
-  glm_model: "glm-4",
-  google_model: "gemini-2.0-flash-exp",
+  google_model: "gemini-2.0-flash",
   output_dir: "output",
   diarize: false,
-  hf_token: "",
 };
 
 export function useConfig() {
