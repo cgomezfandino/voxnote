@@ -74,6 +74,7 @@ async def transcribe_audio(
             text=result.text,
             segments=segments,
             has_speakers=result.has_speakers,
+            audio_filename=saved_filename,
         )
     except Exception as e:
         raise HTTPException(

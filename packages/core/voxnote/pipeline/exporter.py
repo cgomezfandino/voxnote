@@ -39,10 +39,22 @@ def export_obsidian(
     output_dir = output_dir or settings.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    now = datetime.now()
-    date_str = now.strftime("%Y-%m-%d")
-    time_str = now.strftime("%H:%M")
     slug = Path(audio_name).stem
+    
+    import re
+    # Match format YYYY-MM-DD_HH-MM-SS
+    match = re.match(r"^(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})_(.*)$", slug)
+    if match:
+        date_str = match.group(1)
+        time_str = f"{match.group(2)}:{match.group(3)}"
+        title_slug = match.group(5)
+        note_filename = f"{slug}.md"
+    else:
+        now = datetime.now()
+        date_str = now.strftime("%Y-%m-%d")
+        time_str = now.strftime("%H:%M")
+        title_slug = slug
+        note_filename = f"{date_str}_{slug}.md"
 
     tasks = ""
     for item in insights.get("action_items", []):
@@ -63,7 +75,7 @@ time: {time_str}
 audio: "[[audio/{Path(audio_name).name}]]"
 ---
 
-# 📋 Reunión — {slug}
+# 📋 Reunión — {title_slug}
 
 > 🗓️ **Fecha:** {date_str} · ⏰ **Hora:** {time_str} · 🎧 `{Path(audio_name).name}`
 
@@ -113,7 +125,7 @@ audio: "[[audio/{Path(audio_name).name}]]"
 </details>
 """
 
-    note_path = output_dir / f"{date_str}_{slug}.md"
+    note_path = output_dir / note_filename
     note_path.write_text(note, encoding="utf-8")
     console.print(f"[green]Note saved[/] → {note_path}")
     return note_path

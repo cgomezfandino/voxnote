@@ -149,7 +149,7 @@ export function useVoxnote() {
         const note = await generateNote(
           transcription.text,
           insights,
-          options.audioFilename
+          transcription.audio_filename || options.audioFilename
         );
 
         return { transcription, insights, note };

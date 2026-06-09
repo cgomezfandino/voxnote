@@ -10,6 +10,7 @@ export interface TranscriptionResult {
   text: string;
   segments: Segment[];
   has_speakers: boolean;
+  audio_filename?: string;
 }
 
 // Insights types

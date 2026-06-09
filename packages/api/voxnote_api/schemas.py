@@ -23,6 +23,7 @@ class TranscriptionResponse(BaseModel):
     text: str
     segments: list[SegmentResponse] = Field(default_factory=list)
     has_speakers: bool = False
+    audio_filename: str | None = None
 
 
 # --- Insights ---
