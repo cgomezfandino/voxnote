@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import WaveSurfer from "wavesurfer.js";
-import { Play, Pause, Download } from "lucide-react";
+import { Play, Pause, Download, Volume2 } from "lucide-react";
 
 interface AudioVisualizerProps {
   audioUrl: string;
@@ -20,7 +20,6 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
   useEffect(() => {
     if (!containerRef.current) return;
     
-    // Reset state when audioUrl changes
     setIsReady(false);
     setIsPlaying(false);
     setCurrentTime("0:00");
@@ -28,12 +27,12 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
 
     const ws = WaveSurfer.create({
       container: containerRef.current,
-      waveColor: "#C7D2FE",
-      progressColor: "#4F46E5",
-      cursorColor: "#4F46E5",
-      barWidth: 2,
-      barGap: 1,
-      barRadius: 2,
+      waveColor: "rgba(30, 41, 59, 0.7)", // Deep slate border-color
+      progressColor: "#00F298",          // Glowing neon green
+      cursorColor: "#6366F1",            // Electric indigo cursor
+      barWidth: 3,
+      barGap: 2,
+      barRadius: 3,
       height: 80,
       normalize: true,
     });
@@ -53,13 +52,11 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
     ws.on("play", () => setIsPlaying(true));
     ws.on("pause", () => setIsPlaying(false));
     
-    // Handle load errors gracefully
     ws.on("error", (err) => {
       console.warn("WaveSurfer error:", err);
       setIsReady(false);
     });
 
-    // Only load if audioUrl is valid
     if (audioUrl && audioUrl.trim() !== "") {
       ws.load(audioUrl).catch((err) => {
         console.warn("Failed to load audio:", err);
@@ -68,13 +65,11 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
     }
 
     return () => {
-      // Cleanup: unsubscribe from events before destroying
       ws.unAll();
-      // Destroy synchronously to prevent race conditions
       try {
         ws.destroy();
       } catch {
-        // Ignore destroy errors
+        // Ignore
       }
     };
   }, [audioUrl]);
@@ -97,40 +92,44 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
   };
 
   return (
-    <div className="card">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-        <div className="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center flex-shrink-0">
-          <span className="text-primary text-xl">🎵</span>
+    <div className="card border border-white/5 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
+      
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-5 relative z-10">
+        <div className="w-11 h-11 rounded-xl bg-primary-light border border-primary/20 flex items-center justify-center flex-shrink-0">
+          <Volume2 className="w-5 h-5 text-primary" />
         </div>
         <div className="min-w-0">
-          <h3 className="font-semibold text-foreground truncate">{isReady ? "Audio listo" : "Cargando..."}</h3>
-          <p className="text-sm text-muted-foreground">{isReady ? "Reproduce para verificar" : "Procesando..."}</p>
+          <h3 className="font-semibold text-sm text-foreground truncate">{isReady ? "Audio Cargado" : "Analizando audio..."}</h3>
+          <p className="text-xs text-muted-foreground">{isReady ? "Visualización de frecuencia lista" : "Preparando reproductor..."}</p>
         </div>
       </div>
 
-      <div ref={containerRef} className="mb-4" />
+      {/* Waveform Canvas Div */}
+      <div ref={containerRef} className="mb-4 relative z-10 filter drop-shadow-[0_2px_8px_rgba(0,242,152,0.15)]" />
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Control Actions Deck */}
+      <div className="flex items-center justify-between gap-4 pt-2 border-t border-white/5 relative z-10">
         <div className="flex items-center gap-3">
           <button
             onClick={togglePlay}
             disabled={!isReady}
-            className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary-hover disabled:opacity-50 transition-colors flex-shrink-0"
+            className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary-hover disabled:opacity-50 transition-all flex-shrink-0 hover:scale-105 active:scale-95 shadow-[0_0_12px_rgba(99,102,241,0.3)]"
           >
-            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+            {isPlaying ? <Pause className="w-4.5 h-4.5" /> : <Play className="w-4.5 h-4.5 ml-0.5" />}
           </button>
           
-          <span className="text-sm text-muted-foreground font-mono tabular-nums">
+          <span className="text-xs text-muted-foreground font-mono bg-slate-900/60 border border-white/5 px-2.5 py-1 rounded-md tabular-nums">
             {currentTime} / {duration}
           </span>
         </div>
 
         <button
           onClick={downloadAudio}
-          className="p-2 rounded-lg hover:bg-muted transition-colors self-start sm:self-auto"
-          title="Descargar"
+          className="p-2 rounded-lg bg-slate-900/60 border border-white/5 hover:bg-white/5 transition-colors self-start sm:self-auto"
+          title="Descargar archivo de audio"
         >
-          <Download className="w-4 h-4 text-muted-foreground" />
+          <Download className="w-4 h-4 text-slate-400" />
         </button>
       </div>
     </div>

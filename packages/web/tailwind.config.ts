@@ -7,32 +7,31 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Paleta minimalista - Blanco, grises, un acento
-        background: "#FFFFFF",
-        foreground: "#1F2937", // gray-800
+        background: "var(--background)",
+        foreground: "var(--foreground)",
         muted: {
-          DEFAULT: "#F3F4F6", // gray-100
-          foreground: "#6B7280", // gray-500
+          DEFAULT: "var(--muted)",
+          foreground: "var(--muted-foreground)",
         },
-        border: "#E5E7EB", // gray-200
+        border: "var(--border)",
         primary: {
-          DEFAULT: "#4F46E5", // indigo-600
-          foreground: "#FFFFFF",
-          hover: "#4338CA", // indigo-700
-          light: "#EEF2FF", // indigo-50
+          DEFAULT: "var(--primary)",
+          foreground: "var(--primary-foreground)",
+          hover: "var(--primary-hover)",
+          light: "var(--primary-light)",
         },
         secondary: {
-          DEFAULT: "#F3F4F6", // gray-100
-          foreground: "#374151", // gray-700
+          DEFAULT: "var(--secondary)",
+          foreground: "var(--secondary-foreground)",
         },
         accent: {
-          DEFAULT: "#EF4444", // red-500
-          foreground: "#FFFFFF",
-          light: "#FEF2F2", // red-50
+          DEFAULT: "var(--accent)",
+          foreground: "var(--accent-foreground)",
+          light: "var(--accent-light)",
         },
         success: {
-          DEFAULT: "#10B981", // emerald-500
-          light: "#ECFDF5", // emerald-50
+          DEFAULT: "var(--success)",
+          light: "var(--success-light)",
         },
       },
       fontFamily: {

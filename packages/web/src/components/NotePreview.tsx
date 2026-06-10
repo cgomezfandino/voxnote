@@ -299,29 +299,29 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary-light flex items-center justify-center">
-            <FileText className="w-4 h-4 text-primary" />
+          <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+            <FileText className="w-4.5 h-4.5 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground text-sm">
-              Nota generada
+            <h3 className="font-bold uppercase tracking-wider text-xs text-slate-300">
+              Nota Generada
             </h3>
-            <p className="text-xs text-muted-foreground">{filename}</p>
+            <p className="text-[10px] text-muted-foreground font-mono mt-0.5">{filename}</p>
           </div>
         </div>
 
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted hover:bg-border transition-colors"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-slate-900/60 border border-white/5 hover:bg-white/5 text-slate-300 transition-colors"
         >
           {copied ? (
             <>
-              <Check className="w-3.5 h-3.5 text-success" />
+              <Check className="w-3.5 h-3.5 text-accent" />
               Copiado
             </>
           ) : (
             <>
-              <Copy className="w-3.5 h-3.5" />
+              <Copy className="w-3.5 h-3.5 text-slate-400" />
               Copiar
             </>
           )}
@@ -329,7 +329,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
       </div>
 
       {/* Content */}
-      <div className="bg-muted/30 rounded-lg p-4 max-h-[500px] overflow-y-auto border border-border/50">
+      <div className="bg-slate-950/40 rounded-lg p-4 max-h-[500px] overflow-y-auto border border-white/5">
         {renderMarkdown(body)}
       </div>
     </motion.div>

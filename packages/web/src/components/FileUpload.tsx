@@ -84,13 +84,13 @@ export default function FileUpload({ onFileSelected, disabled }: FileUploadProps
 
   if (selectedFile) {
     return (
-      <div className="card border-2 border-primary/20 bg-primary-light/30">
+      <div className="card border border-primary/30 bg-primary/5">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center flex-shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
             <FileAudio className="w-6 h-6 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-foreground truncate">
+            <p className="font-semibold text-slate-200 truncate">
               {selectedFile.name}
             </p>
             <p className="text-xs text-muted-foreground">
@@ -100,7 +100,7 @@ export default function FileUpload({ onFileSelected, disabled }: FileUploadProps
           <button
             onClick={clearFile}
             disabled={disabled}
-            className="p-1.5 rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
+            className="p-1.5 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50"
           >
             <X className="w-4 h-4 text-muted-foreground" />
           </button>
@@ -116,8 +116,8 @@ export default function FileUpload({ onFileSelected, disabled }: FileUploadProps
       onDragLeave={handleDragLeave}
       className={`card border-2 border-dashed cursor-pointer transition-all ${
         dragActive
-          ? "border-primary bg-primary-light/30"
-          : "border-border hover:border-primary/40 hover:bg-muted/30"
+          ? "border-primary bg-primary/10"
+          : "border-white/10 hover:border-primary/40 hover:bg-slate-900/20"
       } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
       onClick={() => !disabled && inputRef.current?.click()}
     >
@@ -131,14 +131,14 @@ export default function FileUpload({ onFileSelected, disabled }: FileUploadProps
       />
 
       <div className="py-6 text-center">
-        <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+        <div className="w-14 h-14 rounded-full bg-slate-950/40 border border-white/5 flex items-center justify-center mx-auto mb-3">
           <Upload className="w-6 h-6 text-muted-foreground" />
         </div>
-        <p className="font-medium text-foreground mb-1">
-          {dragActive ? "Suelta el archivo aqui" : "Sube un archivo de audio"}
+        <p className="font-semibold text-foreground mb-1">
+          {dragActive ? "Suelta el archivo aquí" : "Sube un archivo de audio"}
         </p>
         <p className="text-xs text-muted-foreground">
-          WAV, MP3, M4A, OGG, FLAC o WebM
+          WAV, MP3, M4A, OGG, FLAC o WebM (Máximo 25MB recomendado)
         </p>
       </div>
     </div>

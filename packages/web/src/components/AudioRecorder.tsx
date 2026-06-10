@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, Square, RefreshCw, Play, Pause } from "lucide-react";
+import { Mic, Square, RefreshCw, Play, Pause, FileAudio } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
 
 interface AudioRecorderProps {
@@ -27,7 +27,7 @@ export default function AudioRecorder({
   const [audioBlob, setAudioBlob] = useState<Blob | null>(initialBlob);
   const [audioUrl, setAudioUrl] = useState<string | null>(initialUrl);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [visualizerData, setVisualizerData] = useState<number[]>(Array(32).fill(6));
+  const [visualizerData, setVisualizerData] = useState<number[]>(Array(36).fill(8));
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -89,21 +89,19 @@ export default function AudioRecorder({
       }, 1000);
       
       // Configure analyser for waveform visualization
-      analyser.fftSize = 2048; // Large buffer for smooth waveform
+      analyser.fftSize = 2048;
       const bufferLength = analyser.fftSize;
       const dataArray = new Uint8Array(bufferLength);
-      const smoothBars = new Array(32).fill(6);
+      const smoothBars = new Array(36).fill(8);
 
       const updateVisualizer = () => {
         if (!analyserRef.current) return;
-        // Use time-domain data (actual waveform) instead of frequency data
         analyserRef.current.getByteTimeDomainData(dataArray);
 
-        const numBars = 32;
+        const numBars = 36;
         const step = Math.floor(bufferLength / numBars);
 
         for (let i = 0; i < numBars; i++) {
-          // Find peak amplitude in this segment of the waveform
           let peak = 0;
           for (let j = 0; j < step; j++) {
             const amp = Math.abs(dataArray[i * step + j] - 128);
@@ -111,14 +109,13 @@ export default function AudioRecorder({
           }
 
           const normalized = peak / 128;
-          const boosted = Math.pow(normalized, 0.5);
-          const target = boosted * 58 + 6;
+          const boosted = Math.pow(normalized, 0.45);
+          const target = boosted * 72 + 8; // Responsive bounds
 
-          // Smooth interpolation: fast attack, slow decay for fluid motion
           if (target > smoothBars[i]) {
-            smoothBars[i] += (target - smoothBars[i]) * 0.7; // Fast attack
+            smoothBars[i] += (target - smoothBars[i]) * 0.72; // Fast response
           } else {
-            smoothBars[i] += (target - smoothBars[i]) * 0.12; // Slow decay
+            smoothBars[i] += (target - smoothBars[i]) * 0.15; // Smooth decay
           }
         }
 
@@ -127,7 +124,7 @@ export default function AudioRecorder({
       };
       updateVisualizer();
     } catch (err) {
-      alert("No se pudo acceder al micrófono");
+      alert("No se pudo acceder al micrófono. Por favor, concede los permisos necesarios.");
     }
   }, [onRecordingComplete]);
 
@@ -140,7 +137,7 @@ export default function AudioRecorder({
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     if (audioContextRef.current) audioContextRef.current.close();
     setIsRecording(false);
-    setVisualizerData(Array(20).fill(4));
+    setVisualizerData(Array(36).fill(8));
   }, [isRecording]);
 
   const resetRecording = useCallback(() => {
@@ -160,75 +157,85 @@ export default function AudioRecorder({
     }
   };
 
-  // Check if we have a recording (either from current session or initial props)
   const hasRecording = (audioUrl || initialUrl) && !isRecording;
-  
-  // Use current state's URL or initial URL for playback
   const playbackUrl = audioUrl || initialUrl;
 
   return (
-    <div className="card">
-      {/* Visualizer */}
-      <div className="flex items-center justify-center gap-[3px] sm:gap-1.5 h-20 sm:h-24 mb-6 px-4">
+    <div className="card relative overflow-hidden flex flex-col justify-between min-h-[300px]">
+      
+      {/* Decorative backdrop light glows */}
+      <div className="absolute -top-12 -left-12 w-36 h-36 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-12 -right-12 w-36 h-36 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Dynamic Sound Wave Visualizer Container */}
+      <div className="flex items-end justify-center gap-[4px] sm:gap-[6px] h-28 mb-4 px-6 border-b border-border pb-4 relative z-10">
         {visualizerData.map((height, i) => (
           <div
             key={i}
             style={{
-              height: isRecording ? `${height}px` : hasRecording ? "8px" : "6px",
-              transition: isRecording ? "none" : "height 0.3s ease",
+              height: isRecording ? `${height}px` : hasRecording ? "10px" : "6px",
+              transition: isRecording ? "none" : "height 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
             }}
-            className={`w-1.5 sm:w-2 rounded-full ${isRecording ? "bg-accent" : "bg-primary/30"}`}
+            className={`w-[5px] sm:w-[6px] rounded-full transition-all duration-300 ${
+              isRecording 
+                ? "bg-gradient-to-t from-primary via-accent to-accent shadow-[0_0_10px_rgba(0,242,152,0.3)]" 
+                : hasRecording 
+                  ? "bg-primary" 
+                  : "bg-border"
+            }`}
           />
         ))}
       </div>
 
-      {/* Status */}
-      <div className="text-center mb-6">
+      {/* Recording Info & Stats Deck */}
+      <div className="text-center mb-6 relative z-10 flex-1 flex flex-col justify-center">
         <AnimatePresence mode="wait">
           {isRecording ? (
             <motion.div
               key="recording"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="space-y-1"
             >
-              <div className="text-3xl sm:text-4xl font-semibold text-accent tabular-nums">
+              <div className="text-4xl sm:text-5xl font-bold text-accent tracking-wider font-mono tabular-nums drop-shadow-[0_0_15px_rgba(0,242,152,0.2)]">
                 {formatDuration(recordingTime)}
               </div>
-              <div className="flex items-center justify-center gap-2 mt-2 text-sm text-accent">
-                <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              <div className="flex items-center justify-center gap-2 text-xs font-semibold text-accent uppercase tracking-widest mt-1">
+                <span className="w-2 h-2 rounded-full bg-accent animate-ping" />
                 Grabando...
               </div>
             </motion.div>
           ) : hasRecording ? (
             <motion.div
               key="completed"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="space-y-4"
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4 py-2"
             >
-              <div className="flex items-center justify-center gap-3">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-success-light flex items-center justify-center">
-                  <span className="text-success text-lg sm:text-xl">✓</span>
+              <div className="flex items-center justify-center gap-4 bg-[var(--accordion-bg)] p-4 rounded-xl border border-[var(--accordion-border)] max-w-sm mx-auto">
+                <div className="w-10 h-10 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-accent text-lg">✓</span>
                 </div>
                 <div className="text-left">
-                  <div className="font-semibold text-foreground">Grabación lista</div>
-                  <div className="text-sm text-muted-foreground">{formatDuration(recordingTime)}</div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Grabación Finalizada</div>
+                  <div className="text-sm font-semibold text-foreground font-mono mt-0.5">{formatDuration(recordingTime)}</div>
                 </div>
               </div>
 
-              {/* Audio player */}
-              <div className="bg-muted rounded-lg p-3 mx-auto max-w-xs">
+              {/* Audio Playback Deck */}
+              <div className="bg-[var(--input-bg)] rounded-xl p-3.5 mx-auto max-w-xs border border-[var(--accordion-border)] flex items-center justify-between shadow-lg">
                 <audio ref={audioRef} src={playbackUrl || undefined} onEnded={() => setIsPlaying(false)} />
-                <div className="flex items-center justify-center gap-3">
+                <div className="flex items-center gap-3">
                   <button
                     onClick={togglePlay}
-                    className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary-hover transition-colors"
+                    className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary-hover hover:scale-105 active:scale-95 transition-all shadow-[0_0_15px_rgba(99,102,241,0.3)]"
                   >
-                    {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                    {isPlaying ? <Pause className="w-4.5 h-4.5" /> : <Play className="w-4.5 h-4.5 ml-0.5" />}
                   </button>
-                  <span className="text-sm text-muted-foreground">Escuchar</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Escuchar audio</span>
                 </div>
+                <span className="text-xs text-muted-foreground font-mono bg-[var(--accordion-bg)] px-2.5 py-1 rounded-md">WAV</span>
               </div>
             </motion.div>
           ) : (
@@ -237,42 +244,75 @@ export default function AudioRecorder({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-muted-foreground"
+              className="text-xs sm:text-sm text-slate-400 font-medium max-w-xs mx-auto leading-relaxed"
             >
-              Presiona para comenzar a grabar
+              Haz clic en el botón de abajo para iniciar la grabación de voz.
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-        {!isRecording && !hasRecording && (
-          <button onClick={startRecording} className="btn-accent gap-2 w-full sm:w-auto">
-            <Mic className="w-4 h-4" />
-            Grabar
-          </button>
-        )}
+      {/* Main Trigger Controls */}
+      <div className="flex items-center justify-center pb-2 relative z-10">
+        <AnimatePresence mode="wait">
+          {!isRecording && !hasRecording && (
+            <motion.button
+              key="btn-start"
+              onClick={startRecording}
+              style={{ 
+                background: "var(--record-btn-bg)",
+                boxShadow: "var(--record-shadow)"
+              }}
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all hover:scale-105 focus:outline-none"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Mic className="w-7 h-7 sm:w-9 sm:h-9 text-[var(--record-mic-color)] fill-[var(--record-mic-color)]" />
+            </motion.button>
+          )}
 
-        {isRecording && (
-          <button
-            onClick={stopRecording}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-accent text-white font-medium hover:opacity-90 transition-opacity w-full sm:w-auto"
-          >
-            <Square className="w-4 h-4 fill-current" />
-            Detener
-          </button>
-        )}
+          {isRecording && (
+            <motion.div
+              key="recording-stop-container"
+              className="relative flex items-center justify-center"
+            >
+              {/* Pulsing Concentric Aura */}
+              <div className="absolute w-24 h-24 rounded-full bg-accent/25 animate-ping opacity-60" />
+              <div className="absolute w-20 h-20 rounded-full bg-accent/15 animate-pulse" />
+              
+              <button
+                onClick={stopRecording}
+                className="relative z-10 w-16 h-16 rounded-full bg-accent text-background flex items-center justify-center hover:scale-105 hover:bg-accent/90 transition-all shadow-[0_0_20px_rgba(0,242,152,0.45)] focus:outline-none"
+              >
+                <Square className="w-5 h-5 fill-slate-900 stroke-none" />
+              </button>
+            </motion.div>
+          )}
 
-        {hasRecording && (
-          <>
-            <button onClick={resetRecording} className="btn-secondary gap-2 w-full sm:w-auto">
-              <RefreshCw className="w-4 h-4" />
-              Regrabar
-            </button>
-            <button onClick={onProcess} className="btn-primary w-full sm:w-auto">Procesar</button>
-          </>
-        )}
+          {hasRecording && (
+            <motion.div
+              key="btn-actions"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center gap-3.5 w-full max-w-sm justify-center px-4"
+            >
+              <button 
+                onClick={resetRecording} 
+                className="btn-secondary flex-1 py-3 px-4 flex items-center justify-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4 text-muted-foreground" />
+                Regrabar
+              </button>
+              <button 
+                onClick={onProcess} 
+                className="btn-accent flex-1 py-3 px-4 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,242,152,0.25)]"
+              >
+                <FileAudio className="w-4 h-4 text-slate-900" />
+                Procesar
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -2,65 +2,237 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Dark Theme (Concept 1: The Intelligent Voice) */
+  --background: #080B11;
+  --foreground: #F3F4F6;
+  --muted: #111625;
+  --muted-foreground: #9CA3AF;
+  --border: rgba(30, 41, 59, 0.8);
+  --primary: #6366F1;
+  --primary-foreground: #FFFFFF;
+  --primary-hover: #4F46E5;
+  --primary-light: rgba(99, 102, 241, 0.15);
+  --secondary: #1E293B;
+  --secondary-foreground: #F3F4F6;
+  --accent: #00F298;
+  --accent-foreground: #080B11;
+  --accent-light: rgba(0, 242, 152, 0.15);
+  --success: #00F298;
+  --success-light: rgba(0, 242, 152, 0.1);
+  
+  /* Layout custom variables */
+  --card-bg: rgba(17, 22, 37, 0.55);
+  --card-border: rgba(255, 255, 255, 0.05);
+  --input-bg: rgba(17, 22, 37, 0.65);
+  --sidebar-bg: rgba(17, 22, 37, 0.8);
+  --sidebar-border: rgba(255, 255, 255, 0.05);
+  --accordion-bg: rgba(15, 23, 42, 0.3);
+  --accordion-content-bg: rgba(15, 23, 42, 0.15);
+  --accordion-border: rgba(255, 255, 255, 0.05);
+
+  /* Brand and Header specific */
+  --header-bg: rgba(2, 6, 23, 0.25);
+  --header-border: rgba(255, 255, 255, 0.05);
+  --header-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
+
+  /* Tabs Navigation styling */
+  --tabs-bg: rgba(17, 22, 37, 0.6);
+  --tabs-border: rgba(255, 255, 255, 0.05);
+  --tab-active-bg: rgba(15, 23, 42, 0.6);
+  --tab-active-text: #00F298;
+  --tab-active-border: rgba(0, 242, 152, 0.25);
+
+  /* Mic Button styling */
+  --record-btn-bg: linear-gradient(135deg, #6366F1, #00F298);
+  --record-mic-color: #080B11;
+  --record-shadow: 0 0 25px rgba(0, 242, 152, 0.35);
+}
+
+.light-theme {
+  /* Light Theme (Original Minimalist Light Mode) */
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --border: #CBD5E1;
+  --primary: #4F46E5;
+  --primary-foreground: #FFFFFF;
+  --primary-hover: #4338CA;
+  --primary-light: #EEF2FF;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #334155;
+  --accent: #D97706;
+  --accent-foreground: #FFFFFF;
+  --accent-light: #FEF3C7;
+  --success: #10B981;
+  --success-light: #ECFDF5;
+  
+  /* Layout custom variables */
+  --card-bg: #FFFFFF;
+  --card-border: #E2E8F0;
+  --input-bg: #F1F5F9;
+  --sidebar-bg: #FFFFFF;
+  --sidebar-border: #E2E8F0;
+  --accordion-bg: #F8FAFC;
+  --accordion-content-bg: #FFFFFF;
+  --accordion-border: #E2E8F0;
+
+  /* Brand and Header specific */
+  --header-bg: #FFFFFF;
+  --header-border: #E2E8F0;
+  --header-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+
+  /* Tabs Navigation styling */
+  --tabs-bg: #E2E8F0;
+  --tabs-border: #E2E8F0;
+  --tab-active-bg: #FFFFFF;
+  --tab-active-text: #4F46E5;
+  --tab-active-border: #CBD5E1;
+
+  /* Mic Button styling */
+  --record-btn-bg: linear-gradient(135deg, #4F46E5, #00F298);
+  --record-mic-color: #FFFFFF;
+  --record-shadow: 0 8px 24px rgba(0, 242, 152, 0.35);
+}
+
 @layer base {
   * {
     @apply border-border;
   }
   
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased transition-colors duration-300;
   }
 }
 
 @layer components {
   .card {
-    @apply bg-white rounded-xl border border-border p-4 sm:p-6 shadow-card transition-shadow;
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--card-border);
+    @apply rounded-xl p-4 sm:p-6 shadow-2xl transition-all duration-300;
+  }
+
+  .light-theme .card {
+    @apply shadow-card hover:shadow-card-hover border-border;
+  }
+
+  .dark-theme-only .card:hover, :not(.light-theme) .card:hover {
+    border-color: rgba(99, 102, 241, 0.2);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.04);
   }
   
-  .card:hover {
-    @apply shadow-card-hover;
+  .card-glow-green {
+    @apply card;
+  }
+  :not(.light-theme) .card-glow-green:hover {
+    border-color: rgba(0, 242, 152, 0.3);
+    box-shadow: 0 0 25px rgba(0, 242, 152, 0.05);
+  }
+  
+  .card-glow-indigo {
+    @apply card;
+  }
+  :not(.light-theme) .card-glow-indigo:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 0 25px rgba(99, 102, 241, 0.05);
   }
   
   .btn-primary {
-    @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-primary text-white font-medium text-sm transition-all shadow-button hover:bg-primary-hover active:scale-[0.98];
+    @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-primary text-white font-medium text-sm transition-all active:scale-[0.98] hover:bg-primary-hover;
+  }
+  :not(.light-theme) .btn-primary {
+    @apply shadow-[0_0_15px_rgba(99,102,241,0.35)] hover:shadow-[0_0_20px_rgba(99,102,241,0.5)];
+  }
+  .light-theme .btn-primary {
+    @apply shadow-button hover:bg-primary-hover;
   }
   
   .btn-secondary {
-    @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-secondary text-secondary-foreground font-medium text-sm transition-all border border-border hover:bg-muted active:scale-[0.98];
+    @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-secondary text-foreground font-medium text-sm transition-all border hover:bg-muted active:scale-[0.98];
+  }
+  .light-theme .btn-secondary {
+    @apply border-border hover:bg-slate-100;
+  }
+  :not(.light-theme) .btn-secondary {
+    @apply border-white/5;
   }
   
   .btn-accent {
-    @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-accent text-white font-medium text-sm transition-all shadow-button hover:opacity-90 active:scale-[0.98];
+    @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-accent text-accent-foreground font-semibold text-sm transition-all active:scale-[0.98];
+  }
+  :not(.light-theme) .btn-accent {
+    @apply shadow-[0_0_15px_rgba(0,242,152,0.35)] hover:opacity-90 hover:shadow-[0_0_20px_rgba(0,242,152,0.5)];
+  }
+  .light-theme .btn-accent {
+    @apply shadow-button hover:opacity-90;
   }
   
   .input {
-    @apply w-full px-3 sm:px-4 py-2.5 rounded-lg border border-border bg-white text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all;
+    background: var(--input-bg);
+    @apply w-full px-3 sm:px-4 py-2.5 rounded-lg border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all;
+  }
+  :not(.light-theme) .input {
+    @apply border-white/10;
   }
   
   .select {
-    @apply w-full px-3 sm:px-4 py-2.5 rounded-lg border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-color: var(--input-bg);
+    @apply w-full px-3 sm:px-4 py-2.5 rounded-lg border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all appearance-none cursor-pointer;
     background-repeat: no-repeat;
     background-position: right 12px center;
     background-size: 16px;
     padding-right: 36px;
   }
+  .light-theme .select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  }
+  :not(.light-theme) .select {
+    @apply border-white/10;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  }
   
   .label {
-    @apply block text-sm font-medium text-foreground mb-1.5;
+    @apply block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5;
   }
   
   .badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold tracking-wide;
   }
   
   .badge-primary {
-    @apply badge bg-primary-light text-primary;
+    @apply badge bg-primary-light text-primary border border-primary/20;
   }
   
   .badge-success {
-    @apply badge bg-success-light text-success;
+    @apply badge bg-success-light text-success border border-success/20;
   }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background: var(--border);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Custom background animation lines */
+.bg-glow-line {
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.15), transparent);
 }
 
 /* Responsive adjustments */

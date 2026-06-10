@@ -12,6 +12,8 @@ import {
   Calendar,
   Clock,
   AlertCircle,
+  Sun,
+  Moon,
 } from "lucide-react";
 import ConfigPanel from "@/components/ConfigPanel";
 import AudioRecorder from "@/components/AudioRecorder";
@@ -31,6 +33,22 @@ type Tab = "record" | "process" | "history";
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("record");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Theme State
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("voxnote-theme") as "dark" | "light";
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
+
+  const handleToggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    localStorage.setItem("voxnote-theme", nextTheme);
+  };
 
   // Config from backend
   const { config, updateField, isSyncing, isLoaded } = useConfig();
@@ -154,23 +172,41 @@ export default function Home() {
   const notesThisWeek = notes.filter((n) => n.created_at >= weekAgo).length;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background relative overflow-hidden transition-colors duration-300 ${theme === "light" ? "light-theme" : ""}`}>
+      {/* Dynamic glow decoration background line */}
+      {theme === "dark" && <div className="bg-glow-line top-0 left-0" />}
+
       {/* Mobile Header */}
-      <header className="lg:hidden flex items-center justify-center p-4 border-b border-border bg-white sticky top-0 z-40 relative">
+      <header className="lg:hidden flex items-center justify-between p-4 border-b border-[var(--header-border)] bg-[var(--header-bg)]/80 backdrop-blur-md sticky top-0 z-40 relative">
         <div className="flex items-center gap-3">
-          <Logo size="md" animated />
-          <h1 className="text-xl font-bold text-foreground">Voxnote</h1>
+          <Logo size="sm" animated />
+          <h1 className={`text-lg font-bold tracking-tight ${
+            theme === "dark"
+              ? "text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-400"
+              : "text-slate-900"
+          }`}>
+            Voxnote
+          </h1>
         </div>
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-lg hover:bg-muted transition-colors absolute right-4"
-        >
-          {sidebarOpen ? (
-            <X className="w-5 h-5" />
-          ) : (
-            <Menu className="w-5 h-5" />
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleToggleTheme}
+            className="p-2 rounded-lg hover:bg-foreground/[0.04] transition-colors text-muted-foreground hover:text-foreground"
+            title="Cambiar tema"
+          >
+            {theme === "dark" ? <Sun className="w-5 h-5 text-accent" /> : <Moon className="w-5 h-5 text-primary" />}
+          </button>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 rounded-lg hover:bg-foreground/[0.04] transition-colors"
+          >
+            {sidebarOpen ? (
+              <X className="w-5 h-5 text-foreground" />
+            ) : (
+              <Menu className="w-5 h-5 text-foreground" />
+            )}
+          </button>
+        </div>
       </header>
 
       <div className="flex">
@@ -178,9 +214,9 @@ export default function Home() {
         <aside
           className={`
           fixed lg:sticky lg:top-0 inset-y-0 left-0 z-30
-          w-80 h-screen bg-white border-r border-border p-5
+          w-80 h-screen bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)] p-5
           transform transition-transform duration-300 ease-in-out
-          lg:transform-none overflow-hidden flex flex-col
+          lg:transform-none overflow-hidden flex flex-col backdrop-blur-md
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
         >
@@ -194,44 +230,71 @@ export default function Home() {
         {/* Overlay for mobile sidebar */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-black/20 z-20 lg:hidden"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
         {/* Main Content */}
-        <main className="flex-1 min-h-screen flex flex-col">
+        <main className="flex-1 min-h-screen flex flex-col relative">
           {/* Desktop Header */}
           <header className="hidden lg:block p-6 lg:p-8 pb-0 flex-shrink-0">
-            <div className="max-w-5xl mx-auto text-center">
-              <div className="inline-flex items-center gap-4">
+            <div className="max-w-5xl mx-auto relative flex items-center justify-center min-h-[96px]">
+              {/* Centered Brand Banner */}
+              <div className="inline-flex items-center gap-5 bg-[var(--header-bg)] border border-[var(--header-border)] px-7 py-4 rounded-3xl shadow-[var(--header-shadow)]">
                 <Logo size="lg" animated />
                 <div className="text-left">
-                  <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
+                  <h1 className={`text-2xl lg:text-3xl font-extrabold tracking-tight ${
+                    theme === "dark" 
+                      ? "text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300" 
+                      : "text-slate-900"
+                  }`}>
                     Voxnote
                   </h1>
-                  <p className="text-muted-foreground text-sm">
-                    Transcripcion inteligente con IA
+                  <p className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase mt-1">
+                    Transcripción Inteligente de Voz
                   </p>
                 </div>
+              </div>
+
+              {/* Absolute Right-floating Theme Toggle Button */}
+              <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                <button 
+                  onClick={handleToggleTheme}
+                  className="p-3 rounded-2xl bg-[var(--header-bg)] border border-[var(--header-border)] hover:bg-foreground/[0.04] transition-all shadow-sm text-foreground flex items-center gap-2.5 font-bold text-xs uppercase tracking-wider"
+                  title="Cambiar tema de color"
+                >
+                  {theme === "dark" ? (
+                    <>
+                      <Sun className="w-4 h-4 text-accent" />
+                      <span className="text-slate-300">Modo Claro</span>
+                    </>
+                  ) : (
+                    <>
+                      <Moon className="w-4 h-4 text-primary" />
+                      <span className="text-slate-700">Modo Oscuro</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </header>
 
           {/* Tabs */}
-          <div className="px-4 lg:px-8 pt-6 pb-4 lg:pt-10 lg:pb-6 flex-shrink-0">
+          <div className="px-4 lg:px-8 pt-6 pb-4 lg:pt-8 lg:pb-5 flex-shrink-0">
             <div className="max-w-5xl mx-auto flex justify-center">
-              <div className="flex gap-1 p-1 bg-muted rounded-xl">
+              <div className="flex gap-1.5 p-1 bg-[var(--tabs-bg)] border border-[var(--tabs-border)] rounded-xl backdrop-blur-sm">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
                   return (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center gap-2 px-4 lg:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                        activeTab === tab.id
-                          ? "bg-white text-foreground shadow-sm border border-border"
-                          : "text-muted-foreground hover:text-foreground"
+                      className={`flex items-center gap-2 px-4 lg:px-5.5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                        isActive
+                          ? "bg-[var(--tab-active-bg)] text-[var(--tab-active-text)] shadow-sm border border-[var(--tab-active-border)]"
+                          : "text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04] border border-transparent"
                       }`}
                     >
                       <Icon className="w-4 h-4" />
@@ -390,27 +453,27 @@ export default function Home() {
 
                     {/* Stats */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                      <div className="card text-center">
-                        <div className="text-3xl font-bold text-primary">
+                      <div className="card text-center card-glow-indigo">
+                        <div className="text-3xl font-extrabold text-primary drop-shadow-[0_0_12px_rgba(99,102,241,0.3)]">
                           {notes.length}
                         </div>
-                        <div className="text-sm text-muted-foreground mt-1">
+                        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mt-1.5">
                           Notas totales
                         </div>
                       </div>
-                      <div className="card text-center">
-                        <div className="text-3xl font-bold text-accent">
+                      <div className="card text-center card-glow-green">
+                        <div className="text-3xl font-extrabold text-accent drop-shadow-[0_0_12px_rgba(0,242,152,0.3)]">
                           {notesToday}
                         </div>
-                        <div className="text-sm text-muted-foreground mt-1">
+                        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mt-1.5">
                           Hoy
                         </div>
                       </div>
-                      <div className="card text-center sm:col-span-2 lg:col-span-1">
-                        <div className="text-3xl font-bold text-success">
+                      <div className="card text-center sm:col-span-2 lg:col-span-1 card-glow-green">
+                        <div className="text-3xl font-extrabold text-accent drop-shadow-[0_0_12px_rgba(0,242,152,0.3)]">
                           {notesThisWeek}
                         </div>
-                        <div className="text-sm text-muted-foreground mt-1">
+                        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mt-1.5">
                           Esta semana
                         </div>
                       </div>
@@ -418,53 +481,53 @@ export default function Home() {
 
                     {/* Notes list */}
                     {loadingNotes ? (
-                      <div className="text-center py-12 text-muted-foreground">
+                      <div className="text-center py-12 text-muted-foreground text-xs font-semibold uppercase tracking-wider animate-pulse">
                         Cargando notas...
                       </div>
                     ) : notes.length === 0 ? (
-                      <div className="card text-center py-12">
-                        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                          <FileText className="w-8 h-8 text-muted-foreground" />
+                      <div className="card text-center py-12 border border-white/5">
+                        <div className="w-16 h-16 rounded-full bg-slate-900/60 border border-white/5 flex items-center justify-center mx-auto mb-4">
+                          <FileText className="w-7 h-7 text-muted-foreground" />
                         </div>
-                        <h3 className="font-semibold text-foreground mb-2">
-                          Sin notas todavia
+                        <h3 className="font-bold text-foreground mb-2">
+                          Sin notas todavía
                         </h3>
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Procesa tu primer audio para generar una nota
+                        <p className="text-xs text-muted-foreground mb-6 max-w-xs mx-auto">
+                          Procesa tu primer audio o sube un archivo para generar notas inteligentes
                         </p>
                         <button
                           onClick={() => setActiveTab("process")}
-                          className="btn-primary"
+                          className="btn-primary gap-2"
                         >
                           Ir a Procesar
                         </button>
                       </div>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-3.5">
                         {notes.map((note) => (
                           <button
                             key={note.filename}
                             onClick={() => handleViewNote(note.filename)}
-                            className="card w-full text-left hover:border-primary/40 transition-colors"
+                            className="card w-full text-left hover:border-primary/40 hover:bg-slate-900/40 transition-all duration-300 group"
                           >
-                            <div className="flex items-start gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
+                            <div className="flex items-start gap-3.5">
+                              <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                                 <FileText className="w-5 h-5 text-primary" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-foreground text-sm truncate">
+                                <p className="font-semibold text-slate-200 text-sm truncate group-hover:text-foreground transition-colors">
                                   {note.filename}
                                 </p>
-                                <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                                <p className="text-xs text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
                                   {note.preview}
                                 </p>
-                                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="w-3 h-3" />
+                                <div className="flex items-center gap-4 mt-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                  <span className="flex items-center gap-1.5 bg-slate-950/40 px-2 py-0.5 rounded border border-white/5">
+                                    <Calendar className="w-3.5 h-3.5 text-slate-500" />
                                     {new Date(note.created_at).toLocaleDateString("es")}
                                   </span>
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
+                                  <span className="flex items-center gap-1.5 bg-slate-950/40 px-2 py-0.5 rounded border border-white/5">
+                                    <Clock className="w-3.5 h-3.5 text-slate-500" />
                                     {new Date(note.created_at).toLocaleTimeString("es", {
                                       hour: "2-digit",
                                       minute: "2-digit",
