@@ -4,19 +4,19 @@
 
 :root {
   /* Dark Theme (Concept 1: The Intelligent Voice) */
-  --background: #080B11;
-  --foreground: #F3F4F6;
-  --muted: #111625;
-  --muted-foreground: #9CA3AF;
+  --background: #0F1623;
+  --foreground: #E6E9F0;
+  --muted: #1A2235;
+  --muted-foreground: #98A2B5;
   --border: rgba(30, 41, 59, 0.8);
   --primary: #6366F1;
   --primary-foreground: #FFFFFF;
   --primary-hover: #4F46E5;
   --primary-light: rgba(99, 102, 241, 0.15);
-  --secondary: #1E293B;
-  --secondary-foreground: #F3F4F6;
+  --secondary: #1F2A3D;
+  --secondary-foreground: #E6E9F0;
   --accent: #00F298;
-  --accent-foreground: #080B11;
+  --accent-foreground: #0F1623;
   --accent-light: rgba(0, 242, 152, 0.15);
   --success: #00F298;
   --success-light: rgba(0, 242, 152, 0.1);
@@ -26,10 +26,10 @@
   --danger-border: rgba(244, 73, 95, 0.3);
 
   /* Layout custom variables */
-  --card-bg: rgba(17, 22, 37, 0.55);
+  --card-bg: rgba(26, 34, 53, 0.6);
   --card-border: rgba(255, 255, 255, 0.05);
-  --input-bg: rgba(17, 22, 37, 0.65);
-  --sidebar-bg: rgba(17, 22, 37, 0.8);
+  --input-bg: rgba(26, 34, 53, 0.7);
+  --sidebar-bg: rgba(22, 30, 47, 0.85);
   --sidebar-border: rgba(255, 255, 255, 0.05);
   --accordion-bg: rgba(15, 23, 42, 0.3);
   --accordion-content-bg: rgba(15, 23, 42, 0.15);
@@ -49,16 +49,16 @@
 
   /* Mic Button styling */
   --record-btn-bg: linear-gradient(135deg, #6366F1, #00F298);
-  --record-mic-color: #080B11;
+  --record-mic-color: #0F1623;
   --record-shadow: 0 0 25px rgba(0, 242, 152, 0.35);
 }
 
 .light-theme {
   /* Light Theme (Original Minimalist Light Mode) */
-  --background: #F8FAFC;
-  --foreground: #0F172A;
-  --muted: #F1F5F9;
-  --muted-foreground: #64748B;
+  --background: #E9EDF3;
+  --foreground: #1E293B;
+  --muted: #DCE3EC;
+  --muted-foreground: #566173;
   --border: #CBD5E1;
   --primary: #4F46E5;
   --primary-foreground: #FFFFFF;
@@ -66,10 +66,10 @@
   --primary-light: #EEF2FF;
   --secondary: #F1F5F9;
   --secondary-foreground: #334155;
-  --accent: #D97706;
+  --accent: #059669;
   --accent-foreground: #FFFFFF;
-  --accent-light: #FEF3C7;
-  --success: #10B981;
+  --accent-light: #D1FAE5;
+  --success: #059669;
   --success-light: #ECFDF5;
   --danger: #DC2626;
   --danger-foreground: #FFFFFF;
