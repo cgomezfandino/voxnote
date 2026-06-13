@@ -3,8 +3,6 @@
 from pathlib import Path
 
 import numpy as np
-import sounddevice as sd
-import soundfile as sf
 from rich.console import Console
 
 from voxnote.config import settings
@@ -24,6 +22,12 @@ def record_audio(output_path: str | Path, duration: float | None = None) -> Path
     Returns:
         The Path to the saved audio file.
     """
+    # Lazy imports: these pull in PortAudio/libsndfile system libraries that are
+    # only needed for live recording, not for the transcribe/insights/export paths
+    # (the API never records — it processes uploaded audio).
+    import sounddevice as sd
+    import soundfile as sf
+
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     sr = settings.sample_rate
