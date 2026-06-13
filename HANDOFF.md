@@ -19,7 +19,10 @@ tree, commiteado en una rama (ver git log). **Siguiente paso recomendado: Fase 1
 
 ## ✅ Qué se hizo (y está verificado)
 
-**Tests verdes:** core 36/36, api 14/14. ruff limpio en lo tocado. web ESLint + tsc OK.
+**Tests verdes:** core 36/36, api 16/16. ruff limpio en lo tocado. web ESLint + tsc OK.
+
+> Cierre de sesión 2 (2026-06-13): se arregló el bug de cambio de pestañas y se implementó **Fase 1
+> (renombrar hablantes)** — ver abajo.
 
 1. **Roadmap** priorizado en `.claude/plans/quisiera-que-revises-el-validated-pnueli.md` (6 fases).
 2. **Seguridad** — auditoría en `docs/SECURITY-AUDIT.md` + fixes aplicados (Fase 0.5):
@@ -50,19 +53,22 @@ tree, commiteado en una rama (ver git log). **Siguiente paso recomendado: Fase 1
   dan transcripción pobre (no es culpa del modelo).
 - Es **opcional**: sin diarización igual hay resumen/insights/tareas.
 
-## 👉 Siguiente paso recomendado: Fase 1 — renombrar hablantes
+## 👉 Siguiente paso recomendado
 
-Mapear `SPEAKER_00 → "Carlos"` en la UI + persistir por nota (y reescribir la atribución de tareas).
-Es frontend + un mapping almacenado, **cero ML**, y es el mayor salto de UX para lo multi-hablante.
-Después: capa de datos local (SQLite) para búsqueda + persistencia. Ver el roadmap.
+**Fase 1 (renombrar hablantes) — HECHA ✅** (verificada end-to-end en el dev server):
+endpoint `POST /api/notes/{filename}/speakers` (reescribe la nota reemplazando `SPEAKER_xx`, valida +
+sanea) + panel "Renombrar hablantes" en `NotePreview.tsx` (`SPEAKER_00 → "Carlos"`, persiste y refresca).
+
+**Lo siguiente:** capa de datos local (**SQLite**) para búsqueda entre reuniones + persistir estado de
+tareas. Luego Fase 2 (chat-RAG local + enrolamiento de voz para identidad cross-meeting). Ver el roadmap.
 
 ## 🧩 Pendiente / conocido
 
 - **Fase 0.5 seguridad pendiente:** auth por token en endpoints (requisito antes de exponer/empaquetar),
   estrechar `torch.load` (`add_safe_globals` en vez del monkeypatch global), lockfile + `pip-audit`.
-- **Bug dev-only:** cambiar de pestaña no actualiza el contenido en `next dev` (deadlock
-  `AnimatePresence mode="wait"` + React StrictMode). Pre-existente, casi seguro solo de desarrollo —
-  confirmar con un `next build` de producción.
+- **Bug de cambio de pestañas — ARREGLADO ✅**: era `AnimatePresence mode="wait"` + React StrictMode
+  dejando ambos paneles montados. Solución: se quitó `AnimatePresence` de los tabs en `page.tsx` (React
+  monta/desmonta directo; se conserva la animación de entrada). Verificado en el dev server.
 - **Fase 5 (empaquetado desktop):** la pieza grande para que estudiantes no toquen nada (bundlear
   runtime + modelos; `community-1` es CC-BY → redistribuible). Es lo que elimina toda la fricción de HF/token.
 - `whisper_model` default es `turbo`; verificar que `whisperx.load_model("turbo")` mapea bien (el demo usó `small`).
