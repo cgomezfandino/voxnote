@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import contextlib
 import gc
+import threading
 from pathlib import Path
 
 from rich.console import Console
@@ -17,6 +18,11 @@ from voxnote.config import settings
 from voxnote.pipeline.models import Segment, TranscriptResult
 
 console = Console()
+
+# Serializes the global torch.load monkeypatch below. The patch mutates a process-global,
+# and transcription runs under asyncio.to_thread, so concurrent diarizations could see each
+# other's patched/unpatched state. Holding this lock for the patched section prevents that.
+_TORCH_LOAD_LOCK = threading.Lock()
 
 # Detect available backend at import time
 _BACKEND: str | None = None
@@ -108,11 +114,12 @@ def _patch_torch_serialization_ctx():
         kwargs["weights_only"] = False  # type: ignore[arg-type]
         return _original_load(*args, **kwargs)
 
-    torch.load = _patched_load  # type: ignore[assignment]
-    try:
-        yield
-    finally:
-        torch.load = _original_load  # type: ignore[assignment]
+    with _TORCH_LOAD_LOCK:
+        torch.load = _patched_load  # type: ignore[assignment]
+        try:
+            yield
+        finally:
+            torch.load = _original_load  # type: ignore[assignment]
 
 
 def _transcribe_whisperx(audio_path: str, model_name: str, diarize: bool) -> TranscriptResult:

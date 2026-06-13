@@ -68,6 +68,8 @@ def _to_list(value: object) -> list:
 
 
 def _flatten(item: object) -> str:
+    if item is None:
+        return ""
     if isinstance(item, str):
         return item
     if isinstance(item, dict):
@@ -108,7 +110,8 @@ class InsightsResponse(BaseModel):
         )
         for key in str_keys:
             if key in out:
-                out[key] = [_flatten(i) for i in _to_list(out[key])]
+                # Drop blanks so a None/"" never becomes the literal "None" in the UI.
+                out[key] = [s for i in _to_list(out[key]) if (s := _flatten(i).strip())]
         obj_keys = (
             ("action_items", "tarea"),
             ("participantes", "hablante"),
@@ -119,7 +122,19 @@ class InsightsResponse(BaseModel):
                 coerced: list = []
                 for item in _to_list(out[key]):
                     if isinstance(item, dict):
-                        coerced.append(item)
+                        # The sub-models require `primary` (tarea/hablante/cita) with no
+                        # default, so a dict missing it would raise ValidationError and lose
+                        # the whole payload. Guarantee it best-effort: synthesize from the
+                        # other values, or drop the item if there is nothing usable.
+                        d = dict(item)
+                        if not str(d.get(primary, "")).strip():
+                            synthesized = _flatten(
+                                {k: v for k, v in d.items() if k != primary}
+                            ).strip()
+                            if not synthesized:
+                                continue
+                            d[primary] = synthesized
+                        coerced.append(d)
                     elif isinstance(item, str) and item.strip():
                         coerced.append({primary: item})
                 out[key] = coerced

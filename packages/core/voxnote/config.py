@@ -70,5 +70,12 @@ class Settings(BaseSettings):
         default=Path("output"), description="Directory for generated meeting notes"
     )
 
+    # API limits
+    max_json_mb: int = Field(
+        default=10,
+        description="Max size (MB) of a JSON request body (insights/export); guards against "
+        "memory-exhaustion DoS. Audio uploads use the separate multipart upload limit.",
+    )
+
 
 settings = Settings()

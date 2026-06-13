@@ -5,8 +5,9 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from voxnote_api.routes import config, export, health, insights, notes, ollama, transcribe
 
@@ -40,6 +41,20 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    from voxnote.config import settings
+
+    @app.middleware("http")
+    async def _limit_json_body(request: Request, call_next):  # type: ignore[no-untyped-def]
+        # Bound JSON bodies (insights / export / export-docx) to guard against a
+        # memory-exhaustion DoS. Multipart audio uploads are exempt — they use the
+        # transcribe route's own upload limit. Chunked requests without Content-Length
+        # bypass this; acceptable for the localhost-only threat model.
+        if request.headers.get("content-type", "").startswith("application/json"):
+            length = request.headers.get("content-length", "")
+            if length.isdigit() and int(length) > settings.max_json_mb * 1024 * 1024:
+                return JSONResponse(status_code=413, content={"detail": "Request body too large."})
+        return await call_next(request)
 
     app.include_router(health.router, prefix="/api", tags=["health"])
     app.include_router(transcribe.router, prefix="/api", tags=["transcribe"])

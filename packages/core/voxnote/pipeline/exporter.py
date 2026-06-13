@@ -57,12 +57,19 @@ def export_obsidian(
         title_slug = slug
         note_filename = f"{date_str}_{slug}.md"
 
-    def _bullets(values: list[object], empty: str) -> str:
-        items = [str(v).strip() for v in values if str(v).strip()]
+    def _as_list(value: object) -> list:
+        # LLM output sometimes returns a bare string where a list is expected. Iterating
+        # that string would emit one bullet per character, so coerce to a list first.
+        if value is None or value == "":
+            return []
+        return value if isinstance(value, list) else [value]
+
+    def _bullets(values: object, empty: str) -> str:
+        items = [str(v).strip() for v in _as_list(values) if str(v).strip()]
         return "\n".join(f"- {v}" for v in items) if items else f"- {empty}"
 
     tasks = ""
-    for item in insights.get("action_items", []):
+    for item in _as_list(insights.get("action_items")):
         if not isinstance(item, dict) or not item.get("tarea"):
             continue
         resp = item.get("responsable", "TBD")
@@ -70,7 +77,7 @@ def export_obsidian(
         tasks += f"- [ ] {item['tarea']} @{resp} (deadline: {dl})\n"
 
     participantes_rows = []
-    for p in insights.get("participantes", []):
+    for p in _as_list(insights.get("participantes")):
         if isinstance(p, dict) and p.get("hablante"):
             aporte = p.get("aporte", "")
             participantes_rows.append(f"- **{p['hablante']}**" + (f" — {aporte}" if aporte else ""))
@@ -78,7 +85,7 @@ def export_obsidian(
             participantes_rows.append(f"- **{p.strip()}**")
 
     comentarios_rows = []
-    for c in insights.get("comentarios_destacados", []):
+    for c in _as_list(insights.get("comentarios_destacados")):
         if isinstance(c, dict) and c.get("cita"):
             speaker = c.get("hablante", "")
             prefix = f"**{speaker}:** " if speaker else ""
