@@ -144,7 +144,7 @@ VOXNOTE_DIARIZE=true voxnote process audio/entrevista.mp3
 make dev
 ```
 
-Abre **http://localhost:3001** para:
+Abre **http://localhost:3003** para:
 - Grabar audio desde el navegador
 - Subir archivos existentes
 - Ver y descargar notas generadas
@@ -161,19 +161,19 @@ Endpoints disponibles:
 
 ```bash
 # Transcribir
-curl -X POST "http://127.0.0.1:8000/api/transcribe" \
-  -F "file=@audio.mp3" \
+curl -X POST "http://127.0.0.1:8003/api/transcribe" \
+  -F "audio=@audio.mp3" \
   -F "model=turbo"
 
 # Extraer insights
-curl -X POST "http://127.0.0.1:8000/api/insights" \
+curl -X POST "http://127.0.0.1:8003/api/insights" \
   -H "Content-Type: application/json" \
-  -d '{"transcript": "...", "provider": "ollama"}'
+  -d '{"text": "...", "provider": "ollama"}'
 
 # Exportar nota
-curl -X POST "http://127.0.0.1:8000/api/export" \
+curl -X POST "http://127.0.0.1:8003/api/export" \
   -H "Content-Type: application/json" \
-  -d '{"insights": {...}, "title": "Reunión 2026-03-02"}'
+  -d '{"insights": {}, "transcript_text": "...", "audio_name": "reunion.mp3"}'
 ```
 
 ---

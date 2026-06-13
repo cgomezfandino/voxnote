@@ -52,3 +52,7 @@ Thumbs.db
 .pytest_cache/
 htmlcov/
 .coverage
+
+# Claude Code — personal/session artifacts (keep .claude/settings.json shared)
+.claude/launch.json
+.claude/plans/

@@ -93,8 +93,8 @@ make dev
 ```
 
 Esto inicia:
-- **API** en http://127.0.0.1:8000
-- **Web** en http://localhost:3001
+- **API** en http://127.0.0.1:8003
+- **Web** en http://localhost:3003
 
 ### Solo API
 
@@ -118,7 +118,7 @@ ffmpeg -version
 curl -s http://localhost:11434/api/tags | python3 -m json.tool
 
 # 3. API activa
-curl http://127.0.0.1:8000/api/health
+curl http://127.0.0.1:8003/api/health
 
 # 4. Micrófono accesible (graba 3 segundos de prueba)
 voxnote record --duration 3
@@ -217,7 +217,7 @@ voxnote transcribe audio/mi_reunion.mp3 > transcripcion.txt
 
 ## 7. Interfaz web
 
-UI moderna disponible en **http://localhost:3001**:
+UI moderna disponible en **http://localhost:3003**:
 
 ```bash
 make dev
@@ -379,7 +379,7 @@ Verifica: `curl http://localhost:11434/api/tags`
 Verifica que el servidor esté corriendo:
 
 ```bash
-curl http://127.0.0.1:8000/api/health
+curl http://127.0.0.1:8003/api/health
 ```
 
 Si no responde, inicia el servidor:

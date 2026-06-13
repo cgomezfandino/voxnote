@@ -7,8 +7,11 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
     groups:
-      python-core:
+      python-core-minor:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
+    # Major bumps are intentionally left ungrouped so each arrives as its own
+    # reviewable PR (a major can carry breaking changes).
 
   # Python — FastAPI backend
   - package-ecosystem: "pip"
@@ -17,8 +20,9 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
     groups:
-      python-api:
+      python-api-minor:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   # Node — Next.js frontend
   - package-ecosystem: "npm"
@@ -27,11 +31,15 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
     groups:
-      web:
+      web-minor:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   # GitHub Actions used in CI
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      actions:
+        patterns: ["*"]

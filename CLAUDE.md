@@ -9,7 +9,7 @@ Voxnote is a 100% local meeting-notes pipeline. It records audio, transcribes wi
 The project is organized as a **monorepo** with three packages:
 - `packages/core` — Python pipeline (CLI, transcription, insights, export)
 - `packages/api` — FastAPI backend serving the pipeline over HTTP
-- `packages/web` — Next.js 14 frontend (React, TypeScript, Tailwind CSS)
+- `packages/web` — Next.js 15 frontend (React 19, TypeScript, Tailwind CSS)
 
 ## Commands
 
@@ -17,17 +17,17 @@ The project is organized as a **monorepo** with three packages:
 # Install everything
 make install
 
-# Run dev servers (API on :8000, Web on :3001)
+# Run dev servers (API on :8003, Web on :3003)
 make dev
 
 # Run individual servers
-make dev-api    # uvicorn on port 8000 with --reload
-make dev-web    # next dev on port 3001
+make dev-api    # uvicorn on port 8003 with --reload
+make dev-web    # next dev on port 3003
 
 # Tests
 make test       # all tests (core + api)
-make test-core  # packages/core tests (26 tests)
-make test-api   # packages/api tests (10 tests)
+make test-core  # packages/core tests (40 tests)
+make test-api   # packages/api tests (22 tests)
 
 # Lint & format
 make lint       # ruff check + eslint
@@ -62,7 +62,7 @@ Voxnote/
 │   │   │   └── routes/          # health, transcribe, insights, export, config, notes
 │   │   ├── tests/
 │   │   └── pyproject.toml
-│   └── web/                     # Next.js 14 frontend
+│   └── web/                     # Next.js 15 frontend
 │       ├── src/app/             # App Router (page.tsx)
 │       ├── src/components/      # AudioRecorder, ConfigPanel, ProcessingSteps, etc.
 │       ├── src/hooks/           # useVoxnote, useConfig
@@ -89,6 +89,9 @@ Voxnote/
 | PUT | `/api/config` | Update settings |
 | GET | `/api/notes` | List generated notes |
 | GET | `/api/notes/{filename}` | Get note content |
+| POST | `/api/notes/{filename}/speakers` | Rename SPEAKER_xx labels in a note |
+| POST | `/api/export/docx` | Note Markdown → Word (.docx) |
+| GET | `/api/ollama/models` | List models installed on the Ollama server |
 
 ### Key design patterns
 
@@ -96,8 +99,8 @@ Voxnote/
 - **TranscriptResult model**: Wraps plain text + optional speaker-labeled segments
 - **Backend auto-detection**: `transcriber.py` detects whisperX vs openai-whisper at import time
 - **Lazy imports**: Heavy deps (whisper, torch) imported inside functions for fast startup
-- **Insights structure**: JSON dict with keys: `resumen`, `decisiones`, `action_items`, `insights`, `preguntas_abiertas`, `proximos_pasos`
-- **API proxy**: Next.js rewrites `/api/*` → `localhost:8000/api/*`
+- **Insights structure**: JSON dict with keys: `resumen`, `participantes`, `puntos_clave`, `decisiones`, `action_items`, `insights`, `comentarios_destacados`, `preguntas_abiertas`, `proximos_pasos`
+- **API proxy**: Next.js rewrites `/api/*` → `localhost:8003/api/*`
 - **Config sync**: Frontend config syncs to backend via `PUT /api/config` (debounced)
 
 ## Configuration

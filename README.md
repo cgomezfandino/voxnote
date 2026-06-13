@@ -25,8 +25,8 @@ Pipeline local para grabar reuniones, transcribirlas, extraer insights y organiz
 
 ## Requisitos
 
-- Python ≥ 3.10
-- Node.js ≥ 18
+- Python ≥ 3.10 (usa **Python 3.11** si vas a activar la diarización — whisperX no soporta 3.13/3.14)
+- Node.js ≥ 18.18 (recomendado 20+; lo exige Next.js 15)
 - [FFmpeg](https://ffmpeg.org/) — procesamiento de audio
 - [Ollama](https://ollama.com/) — LLM local (opcional si usas otros proveedores)
 
@@ -55,8 +55,8 @@ ollama pull llama3.1:8b
 ## Instalación
 
 ```bash
-git clone https://github.com/cgomezfandino/Voxnote.git
-cd Voxnote
+git clone https://github.com/cgomezfandino/voxnote.git
+cd voxnote
 
 # Crear entorno virtual
 python3 -m venv .venv
@@ -211,24 +211,27 @@ Backend FastAPI en **http://127.0.0.1:8003**
 | PUT | `/api/config` | Actualizar configuración |
 | GET | `/api/notes` | Listar notas generadas |
 | GET | `/api/notes/{filename}` | Obtener contenido de nota |
+| POST | `/api/notes/{filename}/speakers` | Renombrar etiquetas SPEAKER_xx en una nota |
+| POST | `/api/export/docx` | Nota Markdown → documento Word (.docx) |
+| GET | `/api/ollama/models` | Listar modelos instalados en el servidor Ollama |
 
 ### Ejemplo
 
 ```bash
 # Transcribir audio
 curl -X POST "http://127.0.0.1:8003/api/transcribe" \
-  -F "file=@audio.mp3" \
+  -F "audio=@audio.mp3" \
   -F "model=turbo"
 
 # Extraer insights
 curl -X POST "http://127.0.0.1:8003/api/insights" \
   -H "Content-Type: application/json" \
-  -d '{"transcript": "...", "provider": "ollama"}'
+  -d '{"text": "...", "provider": "ollama"}'
 
 # Exportar nota
 curl -X POST "http://127.0.0.1:8003/api/export" \
   -H "Content-Type: application/json" \
-  -d '{"insights": {...}, "title": "Standup 2026-03-02"}'
+  -d '{"insights": {}, "transcript_text": "...", "audio_name": "reunion.mp3"}'
 ```
 
 ---
@@ -251,6 +254,13 @@ Variables de entorno (prefijo `VOXNOTE_`):
 | `VOXNOTE_DIARIZE_MAX_SPEAKERS` | (auto) | Máximo de hablantes (vacío = auto-detección) |
 | `VOXNOTE_API_HOST` | `127.0.0.1` | Host del API. **No** hay autenticación aún: usa `0.0.0.0` solo en redes de confianza |
 | `VOXNOTE_MAX_UPLOAD_MB` | `500` | Tamaño máximo de subida de audio (API) |
+| `VOXNOTE_MAX_JSON_MB` | `10` | Tamaño máximo del body JSON (insights/export) |
+| `VOXNOTE_API_PORT` | `8003` | Puerto del API |
+| `VOXNOTE_DIARIZE_MODEL` | `pyannote/speaker-diarization-community-1` | Modelo de diarización (gated) |
+| `VOXNOTE_OLLAMA_API_KEY` | (vacío) | API key para Ollama cloud/proxy |
+| `VOXNOTE_OLLAMA_TIMEOUT` | `120` | Timeout de petición a Ollama (s) |
+| `VOXNOTE_COMPUTE_TYPE` | `int8` | Compute type whisperX (int8/float16/float32) |
+| `VOXNOTE_SAMPLE_RATE` | `16000` | Sample rate de grabación (Hz) |
 
 ### Archivo .env
 
@@ -304,6 +314,12 @@ La diarización identifica a los distintos hablantes de un audio (`[SPEAKER_00]`
 > **Es opcional.** Sin diarización igual obtienes resumen, puntos clave, insights y tareas — solo pierdes el "quién dijo qué".
 
 ### Activarla (3 pasos)
+
+> ⚠️ **Importante:** la diarización (whisperX → faster-whisper → ctranslate2) **requiere Python 3.11**. **No funciona en Python 3.13/3.14** (no hay ruedas de ctranslate2/faster-whisper y la instalación falla). Crea el venv con 3.11:
+> ```bash
+> python3.11 -m venv .venv
+> source .venv/bin/activate
+> ```
 
 **1. Instala el extra whisperX** (no viene en la instalación base):
 
@@ -431,7 +447,7 @@ Voxnote/
 │   │   │   └── routes/          # health, transcribe, insights, export, config, notes
 │   │   ├── tests/
 │   │   └── pyproject.toml
-│   └── web/                     # Next.js 14 frontend
+│   └── web/                     # Next.js 15 frontend
 │       ├── src/app/             # App Router
 │       ├── src/components/      # AudioRecorder, ConfigPanel, etc.
 │       ├── src/hooks/           # useVoxnote, useConfig
@@ -471,4 +487,4 @@ make typecheck   # mypy packages/core/
 
 ## Licencia
 
-MIT
+Apache License 2.0 — ver [`LICENSE`](LICENSE). Para atribuciones de terceros ver [`NOTICES.md`](NOTICES.md).

@@ -14,7 +14,7 @@ install-web:
 
 # ─── Dev servers ──────────────────────────────────────────────
 dev-api:
-	cd packages/api && /Users/cgomezfandino/repos/Voxnote/.venv/bin/uvicorn voxnote_api.main:app --reload --port 8003
+	cd packages/api && python -m uvicorn voxnote_api.main:app --reload --port 8003
 
 dev-web:
 	cd packages/web && npm run dev -- --port 3003
@@ -22,7 +22,7 @@ dev-web:
 dev:
 	@echo "Starting API (port 8003) and Web (port 3003)..."
 	@trap 'kill 0' EXIT; \
-		(cd packages/api && /Users/cgomezfandino/repos/Voxnote/.venv/bin/uvicorn voxnote_api.main:app --reload --port 8003) & \
+		(cd packages/api && python -m uvicorn voxnote_api.main:app --reload --port 8003) & \
 		(cd packages/web && npm run dev -- --port 3003) & \
 		wait
 

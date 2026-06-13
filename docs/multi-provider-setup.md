@@ -63,7 +63,7 @@ Configuración en `.env`:
 VOXNOTE_LLM_PROVIDER=google
 GOOGLE_API_KEY=...
 
-# Opcional: cambiar modelo (default: gemini-2.0-flash-exp)
+# Opcional: cambiar modelo (default: gemini-2.0-flash)
 GOOGLE_MODEL=gemini-pro
 ```
 
@@ -106,9 +106,9 @@ OPENAI_API_KEY=sk-...
 Incluye el campo `provider` en las peticiones:
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/api/insights" \
+curl -X POST "http://127.0.0.1:8003/api/insights" \
   -H "Content-Type: application/json" \
-  -d '{"transcript": "...", "provider": "openai"}'
+  -d '{"text": "...", "provider": "openai"}'
 ```
 
 ### Interfaz web
