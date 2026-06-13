@@ -231,3 +231,9 @@ class NoteDetailResponse(BaseModel):
     filename: str
     content: str
     created_at: str
+
+
+class RenameSpeakersRequest(BaseModel):
+    """Map diarization labels (SPEAKER_00) to real names, applied to a note."""
+
+    mapping: dict[str, str]

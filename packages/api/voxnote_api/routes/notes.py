@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
-from voxnote_api.schemas import NoteDetailResponse, NoteListItem
+from voxnote_api.schemas import NoteDetailResponse, NoteListItem, RenameSpeakersRequest
 
 router = APIRouter()
 
@@ -100,4 +101,49 @@ async def get_note(filename: str) -> NoteDetailResponse:
         filename=note_path.name,
         content=content,
         created_at=created_at,
+    )
+
+
+@router.post("/notes/{filename}/speakers", response_model=NoteDetailResponse)
+async def rename_speakers(
+    filename: str, request: RenameSpeakersRequest
+) -> NoteDetailResponse:
+    """Replace SPEAKER_xx labels in a note with real names and persist the change."""
+    output_dir = _get_output_dir()
+
+    if (
+        not filename.endswith(".md")
+        or "/" in filename
+        or "\\" in filename
+        or ".." in filename
+    ):
+        raise HTTPException(status_code=400, detail="Invalid note filename")
+
+    note_path = output_dir / filename
+    if not note_path.resolve().is_relative_to(output_dir.resolve()):
+        raise HTTPException(status_code=403, detail="Access denied")
+    if not note_path.is_file():
+        raise HTTPException(status_code=404, detail=f"Note '{filename}' not found")
+
+    content = note_path.read_text(encoding="utf-8")
+    for label, name in request.mapping.items():
+        # Only replace genuine diarization labels, with a sanitized name.
+        if not re.fullmatch(r"SPEAKER_\d+", label):
+            continue
+        clean = re.sub(r"[\x00-\x1f]", "", str(name)).strip()[:60]
+        if not clean:
+            continue
+        content = re.sub(rf"\b{re.escape(label)}\b", clean, content)
+
+    note_path.write_text(content, encoding="utf-8")
+    try:
+        note_path.chmod(0o600)
+    except OSError:
+        pass
+
+    created_at = datetime.fromtimestamp(
+        note_path.stat().st_mtime, tz=timezone.utc
+    ).isoformat()
+    return NoteDetailResponse(
+        filename=note_path.name, content=content, created_at=created_at
     )
