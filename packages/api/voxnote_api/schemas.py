@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+import re
 
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 # --- Transcription ---
 
@@ -37,6 +38,20 @@ class ActionItem(BaseModel):
     deadline: str = "TBD"
 
 
+class Participante(BaseModel):
+    """A meeting participant / speaker and what they contributed."""
+
+    hablante: str
+    aporte: str = ""
+
+
+class Comentario(BaseModel):
+    """A notable quote / highlight, attributed to a speaker when possible."""
+
+    hablante: str = ""
+    cita: str
+
+
 class InsightsRequest(BaseModel):
     """Request body for insights extraction."""
 
@@ -44,15 +59,71 @@ class InsightsRequest(BaseModel):
     provider: str = "ollama"
 
 
+def _to_list(value: object) -> list:
+    if isinstance(value, list):
+        return value
+    if value in (None, ""):
+        return []
+    return [value]
+
+
+def _flatten(item: object) -> str:
+    if isinstance(item, str):
+        return item
+    if isinstance(item, dict):
+        return " — ".join(str(v) for v in item.values() if v)
+    return str(item)
+
+
 class InsightsResponse(BaseModel):
-    """Structured insights extracted from a meeting transcript."""
+    """Structured, professional insights extracted from a meeting transcript.
+
+    The string/object lists are normalized defensively because LLM output (especially
+    local models) is not always perfectly shaped — a malformed field never breaks the
+    endpoint, it just degrades to a best-effort value.
+    """
 
     resumen: str = "N/A"
+    participantes: list[Participante] = Field(default_factory=list)
+    puntos_clave: list[str] = Field(default_factory=list)
     decisiones: list[str] = Field(default_factory=list)
     action_items: list[ActionItem] = Field(default_factory=list)
     insights: list[str] = Field(default_factory=list)
+    comentarios_destacados: list[Comentario] = Field(default_factory=list)
     preguntas_abiertas: list[str] = Field(default_factory=list)
     proximos_pasos: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize(cls, data: object) -> object:
+        if not isinstance(data, dict):
+            return data
+        out = dict(data)
+        str_keys = (
+            "puntos_clave",
+            "decisiones",
+            "insights",
+            "preguntas_abiertas",
+            "proximos_pasos",
+        )
+        for key in str_keys:
+            if key in out:
+                out[key] = [_flatten(i) for i in _to_list(out[key])]
+        obj_keys = (
+            ("action_items", "tarea"),
+            ("participantes", "hablante"),
+            ("comentarios_destacados", "cita"),
+        )
+        for key, primary in obj_keys:
+            if key in out:
+                coerced: list = []
+                for item in _to_list(out[key]):
+                    if isinstance(item, dict):
+                        coerced.append(item)
+                    elif isinstance(item, str) and item.strip():
+                        coerced.append({primary: item})
+                out[key] = coerced
+        return out
 
 
 # --- Export ---
@@ -75,6 +146,13 @@ class ExportResponse(BaseModel):
     path: str
 
 
+class DocxExportRequest(BaseModel):
+    """Request body for Word (.docx) export from a note's Markdown."""
+
+    content: str
+    filename: str | None = None
+
+
 # --- Config ---
 
 
@@ -95,6 +173,10 @@ class ConfigResponse(BaseModel):
     available_providers: list[str]
 
 
+_ALLOWED_WHISPER_MODELS = {"tiny", "base", "small", "medium", "large-v3", "turbo"}
+_ALLOWED_PROVIDERS = {"ollama", "openai", "google"}
+
+
 class ConfigUpdateRequest(BaseModel):
     """Partial configuration update."""
 
@@ -106,6 +188,29 @@ class ConfigUpdateRequest(BaseModel):
     openai_model: str | None = None
     google_model: str | None = None
     diarize: bool | None = None
+
+    @field_validator("whisper_model")
+    @classmethod
+    def _check_whisper_model(cls, v: str | None) -> str | None:
+        if v is not None and v not in _ALLOWED_WHISPER_MODELS:
+            raise ValueError(
+                f"whisper_model must be one of {sorted(_ALLOWED_WHISPER_MODELS)}"
+            )
+        return v
+
+    @field_validator("llm_provider")
+    @classmethod
+    def _check_provider(cls, v: str | None) -> str | None:
+        if v is not None and v not in _ALLOWED_PROVIDERS:
+            raise ValueError(f"llm_provider must be one of {sorted(_ALLOWED_PROVIDERS)}")
+        return v
+
+    @field_validator("language")
+    @classmethod
+    def _check_language(cls, v: str | None) -> str | None:
+        if v is not None and v != "" and not re.fullmatch(r"[A-Za-z]{2}", v):
+            raise ValueError("language must be a 2-letter ISO 639-1 code or empty")
+        return v
 
 
 # --- Notes ---

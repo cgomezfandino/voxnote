@@ -9,7 +9,7 @@ def extract_insights(transcript: str, provider_name: str | None = None) -> dict:
 
     Args:
         transcript: The meeting transcription text.
-        provider_name: Override the provider (ollama|openai|kimi|glm|google).
+        provider_name: Override the provider (ollama|openai|google).
                       If None, uses settings.llm_provider.
 
     Returns:

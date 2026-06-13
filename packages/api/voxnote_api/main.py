@@ -56,7 +56,17 @@ app = create_app()
 
 
 def run() -> None:
-    """Entry point for voxnote-api command."""
+    """Entry point for the ``voxnote-api`` command.
+
+    Binds to localhost by default so the API is not exposed to the LAN. Override with
+    VOXNOTE_API_HOST (e.g. "0.0.0.0") only when LAN access is explicitly wanted — note
+    there is no authentication yet, so do not expose this on an untrusted network.
+    """
+    import os
+
     import uvicorn
 
-    uvicorn.run("voxnote_api.main:app", host="0.0.0.0", port=8003, reload=True)
+    host = os.getenv("VOXNOTE_API_HOST", "127.0.0.1")
+    port = int(os.getenv("VOXNOTE_API_PORT", "8003"))
+    reload = os.getenv("VOXNOTE_API_RELOAD", "false").lower() in ("1", "true", "yes")
+    uvicorn.run("voxnote_api.main:app", host=host, port=port, reload=reload)

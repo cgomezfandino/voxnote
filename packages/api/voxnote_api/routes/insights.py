@@ -30,5 +30,6 @@ async def extract_insights_endpoint(
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Insight extraction failed: {e}"
+            status_code=500,
+            detail="Insight extraction failed. Check server logs for details.",
         ) from e

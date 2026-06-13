@@ -5,7 +5,7 @@ import os
 
 from rich.console import Console
 
-from voxnote.providers.base import LLMProvider, build_transcript_section
+from voxnote.providers.base import LLMProvider, build_insights_prompt
 
 console = Console()
 
@@ -13,24 +13,6 @@ SYSTEM_PROMPT = """\
 Eres un asistente especializado en analizar transcripciones de reuniones. \
 Extrae insights estructurados y responde ÚNICAMENTE con JSON válido, \
 sin markdown ni backticks.
-"""
-
-USER_PROMPT_TEMPLATE = """\
-Analiza esta transcripción de reunión y responde con un JSON con esta estructura exacta:
-
-{{
-  "resumen": "resumen ejecutivo en 3-5 oraciones",
-  "decisiones": ["lista de decisiones tomadas"],
-  "action_items": [
-    {{"tarea": "descripción", "responsable": "nombre o TBD", "deadline": "fecha o TBD"}}
-  ],
-  "insights": ["observaciones clave o puntos importantes"],
-  "preguntas_abiertas": ["preguntas sin resolver"],
-  "proximos_pasos": ["siguientes pasos acordados"]
-}}
-
-TRANSCRIPCIÓN:
-{transcript_section}
 """
 
 MAX_TRANSCRIPT_CHARS = 8000  # OpenAI can handle more
@@ -72,11 +54,7 @@ class OpenAIProvider(LLMProvider):
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {
                     "role": "user",
-                    "content": USER_PROMPT_TEMPLATE.format(
-                        transcript_section=build_transcript_section(
-                            transcript[:MAX_TRANSCRIPT_CHARS]
-                        )
-                    ),
+                    "content": build_insights_prompt(transcript[:MAX_TRANSCRIPT_CHARS]),
                 },
             ],
             temperature=0.1,

@@ -38,8 +38,16 @@ class Settings(BaseSettings):
     # Speaker Diarization (whisperX)
     diarize: bool = Field(default=False, description="Enable speaker diarization (requires whisperx + HF token)")
     hf_token: str = Field(default="", description="HuggingFace token for pyannote diarization models")
-    diarize_min_speakers: int = Field(default=2, description="Minimum expected speakers")
-    diarize_max_speakers: int = Field(default=5, description="Maximum expected speakers")
+    diarize_model: str = Field(
+        default="pyannote/speaker-diarization-community-1",
+        description="pyannote diarization model (accept its terms on HuggingFace first)",
+    )
+    diarize_min_speakers: int | None = Field(
+        default=None, description="Minimum expected speakers (None = auto-detect)"
+    )
+    diarize_max_speakers: int | None = Field(
+        default=None, description="Maximum expected speakers (None = auto-detect)"
+    )
     compute_type: str = Field(default="int8", description="Compute type for whisperX (int8|float16|float32)")
 
     # Recording

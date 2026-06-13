@@ -5,28 +5,9 @@ import os
 
 from rich.console import Console
 
-from voxnote.providers.base import LLMProvider, build_transcript_section
+from voxnote.providers.base import LLMProvider, build_insights_prompt
 
 console = Console()
-
-PROMPT_TEMPLATE = """\
-Analiza esta transcripción de reunión y responde ÚNICAMENTE con un JSON válido \
-(sin markdown, sin backticks) con esta estructura exacta:
-
-{{
-  "resumen": "resumen ejecutivo en 3-5 oraciones",
-  "decisiones": ["lista de decisiones tomadas"],
-  "action_items": [
-    {{"tarea": "descripción", "responsable": "nombre o TBD", "deadline": "fecha o TBD"}}
-  ],
-  "insights": ["observaciones clave o puntos importantes"],
-  "preguntas_abiertas": ["preguntas sin resolver"],
-  "proximos_pasos": ["siguientes pasos acordados"]
-}}
-
-TRANSCRIPCIÓN:
-{transcript_section}
-"""
 
 MAX_TRANSCRIPT_CHARS = 10000  # Gemini has large context
 
@@ -62,9 +43,8 @@ class GoogleProvider(LLMProvider):
 
         client = genai.Client(api_key=self.api_key)
 
-        section = build_transcript_section(transcript[:MAX_TRANSCRIPT_CHARS])
-        prompt = PROMPT_TEMPLATE.format(transcript_section=section)
-        
+        prompt = build_insights_prompt(transcript[:MAX_TRANSCRIPT_CHARS])
+
         response = client.models.generate_content(
             model=self.model,
             contents=prompt,

@@ -7,6 +7,7 @@ Supports two backends:
 
 from __future__ import annotations
 
+import contextlib
 import gc
 from pathlib import Path
 
@@ -63,6 +64,12 @@ def transcribe(
     model_name = model_name or settings.whisper_model
     should_diarize = diarize if diarize is not None else settings.diarize
 
+    if should_diarize and _BACKEND != "whisperx":
+        console.print(
+            "[yellow]Warning:[/] Diarization requires whisperX. Install it with "
+            '"pip install -e packages/core[whisperx]" — transcribing without speakers.'
+        )
+
     if _BACKEND == "whisperx":
         return _transcribe_whisperx(str(audio_path), model_name, should_diarize)
     else:
@@ -83,8 +90,6 @@ def _transcribe_whisper(audio_path: str, model_name: str) -> TranscriptResult:
     console.print(f"[green]Transcription complete[/] — {len(text)} chars")
     return TranscriptResult(text=text)
 
-
-import contextlib
 
 @contextlib.contextmanager
 def _patch_torch_serialization_ctx():
@@ -161,9 +166,11 @@ def _transcribe_whisperx(
             )
         else:
             console.print("[bold blue]Running speaker diarization…[/]")
+            from whisperx.diarize import DiarizationPipeline
+
             with _patch_torch_serialization_ctx():
-                diarize_model = whisperx.DiarizationPipeline(
-                    use_auth_token=hf_token, device=device
+                diarize_model = DiarizationPipeline(
+                    model_name=settings.diarize_model, token=hf_token, device=device
                 )
                 diarize_segments = diarize_model(
                     audio,

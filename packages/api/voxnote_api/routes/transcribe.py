@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from pathlib import Path
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
@@ -10,6 +11,10 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from voxnote_api.schemas import SegmentResponse, TranscriptionResponse
 
 router = APIRouter()
+
+# Cap uploads to avoid disk-exhaustion / OOM DoS. Override via VOXNOTE_MAX_UPLOAD_MB.
+MAX_UPLOAD_MB = int(os.getenv("VOXNOTE_MAX_UPLOAD_MB", "500"))
+MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 
 
 @router.post("/transcribe", response_model=TranscriptionResponse)
@@ -28,9 +33,13 @@ async def transcribe_audio(
     if suffix not in allowed_extensions:
         raise HTTPException(status_code=400, detail=f"Unsupported file type. Allowed: {', '.join(allowed_extensions)}")
 
-    # Ensure output/audio directory exists
+    # Ensure output/audio directory exists (owner-only access to private recordings)
     audio_dir = settings.output_dir / "audio"
     audio_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        audio_dir.chmod(0o700)
+    except OSError:
+        pass
 
     orig_name = Path(audio.filename or "recording.wav").name
     if orig_name == "blob" or not orig_name:
@@ -40,12 +49,27 @@ async def transcribe_audio(
     saved_filename = f"{timestamp}_{orig_name}"
     saved_path = audio_dir / saved_filename
 
+    # Read with a hard size cap so a huge upload cannot exhaust memory/disk.
+    content = bytearray()
+    while True:
+        chunk = await audio.read(1024 * 1024)
+        if not chunk:
+            break
+        content.extend(chunk)
+        if len(content) > MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Audio file too large (max {MAX_UPLOAD_MB} MB).",
+            )
+
     try:
-        content = await audio.read()
         with open(saved_path, "wb") as f:
             f.write(content)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save audio file to disk: {e}")
+        os.chmod(saved_path, 0o600)
+    except OSError as e:
+        raise HTTPException(
+            status_code=500, detail="Failed to save audio file to disk."
+        ) from e
 
     try:
         from voxnote.pipeline.transcriber import transcribe as do_transcribe
@@ -78,5 +102,6 @@ async def transcribe_audio(
         )
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Transcription failed: {e}"
+            status_code=500,
+            detail="Transcription failed. Check server logs for details.",
         ) from e

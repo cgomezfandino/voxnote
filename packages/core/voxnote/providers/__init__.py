@@ -1,9 +1,9 @@
 """LLM provider abstraction for insight extraction."""
 
 from voxnote.providers.base import LLMProvider
+from voxnote.providers.google import GoogleProvider
 from voxnote.providers.ollama import OllamaProvider
 from voxnote.providers.openai import OpenAIProvider
-from voxnote.providers.google import GoogleProvider
 
 __all__ = [
     "LLMProvider",

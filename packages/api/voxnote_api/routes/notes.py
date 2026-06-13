@@ -73,14 +73,24 @@ async def list_notes() -> list[NoteListItem]:
 async def get_note(filename: str) -> NoteDetailResponse:
     """Get a specific note's full content."""
     output_dir = _get_output_dir()
+
+    # Only Markdown notes may be served; reject traversal patterns outright.
+    if (
+        not filename.endswith(".md")
+        or "/" in filename
+        or "\\" in filename
+        or ".." in filename
+    ):
+        raise HTTPException(status_code=400, detail="Invalid note filename")
+
     note_path = output_dir / filename
 
-    if not note_path.exists() or not note_path.is_file():
-        raise HTTPException(status_code=404, detail=f"Note '{filename}' not found")
-
-    # Prevent path traversal attacks
+    # Validate the resolved path stays within output_dir BEFORE touching the filesystem.
     if not note_path.resolve().is_relative_to(output_dir.resolve()):
         raise HTTPException(status_code=403, detail="Access denied")
+
+    if not note_path.is_file():
+        raise HTTPException(status_code=404, detail=f"Note '{filename}' not found")
 
     content = note_path.read_text(encoding="utf-8")
     stat = note_path.stat()
