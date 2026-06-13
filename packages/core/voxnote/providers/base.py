@@ -2,6 +2,30 @@
 
 from abc import ABC, abstractmethod
 
+from rich.console import Console
+
+_console = Console()
+
+
+def truncate_transcript(transcript: str, max_chars: int) -> str:
+    """Cap an over-long transcript to a provider's input budget, warning loudly.
+
+    Providers have a hard input limit, but silently slicing the transcript makes a long
+    meeting's note cover only its opening minutes. We still truncate, but emit a visible
+    warning so the user knows the note is partial. The proper fix (chunking + map-reduce
+    over the whole transcript) is roadmapped for Fase 1.
+    """
+    if len(transcript) <= max_chars:
+        return transcript
+    pct = round(max_chars / len(transcript) * 100)
+    _console.print(
+        f"[yellow]Warning:[/] transcript is {len(transcript)} chars but this provider's cap "
+        f"is {max_chars} — only ~{pct}% will be analyzed, so the note will cover roughly the "
+        f"start of the meeting. Use a provider with a larger context window for full coverage."
+    )
+    return transcript[:max_chars]
+
+
 SPEAKER_CONTEXT_ES = (
     "NOTA: La transcripción incluye etiquetas de hablante (ej: [SPEAKER_00], "
     "[SPEAKER_01]). Usa estas etiquetas para atribuir decisiones, action items "

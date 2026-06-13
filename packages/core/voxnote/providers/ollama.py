@@ -7,7 +7,7 @@ import requests
 from rich.console import Console
 
 from voxnote.config import settings
-from voxnote.providers.base import LLMProvider, build_insights_prompt
+from voxnote.providers.base import LLMProvider, build_insights_prompt, truncate_transcript
 
 console = Console()
 
@@ -25,7 +25,7 @@ class OllamaProvider(LLMProvider):
         """Extract insights using Ollama."""
         console.print(f"[bold blue]Extracting insights[/] with {self.name}…")
 
-        prompt = build_insights_prompt(transcript[:MAX_TRANSCRIPT_CHARS])
+        prompt = build_insights_prompt(truncate_transcript(transcript, MAX_TRANSCRIPT_CHARS))
 
         headers = {}
         if settings.ollama_api_key:

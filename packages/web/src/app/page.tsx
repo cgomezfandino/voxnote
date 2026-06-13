@@ -431,6 +431,7 @@ export default function Home() {
                       {/* Note preview */}
                       {processedNote && (
                         <NotePreview
+                          key={processedNote.filename}
                           content={processedNote.content}
                           filename={processedNote.filename}
                         />
@@ -550,6 +551,7 @@ export default function Home() {
                     {selectedNote && (
                       <div className="mt-6">
                         <NotePreview
+                          key={selectedNote.filename}
                           content={selectedNote.content}
                           filename={selectedNote.filename}
                         />

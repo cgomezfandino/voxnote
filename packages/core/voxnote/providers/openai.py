@@ -5,7 +5,7 @@ import os
 
 from rich.console import Console
 
-from voxnote.providers.base import LLMProvider, build_insights_prompt
+from voxnote.providers.base import LLMProvider, build_insights_prompt, truncate_transcript
 
 console = Console()
 
@@ -50,7 +50,9 @@ class OpenAIProvider(LLMProvider):
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {
                     "role": "user",
-                    "content": build_insights_prompt(transcript[:MAX_TRANSCRIPT_CHARS]),
+                    "content": build_insights_prompt(
+                        truncate_transcript(transcript, MAX_TRANSCRIPT_CHARS)
+                    ),
                 },
             ],
             temperature=0.1,

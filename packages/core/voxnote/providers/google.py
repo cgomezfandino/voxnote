@@ -5,7 +5,7 @@ import os
 
 from rich.console import Console
 
-from voxnote.providers.base import LLMProvider, build_insights_prompt
+from voxnote.providers.base import LLMProvider, build_insights_prompt, truncate_transcript
 
 console = Console()
 
@@ -40,7 +40,7 @@ class GoogleProvider(LLMProvider):
 
         client = genai.Client(api_key=self.api_key)
 
-        prompt = build_insights_prompt(transcript[:MAX_TRANSCRIPT_CHARS])
+        prompt = build_insights_prompt(truncate_transcript(transcript, MAX_TRANSCRIPT_CHARS))
 
         response = client.models.generate_content(
             model=self.model,

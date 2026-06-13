@@ -13,8 +13,15 @@ def extract_insights(transcript: str, provider_name: str | None = None) -> dict:
                       If None, uses settings.llm_provider.
 
     Returns:
-        A dict with keys: resumen, decisiones, action_items, insights,
-        preguntas_abiertas, proximos_pasos.
+        A dict with keys: resumen, participantes, puntos_clave, decisiones,
+        action_items, insights, comentarios_destacados, preguntas_abiertas,
+        proximos_pasos.
+
+    Note:
+        Providers cap the transcript to their input budget; for very long meetings
+        the transcript is truncated (with a visible warning) — see
+        ``truncate_transcript`` in ``providers/base``. Full-coverage chunking is
+        roadmapped for Fase 1.
     """
     provider = get_provider(provider_name or settings.llm_provider)
     return provider.extract_insights(transcript)

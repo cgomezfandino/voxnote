@@ -18,6 +18,28 @@ def test_speaker_text_has_labels(sample_diarized_result) -> None:
     assert "[SPEAKER_01]" in text
 
 
+def test_speaker_text_keeps_leading_unlabeled_segment() -> None:
+    """Diarization can leave leading segments with speaker=None (silence/overlap).
+
+    Their text must survive into the formatted output instead of being silently dropped.
+    """
+    from voxnote.pipeline.models import Segment, TranscriptResult
+
+    tr = TranscriptResult(
+        text="Intro sin etiqueta. Hola. Qué tal.",
+        segments=[
+            Segment(text="Intro sin etiqueta.", start=0.0, end=1.0, speaker=None),
+            Segment(text="Hola.", start=1.0, end=2.0, speaker="SPEAKER_00"),
+            Segment(text="Qué tal.", start=2.0, end=3.0, speaker="SPEAKER_01"),
+        ],
+        has_speakers=True,
+    )
+    out = tr.to_speaker_text()
+    assert "Intro sin etiqueta." in out  # leading unlabeled text not dropped
+    assert "[SPEAKER_00]: Hola." in out
+    assert "[SPEAKER_01]: Qué tal." in out
+
+
 def test_transcript_section_adds_speaker_context() -> None:
     diarized = "[SPEAKER_00]: Hola.\n\n[SPEAKER_01]: Qué tal."
     section = build_transcript_section(diarized)
