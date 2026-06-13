@@ -1,6 +1,5 @@
 """Tests for notes endpoints."""
 
-from pathlib import Path
 from unittest.mock import patch
 
 
@@ -16,8 +15,7 @@ def test_list_notes_with_files(client, tmp_path):
     """GET /api/notes should list existing markdown notes."""
     note = tmp_path / "2026-02-27_test-meeting.md"
     note.write_text(
-        "---\ntags: [meeting]\ndate: 2026-02-27\n---\n\n"
-        "# Meeting\n\nSome content here.\n"
+        "---\ntags: [meeting]\ndate: 2026-02-27\n---\n\n# Meeting\n\nSome content here.\n"
     )
 
     with patch("voxnote_api.routes.notes._get_output_dir", return_value=tmp_path):

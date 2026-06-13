@@ -26,12 +26,16 @@ async def transcribe_audio(
 ) -> TranscriptionResponse:
     """Transcribe an uploaded audio file with Whisper and save a copy permanently."""
     from datetime import datetime
+
     from voxnote.config import settings
 
     suffix = Path(audio.filename or "audio.wav").suffix.lower() or ".wav"
     allowed_extensions = {".wav", ".mp3", ".m4a", ".ogg", ".flac", ".webm"}
     if suffix not in allowed_extensions:
-        raise HTTPException(status_code=400, detail=f"Unsupported file type. Allowed: {', '.join(allowed_extensions)}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type. Allowed: {', '.join(allowed_extensions)}",
+        )
 
     # Ensure output/audio directory exists (owner-only access to private recordings)
     audio_dir = settings.output_dir / "audio"
@@ -67,9 +71,7 @@ async def transcribe_audio(
             f.write(content)
         os.chmod(saved_path, 0o600)
     except OSError as e:
-        raise HTTPException(
-            status_code=500, detail="Failed to save audio file to disk."
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to save audio file to disk.") from e
 
     try:
         from voxnote.pipeline.transcriber import transcribe as do_transcribe

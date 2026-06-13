@@ -33,16 +33,12 @@ class OpenAIProvider(LLMProvider):
     def name(self) -> str:
         return f"OpenAI ({self.model})"
 
-
-
     def extract_insights(self, transcript: str) -> dict:
         """Extract insights using OpenAI API."""
         try:
             from openai import OpenAI
         except ImportError:
-            raise ImportError(
-                "openai package not installed. Install with: pip install openai"
-            )
+            raise ImportError("openai package not installed. Install with: pip install openai")
 
         console.print(f"[bold blue]Extracting insights[/] with {self.name}…")
 

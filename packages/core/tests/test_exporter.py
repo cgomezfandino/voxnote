@@ -1,7 +1,5 @@
 """Tests for the Obsidian Markdown exporter."""
 
-from pathlib import Path
-
 
 def test_export_creates_file(tmp_path, sample_insights, sample_transcript):
     """export_obsidian should write a .md file in the output dir."""

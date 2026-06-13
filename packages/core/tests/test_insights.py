@@ -1,7 +1,6 @@
 """Tests for the insight extraction module (provider-based)."""
 
-import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from voxnote.pipeline.insights import extract_insights
 
@@ -58,7 +57,9 @@ def test_extract_uses_settings_by_default():
 
     with patch("voxnote.pipeline.insights.settings") as mock_settings:
         mock_settings.llm_provider = "ollama"
-        with patch("voxnote.pipeline.insights.get_provider", return_value=mock_provider) as mock_get:
+        with patch(
+            "voxnote.pipeline.insights.get_provider", return_value=mock_provider
+        ) as mock_get:
             extract_insights("Test transcript")
 
         mock_get.assert_called_once_with("ollama")

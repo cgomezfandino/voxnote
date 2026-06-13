@@ -116,5 +116,3 @@ class LLMProvider(ABC):
     def name(self) -> str:
         """Return the provider name."""
         pass
-
-

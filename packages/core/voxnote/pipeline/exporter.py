@@ -42,6 +42,7 @@ def export_obsidian(
     slug = Path(audio_name).stem
 
     import re
+
     # Match format YYYY-MM-DD_HH-MM-SS
     match = re.match(r"^(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})_(.*)$", slug)
     if match:

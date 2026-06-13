@@ -115,9 +115,7 @@ def _patch_torch_serialization_ctx():
         torch.load = _original_load  # type: ignore[assignment]
 
 
-def _transcribe_whisperx(
-    audio_path: str, model_name: str, diarize: bool
-) -> TranscriptResult:
+def _transcribe_whisperx(audio_path: str, model_name: str, diarize: bool) -> TranscriptResult:
     """Transcribe using whisperX with optional alignment and diarization."""
     import whisperx
 
@@ -132,7 +130,10 @@ def _transcribe_whisperx(
 
     # Step 1: Transcribe
     model = whisperx.load_model(
-        model_name, device=device, compute_type=compute_type, language=language,
+        model_name,
+        device=device,
+        compute_type=compute_type,
+        language=language,
     )
     audio = whisperx.load_audio(audio_path)
     result = model.transcribe(audio, batch_size=16, language=language)
@@ -144,12 +145,8 @@ def _transcribe_whisperx(
     # Step 2: Align (word-level timestamps)
     lang_code = language or result.get("language", "es")
     try:
-        model_align, metadata = whisperx.load_align_model(
-            language_code=lang_code, device=device
-        )
-        result = whisperx.align(
-            result["segments"], model_align, metadata, audio, device=device
-        )
+        model_align, metadata = whisperx.load_align_model(language_code=lang_code, device=device)
+        result = whisperx.align(result["segments"], model_align, metadata, audio, device=device)
         del model_align
         gc.collect()
     except Exception as e:
@@ -185,12 +182,14 @@ def _transcribe_whisperx(
     # Build TranscriptResult from segments
     segments: list[Segment] = []
     for seg in result.get("segments", []):
-        segments.append(Segment(
-            text=seg.get("text", ""),
-            start=seg.get("start", 0.0),
-            end=seg.get("end", 0.0),
-            speaker=seg.get("speaker") if has_speakers else None,
-        ))
+        segments.append(
+            Segment(
+                text=seg.get("text", ""),
+                start=seg.get("start", 0.0),
+                end=seg.get("end", 0.0),
+                speaker=seg.get("speaker") if has_speakers else None,
+            )
+        )
 
     full_text = " ".join(s.text.strip() for s in segments if s.text.strip())
     tr = TranscriptResult(text=full_text, segments=segments, has_speakers=has_speakers)

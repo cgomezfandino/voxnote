@@ -26,8 +26,6 @@ class GoogleProvider(LLMProvider):
     def name(self) -> str:
         return f"Google ({self.model})"
 
-
-
     def extract_insights(self, transcript: str) -> dict:
         """Extract insights using Google Gemini API."""
         try:
@@ -35,8 +33,7 @@ class GoogleProvider(LLMProvider):
             from google.genai import types
         except ImportError:
             raise ImportError(
-                "google-genai package not installed. "
-                "Install with: pip install google-genai"
+                "google-genai package not installed. Install with: pip install google-genai"
             )
 
         console.print(f"[bold blue]Extracting insights[/] with {self.name}…")
@@ -51,7 +48,7 @@ class GoogleProvider(LLMProvider):
             config=types.GenerateContentConfig(
                 temperature=0.1,
                 response_mime_type="application/json",
-            )
+            ),
         )
 
         raw = response.text

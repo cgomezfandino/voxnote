@@ -21,8 +21,6 @@ class OllamaProvider(LLMProvider):
     def name(self) -> str:
         return f"Ollama ({settings.ollama_model})"
 
-
-
     def extract_insights(self, transcript: str) -> dict:
         """Extract insights using Ollama."""
         console.print(f"[bold blue]Extracting insights[/] with {self.name}…")

@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from voxnote_api.routes import config, export, health, insights, notes, transcribe, ollama
+from voxnote_api.routes import config, export, health, insights, notes, ollama, transcribe
 
 
 @asynccontextmanager

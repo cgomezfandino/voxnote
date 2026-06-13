@@ -76,12 +76,7 @@ async def get_note(filename: str) -> NoteDetailResponse:
     output_dir = _get_output_dir()
 
     # Only Markdown notes may be served; reject traversal patterns outright.
-    if (
-        not filename.endswith(".md")
-        or "/" in filename
-        or "\\" in filename
-        or ".." in filename
-    ):
+    if not filename.endswith(".md") or "/" in filename or "\\" in filename or ".." in filename:
         raise HTTPException(status_code=400, detail="Invalid note filename")
 
     note_path = output_dir / filename
@@ -105,18 +100,11 @@ async def get_note(filename: str) -> NoteDetailResponse:
 
 
 @router.post("/notes/{filename}/speakers", response_model=NoteDetailResponse)
-async def rename_speakers(
-    filename: str, request: RenameSpeakersRequest
-) -> NoteDetailResponse:
+async def rename_speakers(filename: str, request: RenameSpeakersRequest) -> NoteDetailResponse:
     """Replace SPEAKER_xx labels in a note with real names and persist the change."""
     output_dir = _get_output_dir()
 
-    if (
-        not filename.endswith(".md")
-        or "/" in filename
-        or "\\" in filename
-        or ".." in filename
-    ):
+    if not filename.endswith(".md") or "/" in filename or "\\" in filename or ".." in filename:
         raise HTTPException(status_code=400, detail="Invalid note filename")
 
     note_path = output_dir / filename
@@ -141,9 +129,5 @@ async def rename_speakers(
     except OSError:
         pass
 
-    created_at = datetime.fromtimestamp(
-        note_path.stat().st_mtime, tz=timezone.utc
-    ).isoformat()
-    return NoteDetailResponse(
-        filename=note_path.name, content=content, created_at=created_at
-    )
+    created_at = datetime.fromtimestamp(note_path.stat().st_mtime, tz=timezone.utc).isoformat()
+    return NoteDetailResponse(filename=note_path.name, content=content, created_at=created_at)

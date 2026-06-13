@@ -193,9 +193,7 @@ class ConfigUpdateRequest(BaseModel):
     @classmethod
     def _check_whisper_model(cls, v: str | None) -> str | None:
         if v is not None and v not in _ALLOWED_WHISPER_MODELS:
-            raise ValueError(
-                f"whisper_model must be one of {sorted(_ALLOWED_WHISPER_MODELS)}"
-            )
+            raise ValueError(f"whisper_model must be one of {sorted(_ALLOWED_WHISPER_MODELS)}")
         return v
 
     @field_validator("llm_provider")

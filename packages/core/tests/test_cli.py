@@ -3,7 +3,6 @@
 from unittest.mock import patch
 
 from click.testing import CliRunner
-
 from voxnote.cli import main
 from voxnote.pipeline.models import TranscriptResult
 

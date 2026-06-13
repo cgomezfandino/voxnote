@@ -90,9 +90,7 @@ def test_markdown_to_docx_builds_task_table() -> None:
     assert document.tables, "expected a task table"
     header = [c.text for c in document.tables[0].rows[0].cells]
     assert header == ["Tarea", "Responsable", "Fecha límite"]
-    body_text = "\n".join(
-        cell.text for row in document.tables[0].rows for cell in row.cells
-    )
+    body_text = "\n".join(cell.text for row in document.tables[0].rows for cell in row.cells)
     assert "Preparar la demo" in body_text
     assert "SPEAKER_00" in body_text
     assert "2026-06-20" in body_text
