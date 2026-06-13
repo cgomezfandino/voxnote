@@ -1,0 +1,37 @@
+version: 2
+updates:
+  # Python — pipeline core
+  - package-ecosystem: "pip"
+    directory: "/packages/core"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      python-core:
+        patterns: ["*"]
+
+  # Python — FastAPI backend
+  - package-ecosystem: "pip"
+    directory: "/packages/api"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      python-api:
+        patterns: ["*"]
+
+  # Node — Next.js frontend
+  - package-ecosystem: "npm"
+    directory: "/packages/web"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      web:
+        patterns: ["*"]
+
+  # GitHub Actions used in CI
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

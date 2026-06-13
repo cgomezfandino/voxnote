@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Least-privilege default token: CI only needs to read the repo.
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python (core + api)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: System deps (PortAudio for sounddevice)
+        run: sudo apt-get update && sudo apt-get install -y libportaudio2
+      - name: Install
+        run: pip install -e "packages/core[dev]" -e "packages/api[dev]"
+      - name: Lint (ruff)
+        run: ruff check packages/core/ packages/api/
+      - name: Test core
+        run: pytest tests/ -q
+        working-directory: packages/core
+        env:
+          VOXNOTE_OUTPUT_DIR: /tmp/voxnote-ci
+      - name: Test api
+        run: pytest tests/ -q
+        working-directory: packages/api
+        env:
+          VOXNOTE_OUTPUT_DIR: /tmp/voxnote-ci
+
+  web:
+    name: Web (lint + types)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: packages/web/package-lock.json
+      - name: Install
+        run: npm ci
+        working-directory: packages/web
+      - name: Lint (eslint)
+        run: npm run lint
+        working-directory: packages/web
+      - name: Typecheck (tsc)
+        run: npx tsc --noEmit
+        working-directory: packages/web

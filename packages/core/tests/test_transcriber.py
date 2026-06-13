@@ -1,6 +1,6 @@
 """Tests for the Whisper transcriber (model loading mocked)."""
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from voxnote.pipeline.models import TranscriptResult
 

@@ -1,7 +1,5 @@
 """Tests for the Obsidian Markdown exporter."""
 
-from pathlib import Path
-
 
 def test_export_creates_file(tmp_path, sample_insights, sample_transcript):
     """export_obsidian should write a .md file in the output dir."""
@@ -105,6 +103,26 @@ def test_export_slug_from_audio_name(tmp_path, sample_insights, sample_transcrip
     )
 
     assert "weekly_sync" in note.name
+
+
+def test_export_string_field_not_split_per_char(tmp_path, sample_transcript):
+    """A list-field returned by the LLM as a bare string must render as one bullet.
+
+    Iterating a string yields characters, so the old code emitted one bullet per letter.
+    """
+    from voxnote.pipeline.exporter import export_obsidian
+
+    note = export_obsidian(
+        insights={"resumen": "R", "decisiones": "Usar JWT", "participantes": "Carlos"},
+        transcript=sample_transcript,
+        audio_name="oneline.mp3",
+        output_dir=tmp_path,
+    )
+    content = note.read_text()
+
+    assert "- Usar JWT" in content  # one bullet, whole string
+    assert "- U\n" not in content  # NOT split into per-character bullets
+    assert "- **Carlos**" in content  # participant string handled as a single entry
 
 
 def test_export_with_diarized_transcript(tmp_path, sample_insights, sample_diarized_result):

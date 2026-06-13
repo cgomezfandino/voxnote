@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Mic,
   FileAudio,
@@ -315,7 +315,7 @@ export default function Home() {
                   Cargando configuración...
                 </div>
               ) : (
-              <AnimatePresence mode="wait">
+              <>
                 {/* ==================== RECORD TAB ==================== */}
                 {activeTab === "record" && (
                   <motion.div
@@ -409,14 +409,19 @@ export default function Home() {
 
                       {/* Error display */}
                       {error && (
-                        <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200">
-                          <AlertCircle className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
-                          <p className="text-sm text-accent">{error}</p>
+                        <div className="flex items-start gap-2 p-3 rounded-lg bg-danger-light border border-danger-border">
+                          <AlertCircle className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
+                          <p className="text-sm text-danger">{error}</p>
                         </div>
                       )}
 
                       {/* Processing steps */}
-                      {steps.length > 0 && <ProcessingSteps steps={steps} />}
+                      {steps.length > 0 && (
+                        <ProcessingSteps
+                          steps={steps}
+                          onRetry={canProcess ? handleProcess : undefined}
+                        />
+                      )}
 
                       {/* Insights display */}
                       {processedInsights && (
@@ -426,6 +431,7 @@ export default function Home() {
                       {/* Note preview */}
                       {processedNote && (
                         <NotePreview
+                          key={processedNote.filename}
                           content={processedNote.content}
                           filename={processedNote.filename}
                         />
@@ -545,6 +551,7 @@ export default function Home() {
                     {selectedNote && (
                       <div className="mt-6">
                         <NotePreview
+                          key={selectedNote.filename}
                           content={selectedNote.content}
                           filename={selectedNote.filename}
                         />
@@ -552,7 +559,7 @@ export default function Home() {
                     )}
                   </motion.div>
                 )}
-              </AnimatePresence>
+              </>
               )}
             </div>
           </div>

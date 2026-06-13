@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { Upload, FileAudio, X } from "lucide-react";
+import { useToast } from "@/hooks/useToast";
 
 const ACCEPTED_TYPES = [
   "audio/wav",
@@ -24,6 +25,7 @@ export default function FileUpload({ onFileSelected, disabled }: FileUploadProps
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
 
   const handleFile = useCallback(
     (file: File) => {
@@ -34,10 +36,13 @@ export default function FileUpload({ onFileSelected, disabled }: FileUploadProps
         setSelectedFile(file);
         onFileSelected(file);
       } else {
-        alert("Formato no soportado. Usa WAV, MP3, M4A, OGG, FLAC o WebM.");
+        showToast(
+          "Formato no soportado. Usa WAV, MP3, M4A, OGG, FLAC o WebM.",
+          "error"
+        );
       }
     },
-    [onFileSelected]
+    [onFileSelected, showToast]
   );
 
   const handleDrop = useCallback(

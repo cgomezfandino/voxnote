@@ -1,11 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Check, Loader2, AlertCircle } from "lucide-react";
+import { Check, Loader2, AlertTriangle, RotateCcw } from "lucide-react";
 import type { ProcessingStep, StepStatus } from "@/types";
 
 interface ProcessingStepsProps {
   steps: ProcessingStep[];
+  onRetry?: () => void;
 }
 
 function StepIcon({ status }: { status: StepStatus }) {
@@ -28,9 +29,13 @@ function StepIcon({ status }: { status: StepStatus }) {
       );
     case "error":
       return (
-        <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center">
-          <AlertCircle className="w-4 h-4 text-white" />
-        </div>
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="w-7 h-7 rounded-full bg-danger flex items-center justify-center shadow-[0_0_12px_var(--danger-light)]"
+        >
+          <AlertTriangle className="w-4 h-4 text-danger-foreground" />
+        </motion.div>
       );
     default:
       return (
@@ -39,7 +44,7 @@ function StepIcon({ status }: { status: StepStatus }) {
   }
 }
 
-export default function ProcessingSteps({ steps }: ProcessingStepsProps) {
+export default function ProcessingSteps({ steps, onRetry }: ProcessingStepsProps) {
   if (steps.length === 0) return null;
 
   return (
@@ -53,14 +58,14 @@ export default function ProcessingSteps({ steps }: ProcessingStepsProps) {
               {index < steps.length - 1 && (
                 <div
                   className={`w-0.5 h-8 mt-1 ${
-                    step.status === "completed" ? "bg-accent" : "bg-white/5"
+                    step.status === "completed" ? "bg-success" : "bg-white/5"
                   }`}
                 />
               )}
             </div>
 
             {/* Content */}
-            <div className="pt-0.5 pb-4">
+            <div className="pt-0.5 pb-4 flex-1">
               <p
                 className={`text-sm font-medium ${
                   step.status === "active"
@@ -68,7 +73,7 @@ export default function ProcessingSteps({ steps }: ProcessingStepsProps) {
                     : step.status === "completed"
                       ? "text-foreground"
                       : step.status === "error"
-                        ? "text-accent"
+                        ? "text-danger"
                         : "text-muted-foreground"
                 }`}
               >
@@ -78,12 +83,21 @@ export default function ProcessingSteps({ steps }: ProcessingStepsProps) {
                 <p
                   className={`text-xs mt-0.5 ${
                     step.status === "error"
-                      ? "text-accent"
+                      ? "text-danger"
                       : "text-muted-foreground"
                   }`}
                 >
                   {step.description}
                 </p>
+              )}
+              {step.status === "error" && onRetry && (
+                <button
+                  onClick={onRetry}
+                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-danger-light border border-danger-border text-danger text-xs font-semibold transition-all hover:bg-danger/15 active:scale-[0.98]"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Reintentar
+                </button>
               )}
             </div>
           </div>

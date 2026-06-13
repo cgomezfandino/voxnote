@@ -298,7 +298,7 @@ export VOXNOTE_WHISPER_MODEL=turbo
 # Idioma del audio (vacío = auto-detect)
 export VOXNOTE_LANGUAGE=es
 
-# Proveedor LLM (ollama|openai|kimi|glm|google)
+# Proveedor LLM (ollama|openai|google)
 export VOXNOTE_LLM_PROVIDER=ollama
 
 # Modelo de Ollama para insights
@@ -348,10 +348,6 @@ OPENAI_API_KEY=sk-...
 # Google Gemini
 VOXNOTE_LLM_PROVIDER=google
 GOOGLE_API_KEY=...
-
-# Kimi
-VOXNOTE_LLM_PROVIDER=kimi
-KIMI_API_KEY=...
 ```
 
 Ver [multi-provider-setup.md](multi-provider-setup.md) para más detalles.

@@ -18,8 +18,8 @@ def test_defaults(monkeypatch):
     assert s.llm_provider == "ollama"
     assert s.diarize is False
     assert s.hf_token == ""
-    assert s.diarize_min_speakers == 2
-    assert s.diarize_max_speakers == 5
+    assert s.diarize_min_speakers is None
+    assert s.diarize_max_speakers is None
     assert s.compute_type == "int8"
 
 

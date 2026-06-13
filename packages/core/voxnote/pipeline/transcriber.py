@@ -7,7 +7,9 @@ Supports two backends:
 
 from __future__ import annotations
 
+import contextlib
 import gc
+import threading
 from pathlib import Path
 
 from rich.console import Console
@@ -16,6 +18,11 @@ from voxnote.config import settings
 from voxnote.pipeline.models import Segment, TranscriptResult
 
 console = Console()
+
+# Serializes the global torch.load monkeypatch below. The patch mutates a process-global,
+# and transcription runs under asyncio.to_thread, so concurrent diarizations could see each
+# other's patched/unpatched state. Holding this lock for the patched section prevents that.
+_TORCH_LOAD_LOCK = threading.Lock()
 
 # Detect available backend at import time
 _BACKEND: str | None = None
@@ -63,6 +70,12 @@ def transcribe(
     model_name = model_name or settings.whisper_model
     should_diarize = diarize if diarize is not None else settings.diarize
 
+    if should_diarize and _BACKEND != "whisperx":
+        console.print(
+            "[yellow]Warning:[/] Diarization requires whisperX. Install it with "
+            '"pip install -e packages/core[whisperx]" — transcribing without speakers.'
+        )
+
     if _BACKEND == "whisperx":
         return _transcribe_whisperx(str(audio_path), model_name, should_diarize)
     else:
@@ -84,8 +97,6 @@ def _transcribe_whisper(audio_path: str, model_name: str) -> TranscriptResult:
     return TranscriptResult(text=text)
 
 
-import contextlib
-
 @contextlib.contextmanager
 def _patch_torch_serialization_ctx():
     """Allow pyannote checkpoint loading with PyTorch >= 2.6.
@@ -103,16 +114,15 @@ def _patch_torch_serialization_ctx():
         kwargs["weights_only"] = False  # type: ignore[arg-type]
         return _original_load(*args, **kwargs)
 
-    torch.load = _patched_load  # type: ignore[assignment]
-    try:
-        yield
-    finally:
-        torch.load = _original_load  # type: ignore[assignment]
+    with _TORCH_LOAD_LOCK:
+        torch.load = _patched_load  # type: ignore[assignment]
+        try:
+            yield
+        finally:
+            torch.load = _original_load  # type: ignore[assignment]
 
 
-def _transcribe_whisperx(
-    audio_path: str, model_name: str, diarize: bool
-) -> TranscriptResult:
+def _transcribe_whisperx(audio_path: str, model_name: str, diarize: bool) -> TranscriptResult:
     """Transcribe using whisperX with optional alignment and diarization."""
     import whisperx
 
@@ -127,7 +137,10 @@ def _transcribe_whisperx(
 
     # Step 1: Transcribe
     model = whisperx.load_model(
-        model_name, device=device, compute_type=compute_type, language=language,
+        model_name,
+        device=device,
+        compute_type=compute_type,
+        language=language,
     )
     audio = whisperx.load_audio(audio_path)
     result = model.transcribe(audio, batch_size=16, language=language)
@@ -139,12 +152,8 @@ def _transcribe_whisperx(
     # Step 2: Align (word-level timestamps)
     lang_code = language or result.get("language", "es")
     try:
-        model_align, metadata = whisperx.load_align_model(
-            language_code=lang_code, device=device
-        )
-        result = whisperx.align(
-            result["segments"], model_align, metadata, audio, device=device
-        )
+        model_align, metadata = whisperx.load_align_model(language_code=lang_code, device=device)
+        result = whisperx.align(result["segments"], model_align, metadata, audio, device=device)
         del model_align
         gc.collect()
     except Exception as e:
@@ -161,9 +170,11 @@ def _transcribe_whisperx(
             )
         else:
             console.print("[bold blue]Running speaker diarization…[/]")
+            from whisperx.diarize import DiarizationPipeline
+
             with _patch_torch_serialization_ctx():
-                diarize_model = whisperx.DiarizationPipeline(
-                    use_auth_token=hf_token, device=device
+                diarize_model = DiarizationPipeline(
+                    model_name=settings.diarize_model, token=hf_token, device=device
                 )
                 diarize_segments = diarize_model(
                     audio,
@@ -178,12 +189,14 @@ def _transcribe_whisperx(
     # Build TranscriptResult from segments
     segments: list[Segment] = []
     for seg in result.get("segments", []):
-        segments.append(Segment(
-            text=seg.get("text", ""),
-            start=seg.get("start", 0.0),
-            end=seg.get("end", 0.0),
-            speaker=seg.get("speaker") if has_speakers else None,
-        ))
+        segments.append(
+            Segment(
+                text=seg.get("text", ""),
+                start=seg.get("start", 0.0),
+                end=seg.get("end", 0.0),
+                speaker=seg.get("speaker") if has_speakers else None,
+            )
+        )
 
     full_text = " ".join(s.text.strip() for s in segments if s.text.strip())
     tr = TranscriptResult(text=full_text, segments=segments, has_speakers=has_speakers)

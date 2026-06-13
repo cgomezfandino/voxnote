@@ -1,7 +1,6 @@
 """Shared fixtures for all tests."""
 
 import pytest
-
 from voxnote.pipeline.models import Segment, TranscriptResult
 
 
@@ -9,7 +8,10 @@ from voxnote.pipeline.models import Segment, TranscriptResult
 def sample_insights() -> dict:
     """A realistic insights dict as returned by Ollama."""
     return {
-        "resumen": "Se discutió el lanzamiento del MVP para marzo. El equipo acordó priorizar auth y dashboard.",
+        "resumen": (
+            "Se discutió el lanzamiento del MVP para marzo. "
+            "El equipo acordó priorizar auth y dashboard."
+        ),
         "decisiones": [
             "Usar JWT para autenticación",
             "Lanzar MVP el 15 de marzo",

@@ -36,16 +36,22 @@ class TranscriptResult:
         current_speaker: str | None = None
         current_parts: list[str] = []
 
+        def flush() -> None:
+            # Emit the pending block whenever there is text, even when the speaker is
+            # unknown (diarization leaves leading silence/overlap segments with no label).
+            # Guarding on the speaker instead of the content silently drops that text.
+            if current_parts:
+                label = current_speaker or "SPEAKER_?"
+                lines.append(f"[{label}]: {' '.join(current_parts)}")
+
         for seg in self.segments:
             if seg.speaker != current_speaker:
-                if current_speaker is not None:
-                    lines.append(f"[{current_speaker}]: {' '.join(current_parts)}")
+                flush()
                 current_speaker = seg.speaker
                 current_parts = [seg.text.strip()]
             else:
                 current_parts.append(seg.text.strip())
 
-        if current_speaker and current_parts:
-            lines.append(f"[{current_speaker}]: {' '.join(current_parts)}")
+        flush()
 
         return "\n\n".join(lines)

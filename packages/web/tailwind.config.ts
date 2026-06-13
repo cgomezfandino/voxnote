@@ -33,6 +33,12 @@ const config: Config = {
           DEFAULT: "var(--success)",
           light: "var(--success-light)",
         },
+        danger: {
+          DEFAULT: "var(--danger)",
+          foreground: "var(--danger-foreground)",
+          light: "var(--danger-light)",
+          border: "var(--danger-border)",
+        },
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],

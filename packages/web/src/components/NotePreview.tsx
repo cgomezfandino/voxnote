@@ -1,8 +1,24 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { FileText, Copy, Check, ChevronDown, ChevronRight } from "lucide-react";
-import { useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  FileText,
+  Copy,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Download,
+  FileType2,
+  Loader2,
+  AlertCircle,
+  Users,
+} from "lucide-react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import ReactMarkdown from "react-markdown";
+import type { Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+import { exportNoteDocx, renameSpeakers } from "@/lib/api";
 
 interface NotePreviewProps {
   content: string;
@@ -19,7 +35,139 @@ function stripFrontmatter(content: string): string {
   return content;
 }
 
-/** Collapsible section for <details>/<summary> blocks. */
+/** Strip leading emoji/symbols so headings read cleanly. */
+function cleanTitle(text: string): string {
+  // Drop leading non-letter/digit chars (emoji, symbols). À-ÿ keeps Spanish accents.
+  return text.replace(/^[^A-Za-zÀ-ÿ0-9]+/, "").trim() || text.trim();
+}
+
+/**
+ * Pull the transcript out of the note so it can be shown in a collapsible block.
+ * The transcript uses `[SPEAKER_00]:` lines that Markdown would mis-parse as link
+ * definitions, so it is rendered as plain text, not Markdown.
+ */
+function extractTranscript(md: string): {
+  main: string;
+  transcript: string | null;
+  title: string;
+} {
+  const details = md.match(/<details>([\s\S]*?)<\/details>/i);
+  if (details) {
+    const inner = details[1];
+    const summary = inner.match(/<summary>([\s\S]*?)<\/summary>/i);
+    const title = summary
+      ? cleanTitle(summary[1].replace(/<\/?[^>]+>/g, "").trim())
+      : "Transcripción completa";
+    const transcript = inner.replace(/<summary>[\s\S]*?<\/summary>/i, "").trim();
+    return { main: md.replace(details[0], "").trim(), transcript, title };
+  }
+
+  const heading = md.match(/^##\s+.*transcripci[oó]n.*$/im);
+  if (heading) {
+    const idx = md.indexOf(heading[0]);
+    const after = md.slice(idx + heading[0].length);
+    const nextH2 = after.search(/^##\s+/m);
+    const transcript = (nextH2 === -1 ? after : after.slice(0, nextH2)).trim();
+    const main = (md.slice(0, idx) + (nextH2 === -1 ? "" : after.slice(nextH2))).trim();
+    return { main, transcript, title: cleanTitle(heading[0].replace(/^##\s+/, "")) };
+  }
+
+  return { main: md, transcript: null, title: "Transcripción completa" };
+}
+
+const markdownComponents: Components = {
+  h1: ({ children }) => (
+    <h1 className="text-lg sm:text-xl font-bold text-foreground mt-6 mb-3 first:mt-0">
+      {children}
+    </h1>
+  ),
+  h2: ({ children }) => (
+    <h2 className="text-base font-semibold text-foreground mt-6 mb-2.5 pb-1.5 border-b border-white/5 first:mt-0">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="text-sm font-semibold text-foreground mt-4 mb-1.5">{children}</h3>
+  ),
+  p: ({ children }) => (
+    <p className="text-sm text-foreground/90 leading-relaxed mb-3">{children}</p>
+  ),
+  ul: ({ children, className }) => (
+    <ul
+      className={
+        className?.includes("contains-task-list")
+          ? "space-y-2 mb-4"
+          : "list-disc list-outside ml-5 space-y-1.5 mb-4 marker:text-primary"
+      }
+    >
+      {children}
+    </ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="list-decimal list-outside ml-5 space-y-1.5 mb-4 marker:text-primary marker:font-semibold">
+      {children}
+    </ol>
+  ),
+  li: ({ children, className }) =>
+    className?.includes("task-list-item") ? (
+      <li className="flex items-start gap-2.5 text-sm text-foreground/90 list-none leading-relaxed">
+        {children}
+      </li>
+    ) : (
+      <li className="text-sm text-foreground/90 leading-relaxed pl-1">{children}</li>
+    ),
+  input: ({ checked }) => (
+    <span
+      className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
+        checked ? "bg-success/20 border-success" : "border-white/25 bg-white/5"
+      }`}
+    >
+      {checked && <Check className="w-3 h-3 text-success" />}
+    </span>
+  ),
+  blockquote: ({ children }) => (
+    <blockquote className="border-l-2 border-primary/40 bg-primary/5 rounded-r px-3 py-2 text-sm text-muted-foreground mb-4">
+      {children}
+    </blockquote>
+  ),
+  strong: ({ children }) => (
+    <strong className="font-semibold text-foreground">{children}</strong>
+  ),
+  em: ({ children }) => <em className="italic">{children}</em>,
+  a: ({ children, href }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="text-primary underline decoration-primary/40 hover:decoration-primary"
+    >
+      {children}
+    </a>
+  ),
+  code: ({ children }) => (
+    <code className="px-1.5 py-0.5 rounded bg-white/5 text-primary text-[0.8em] font-mono">
+      {children}
+    </code>
+  ),
+  hr: () => <hr className="border-white/5 my-5" />,
+  table: ({ children }) => (
+    <div className="overflow-x-auto mb-4 rounded-lg border border-white/10">
+      <table className="w-full text-sm border-collapse">{children}</table>
+    </div>
+  ),
+  th: ({ children }) => (
+    <th className="text-left font-semibold text-foreground bg-white/5 px-3 py-2 border-b border-white/10">
+      {children}
+    </th>
+  ),
+  td: ({ children }) => (
+    <td className="px-3 py-2 border-b border-white/5 text-foreground/90 align-top">
+      {children}
+    </td>
+  ),
+};
+
+/** Collapsible section for the transcript block. */
 function CollapsibleSection({
   title,
   children,
@@ -30,7 +178,7 @@ function CollapsibleSection({
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="border border-border rounded-lg mt-3 overflow-hidden">
+    <div className="border border-border rounded-lg mt-4 overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center gap-2 px-3 py-2.5 bg-muted/50 hover:bg-muted transition-colors text-left"
@@ -46,7 +194,7 @@ function CollapsibleSection({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="px-3 py-3 border-t border-border max-h-64 overflow-y-auto"
+          className="px-3 py-3 border-t border-border max-h-72 overflow-y-auto"
         >
           {children}
         </motion.div>
@@ -56,239 +204,99 @@ function CollapsibleSection({
 }
 
 export default function NotePreview({ content, filename }: NotePreviewProps) {
+  const [noteContent, setNoteContent] = useState(content);
   const [copied, setCopied] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState(false);
+  const [showRename, setShowRename] = useState(false);
+  const [names, setNames] = useState<Record<string, string>>({});
+  const [renaming, setRenaming] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Keep local content in sync when a different note is opened.
+  useEffect(() => setNoteContent(content), [content]);
+
+  const speakers = useMemo(
+    () => Array.from(new Set(noteContent.match(/SPEAKER_\d+/g) ?? [])).sort(),
+    [noteContent]
+  );
 
   const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(content);
+    await navigator.clipboard.writeText(noteContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [content]);
+  }, [noteContent]);
 
-  const body = stripFrontmatter(content);
-
-  // Simple markdown-to-html renderer for preview
-  const renderMarkdown = (md: string) => {
-    const elements: React.ReactNode[] = [];
-    let listItems: string[] = [];
-    let i = 0;
-    const lines = md.split("\n");
-
-    const flushList = () => {
-      if (listItems.length > 0) {
-        elements.push(
-          <ul
-            key={`list-${elements.length}`}
-            className="list-disc list-inside space-y-0.5 mb-3"
-          >
-            {listItems.map((item, j) => (
-              <li key={j} className="text-sm text-foreground">
-                {item}
-              </li>
-            ))}
-          </ul>
-        );
-        listItems = [];
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
       }
     };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [menuOpen]);
 
-    while (i < lines.length) {
-      const trimmed = lines[i].trim();
+  const triggerDownload = useCallback((blob: Blob, name: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, []);
 
-      // Handle <details> blocks → collapsible section
-      if (trimmed.startsWith("<details")) {
-        flushList();
-        // Extract summary text
-        let summaryText = "Ver contenido";
-        i++;
-        while (i < lines.length) {
-          const line = lines[i].trim();
-          if (line.startsWith("<summary>")) {
-            summaryText = line
-              .replace(/<\/?summary>/g, "")
-              .replace(/<\/?b>/g, "")
-              .trim();
-            i++;
-            break;
-          }
-          if (line === "</details>") break;
-          i++;
-        }
+  const handleDownloadMarkdown = useCallback(() => {
+    triggerDownload(
+      new Blob([noteContent], { type: "text/markdown;charset=utf-8" }),
+      filename.endsWith(".md") ? filename : `${filename}.md`
+    );
+    setMenuOpen(false);
+  }, [noteContent, filename, triggerDownload]);
 
-        // Collect inner content until </details>
-        const innerLines: string[] = [];
-        while (i < lines.length) {
-          const line = lines[i].trim();
-          if (line === "</details>") {
-            i++;
-            break;
-          }
-          innerLines.push(lines[i]);
-          i++;
-        }
-
-        const innerContent = innerLines.join("\n").trim();
-        elements.push(
-          <CollapsibleSection
-            key={`details-${elements.length}`}
-            title={summaryText}
-          >
-            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-              {innerContent}
-            </p>
-          </CollapsibleSection>
-        );
-        continue;
-      }
-
-      // Skip standalone HTML tags
-      if (
-        trimmed.startsWith("</") ||
-        trimmed === "<summary>" ||
-        trimmed === "</summary>"
-      ) {
-        i++;
-        continue;
-      }
-
-      // Headings
-      if (trimmed.startsWith("## ")) {
-        flushList();
-        const headingText = trimmed.slice(3);
-
-        // Auto-collapse "Transcripción Completa" heading
-        if (/transcripci[oó]n/i.test(headingText)) {
-          const innerLines: string[] = [];
-          i++;
-          while (i < lines.length) {
-            // Stop if we hit another h2 heading or end of content
-            if (lines[i].trim().startsWith("## ")) break;
-            innerLines.push(lines[i]);
-            i++;
-          }
-          const innerContent = innerLines.join("\n").trim();
-          if (innerContent) {
-            elements.push(
-              <CollapsibleSection
-                key={`transcript-${elements.length}`}
-                title={headingText}
-              >
-                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                  {innerContent}
-                </p>
-              </CollapsibleSection>
-            );
-          }
-          continue;
-        }
-
-        elements.push(
-          <h2
-            key={`h2-${elements.length}`}
-            className="text-base font-semibold text-foreground mt-4 mb-2"
-          >
-            {headingText}
-          </h2>
-        );
-        i++;
-        continue;
-      }
-      if (trimmed.startsWith("### ")) {
-        flushList();
-        elements.push(
-          <h3
-            key={`h3-${elements.length}`}
-            className="text-sm font-semibold text-foreground mt-3 mb-1.5"
-          >
-            {trimmed.slice(4)}
-          </h3>
-        );
-        i++;
-        continue;
-      }
-      if (trimmed.startsWith("# ")) {
-        flushList();
-        elements.push(
-          <h1
-            key={`h1-${elements.length}`}
-            className="text-lg font-bold text-foreground mt-4 mb-2"
-          >
-            {trimmed.slice(2)}
-          </h1>
-        );
-        i++;
-        continue;
-      }
-
-      // List items
-      if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-        listItems.push(trimmed.slice(2));
-        i++;
-        continue;
-      }
-
-      // Numbered list
-      if (/^\d+\.\s/.test(trimmed)) {
-        listItems.push(trimmed.replace(/^\d+\.\s/, ""));
-        i++;
-        continue;
-      }
-
-      // Checkbox items (- [ ] task)
-      if (trimmed.startsWith("- [ ] ") || trimmed.startsWith("- [x] ")) {
-        const checked = trimmed.startsWith("- [x] ");
-        listItems.push((checked ? "\u2611 " : "\u2610 ") + trimmed.slice(6));
-        i++;
-        continue;
-      }
-
-      // Blockquote
-      if (trimmed.startsWith("> ")) {
-        flushList();
-        elements.push(
-          <blockquote
-            key={`bq-${elements.length}`}
-            className="border-l-2 border-primary/30 pl-3 text-sm text-muted-foreground italic mb-3"
-          >
-            {trimmed.slice(2)}
-          </blockquote>
-        );
-        i++;
-        continue;
-      }
-
-      // Horizontal rule
-      if (trimmed === "---" || trimmed === "***") {
-        flushList();
-        elements.push(
-          <hr key={`hr-${elements.length}`} className="border-border my-4" />
-        );
-        i++;
-        continue;
-      }
-
-      // Empty line
-      if (trimmed === "") {
-        flushList();
-        i++;
-        continue;
-      }
-
-      // Paragraph
-      flushList();
-      elements.push(
-        <p
-          key={`p-${elements.length}`}
-          className="text-sm text-foreground mb-2"
-        >
-          {trimmed}
-        </p>
-      );
-      i++;
+  const handleDownloadWord = useCallback(async () => {
+    setDownloading(true);
+    setDownloadError(false);
+    try {
+      const blob = await exportNoteDocx(noteContent, filename);
+      triggerDownload(blob, `${filename.replace(/\.md$/, "")}.docx`);
+      setMenuOpen(false);
+    } catch {
+      setDownloadError(true);
+      setTimeout(() => setDownloadError(false), 4000);
+    } finally {
+      setDownloading(false);
     }
+  }, [noteContent, filename, triggerDownload]);
 
-    flushList();
-    return elements;
-  };
+  const handleRename = useCallback(async () => {
+    const mapping: Record<string, string> = {};
+    for (const sp of speakers) {
+      const value = (names[sp] ?? "").trim();
+      if (value) mapping[sp] = value;
+    }
+    if (Object.keys(mapping).length === 0) {
+      setShowRename(false);
+      return;
+    }
+    setRenaming(true);
+    try {
+      const updated = await renameSpeakers(filename, mapping);
+      setNoteContent(updated.content);
+      setNames({});
+      setShowRename(false);
+    } catch {
+      // keep the panel open so the user can retry
+    } finally {
+      setRenaming(false);
+    }
+  }, [speakers, names, filename]);
+
+  const { main, transcript, title } = extractTranscript(stripFrontmatter(noteContent));
 
   return (
     <motion.div
@@ -297,40 +305,156 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
       className="card"
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
             <FileText className="w-4.5 h-4.5 text-primary" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h3 className="font-bold uppercase tracking-wider text-xs text-slate-300">
               Nota Generada
             </h3>
-            <p className="text-[10px] text-muted-foreground font-mono mt-0.5">{filename}</p>
+            <p className="text-[10px] text-muted-foreground font-mono mt-0.5 truncate">
+              {filename}
+            </p>
           </div>
         </div>
 
-        <button
-          onClick={handleCopy}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-slate-900/60 border border-white/5 hover:bg-white/5 text-slate-300 transition-colors"
-        >
-          {copied ? (
-            <>
-              <Check className="w-3.5 h-3.5 text-accent" />
-              Copiado
-            </>
-          ) : (
-            <>
-              <Copy className="w-3.5 h-3.5 text-slate-400" />
-              Copiar
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-slate-900/60 border border-white/5 hover:bg-white/5 text-slate-300 transition-colors"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-accent" />
+                Copiado
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5 text-slate-400" />
+                Copiar
+              </>
+            )}
+          </button>
+
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              disabled={downloading}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-primary/15 border border-primary/30 hover:bg-primary/25 text-primary transition-colors disabled:opacity-60"
+            >
+              {downloading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : downloadError ? (
+                <AlertCircle className="w-3.5 h-3.5 text-danger" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
+              Descargar
+              <ChevronDown className="w-3 h-3" />
+            </button>
+
+            <AnimatePresence>
+              {menuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="absolute right-0 mt-1.5 w-56 z-20 rounded-lg border border-white/10 bg-slate-900/95 backdrop-blur shadow-xl overflow-hidden"
+                >
+                  <button
+                    onClick={handleDownloadWord}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-sm text-slate-200 hover:bg-white/5 transition-colors"
+                  >
+                    <FileType2 className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span>
+                      Documento Word
+                      <span className="block text-[10px] text-muted-foreground">
+                        .docx · para compartir e imprimir
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    onClick={handleDownloadMarkdown}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-sm text-slate-200 hover:bg-white/5 transition-colors border-t border-white/5"
+                  >
+                    <FileText className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    <span>
+                      Markdown
+                      <span className="block text-[10px] text-muted-foreground">
+                        .md · para Obsidian
+                      </span>
+                    </span>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
 
+      {/* Rename speakers (only when diarization labels are present) */}
+      {speakers.length > 0 && (
+        <div className="mb-4">
+          <button
+            onClick={() => setShowRename((s) => !s)}
+            className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
+          >
+            <Users className="w-3.5 h-3.5" />
+            {showRename ? "Ocultar" : "Renombrar hablantes"} ({speakers.length})
+          </button>
+
+          {showRename && (
+            <div className="mt-3 p-3.5 rounded-lg bg-slate-900/40 border border-white/5 space-y-2.5">
+              {speakers.map((sp) => (
+                <div key={sp} className="flex items-center gap-2.5">
+                  <span className="text-xs font-mono text-muted-foreground w-24 flex-shrink-0">
+                    {sp}
+                  </span>
+                  <span className="text-muted-foreground">→</span>
+                  <input
+                    value={names[sp] ?? ""}
+                    onChange={(e) =>
+                      setNames((n) => ({ ...n, [sp]: e.target.value }))
+                    }
+                    placeholder="Nombre real…"
+                    className="flex-1 bg-slate-950/60 border border-white/10 rounded-md px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none"
+                  />
+                </div>
+              ))}
+              <div className="flex justify-end pt-1">
+                <button
+                  onClick={handleRename}
+                  disabled={renaming}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-primary/15 border border-primary/30 hover:bg-primary/25 text-primary transition-colors disabled:opacity-60"
+                >
+                  {renaming ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
+                  Aplicar nombres
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Content */}
-      <div className="bg-slate-950/40 rounded-lg p-4 max-h-[500px] overflow-y-auto border border-white/5">
-        {renderMarkdown(body)}
+      <div className="bg-slate-950/40 rounded-lg p-4 sm:p-5 max-h-[60vh] overflow-y-auto border border-white/5">
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+          {main}
+        </ReactMarkdown>
+
+        {transcript && (
+          <CollapsibleSection title={title}>
+            <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
+              {transcript}
+            </p>
+          </CollapsibleSection>
+        )}
       </div>
     </motion.div>
   );

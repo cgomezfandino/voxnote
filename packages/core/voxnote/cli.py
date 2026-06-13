@@ -19,7 +19,13 @@ def main() -> None:
 
 @main.command()
 @click.option("-o", "--output", type=click.Path(), default=None, help="Output .wav path")
-@click.option("-d", "--duration", type=float, default=None, help="Recording duration in seconds (omit for manual stop)")
+@click.option(
+    "-d",
+    "--duration",
+    type=float,
+    default=None,
+    help="Recording duration in seconds (omit for manual stop)",
+)
 def record(output: str | None, duration: float | None) -> None:
     """Record audio from the microphone."""
     from voxnote.pipeline.recorder import record_audio
@@ -33,7 +39,9 @@ def record(output: str | None, duration: float | None) -> None:
 
 @main.command()
 @click.argument("audio", type=click.Path(exists=True))
-@click.option("-m", "--model", default=None, help=f"Whisper model (default: {settings.whisper_model})")
+@click.option(
+    "-m", "--model", default=None, help=f"Whisper model (default: {settings.whisper_model})"
+)
 @click.option("--diarize/--no-diarize", default=None, help="Enable speaker diarization")
 def transcribe(audio: str, model: str | None, diarize: bool | None) -> None:
     """Transcribe an audio file with Whisper."""
@@ -49,7 +57,9 @@ def transcribe(audio: str, model: str | None, diarize: bool | None) -> None:
 @main.command()
 @click.argument("audio", type=click.Path(exists=True))
 @click.option("-m", "--model", default=None, help="Whisper model override")
-@click.option("-o", "--output-dir", type=click.Path(), default=None, help="Output directory for the note")
+@click.option(
+    "-o", "--output-dir", type=click.Path(), default=None, help="Output directory for the note"
+)
 @click.option("--diarize/--no-diarize", default=None, help="Enable speaker diarization")
 def process(audio: str, model: str | None, output_dir: str | None, diarize: bool | None) -> None:
     """Run the full pipeline: transcribe → extract insights → export note."""

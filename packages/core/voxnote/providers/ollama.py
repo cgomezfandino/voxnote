@@ -7,28 +7,9 @@ import requests
 from rich.console import Console
 
 from voxnote.config import settings
-from voxnote.providers.base import LLMProvider, build_transcript_section
+from voxnote.providers.base import LLMProvider, build_insights_prompt, truncate_transcript
 
 console = Console()
-
-PROMPT_TEMPLATE = """\
-Analiza esta transcripción de reunión y responde SOLO con un JSON válido \
-(sin markdown, sin backticks) con esta estructura exacta:
-
-{{
-  "resumen": "resumen ejecutivo en 3-5 oraciones",
-  "decisiones": ["lista de decisiones tomadas"],
-  "action_items": [
-    {{"tarea": "descripción", "responsable": "nombre o TBD", "deadline": "fecha o TBD"}}
-  ],
-  "insights": ["observaciones clave o puntos importantes"],
-  "preguntas_abiertas": ["preguntas sin resolver"],
-  "proximos_pasos": ["siguientes pasos acordados"]
-}}
-
-TRANSCRIPCIÓN:
-{transcript_section}
-"""
 
 MAX_TRANSCRIPT_CHARS = 4000
 
@@ -40,14 +21,11 @@ class OllamaProvider(LLMProvider):
     def name(self) -> str:
         return f"Ollama ({settings.ollama_model})"
 
-
-
     def extract_insights(self, transcript: str) -> dict:
         """Extract insights using Ollama."""
         console.print(f"[bold blue]Extracting insights[/] with {self.name}…")
 
-        section = build_transcript_section(transcript[:MAX_TRANSCRIPT_CHARS])
-        prompt = PROMPT_TEMPLATE.format(transcript_section=section)
+        prompt = build_insights_prompt(truncate_transcript(transcript, MAX_TRANSCRIPT_CHARS))
 
         headers = {}
         if settings.ollama_api_key:
@@ -62,7 +40,7 @@ class OllamaProvider(LLMProvider):
                 "stream": False,
                 "options": {
                     "temperature": 0.1,
-                    "num_predict": 2000,  # Allow longer responses
+                    "num_predict": 3000,  # richer structure needs more tokens
                 },
             },
             timeout=settings.ollama_timeout,

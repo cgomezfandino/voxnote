@@ -20,7 +20,11 @@
   --accent-light: rgba(0, 242, 152, 0.15);
   --success: #00F298;
   --success-light: rgba(0, 242, 152, 0.1);
-  
+  --danger: #F4495F;
+  --danger-foreground: #FFFFFF;
+  --danger-light: rgba(244, 73, 95, 0.12);
+  --danger-border: rgba(244, 73, 95, 0.3);
+
   /* Layout custom variables */
   --card-bg: rgba(17, 22, 37, 0.55);
   --card-border: rgba(255, 255, 255, 0.05);
@@ -67,7 +71,11 @@
   --accent-light: #FEF3C7;
   --success: #10B981;
   --success-light: #ECFDF5;
-  
+  --danger: #DC2626;
+  --danger-foreground: #FFFFFF;
+  --danger-light: #FEF2F2;
+  --danger-border: #FECACA;
+
   /* Layout custom variables */
   --card-bg: #FFFFFF;
   --card-border: #E2E8F0;
