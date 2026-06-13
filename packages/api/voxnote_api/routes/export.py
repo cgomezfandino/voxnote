@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 
 from fastapi import APIRouter, HTTPException
@@ -11,6 +12,7 @@ from fastapi.responses import Response
 from voxnote_api.schemas import DocxExportRequest, ExportRequest, ExportResponse
 
 router = APIRouter()
+logger = logging.getLogger("voxnote_api")
 
 DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
@@ -36,6 +38,7 @@ async def export_note(request: ExportRequest) -> ExportResponse:
             path=str(note_path),
         )
     except Exception as e:
+        logger.exception("Obsidian export failed")
         raise HTTPException(
             status_code=500, detail="Export failed. Check server logs for details."
         ) from e
@@ -49,6 +52,7 @@ async def export_note_docx(request: DocxExportRequest) -> Response:
 
         data = await asyncio.to_thread(markdown_to_docx, request.content)
     except Exception as e:
+        logger.exception("Word (.docx) export failed")
         raise HTTPException(
             status_code=500, detail="Word export failed. Check server logs for details."
         ) from e

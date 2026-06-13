@@ -104,6 +104,16 @@ def test_markdown_to_docx_sanitizes_invalid_xml_chars() -> None:
     assert "caracteres de control" in text
 
 
+def test_markdown_to_docx_flattens_links() -> None:
+    # Markdown links become plain label text (the URL, incl. javascript:, is dropped).
+    md = "## Resumen\n\nVer [el panel](https://example.com/x) y [clic](javascript:alert(1)).\n"
+    text = _docx_text(markdown_to_docx(md))
+    assert "el panel" in text
+    assert "clic" in text
+    assert "https://example.com" not in text
+    assert "javascript:" not in text
+
+
 def test_markdown_to_docx_includes_enriched_sections() -> None:
     # The Word export must carry the speaker-aware enriched sections too.
     md = (

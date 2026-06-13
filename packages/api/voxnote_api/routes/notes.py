@@ -118,7 +118,10 @@ async def rename_speakers(filename: str, request: RenameSpeakersRequest) -> Note
         # Only replace genuine diarization labels, with a sanitized name.
         if not re.fullmatch(r"SPEAKER_\d+", label):
             continue
-        clean = re.sub(r"[\x00-\x1f]", "", str(name)).strip()[:60]
+        clean = re.sub(r"[\x00-\x1f]", "", str(name))
+        # Strip inline Markdown / HTML metacharacters so a "name" cannot inject a link,
+        # code span, wikilink or tag that a non-React viewer (e.g. Obsidian) would render.
+        clean = re.sub(r"[`\[\]()<>|*_~#]", "", clean).strip()[:60]
         if not clean:
             continue
         content = re.sub(rf"\b{re.escape(label)}\b", clean, content)

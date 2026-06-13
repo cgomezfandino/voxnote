@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
+import re
 from pathlib import Path
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
@@ -11,6 +13,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from voxnote_api.schemas import SegmentResponse, TranscriptionResponse
 
 router = APIRouter()
+logger = logging.getLogger("voxnote_api")
 
 # Cap uploads to avoid disk-exhaustion / OOM DoS. Override via VOXNOTE_MAX_UPLOAD_MB.
 MAX_UPLOAD_MB = int(os.getenv("VOXNOTE_MAX_UPLOAD_MB", "500"))
@@ -46,7 +49,10 @@ async def transcribe_audio(
         pass
 
     orig_name = Path(audio.filename or "recording.wav").name
-    if orig_name == "blob" or not orig_name:
+    # Sanitize: the uploaded name reaches the note's YAML frontmatter, so strip anything
+    # but filename-safe characters (newlines/metacharacters would corrupt the frontmatter).
+    orig_name = re.sub(r"[^A-Za-z0-9_.-]", "_", orig_name)
+    if orig_name in ("blob", "") or not orig_name.strip("_"):
         orig_name = f"grabacion{suffix}"
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -71,6 +77,7 @@ async def transcribe_audio(
             f.write(content)
         os.chmod(saved_path, 0o600)
     except OSError as e:
+        logger.exception("Failed to save uploaded audio to disk")
         raise HTTPException(status_code=500, detail="Failed to save audio file to disk.") from e
 
     try:
@@ -103,6 +110,7 @@ async def transcribe_audio(
             audio_filename=saved_filename,
         )
     except Exception as e:
+        logger.exception("Transcription failed")
         raise HTTPException(
             status_code=500,
             detail="Transcription failed. Check server logs for details.",

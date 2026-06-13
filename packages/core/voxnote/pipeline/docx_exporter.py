@@ -1,9 +1,12 @@
 """Render a Voxnote Markdown note as a Word (.docx) document.
 
 The note Markdown is produced by :mod:`voxnote.pipeline.exporter`, so its structure is
-predictable; this converter also handles any historical note (stored only as Markdown).
-Headings, lists, task checkboxes and the transcript section become a styled Word document
-aimed at non-technical readers.
+predictable. This converter targets that structure: headings, bullet/numbered lists, task
+checkboxes (rendered as a table), block quotes, and the transcript section become a styled
+Word document aimed at non-technical readers. Inline emphasis, code spans, wikilinks and
+Markdown links are flattened to plain text. Unsupported constructs (fenced code blocks,
+Markdown tables, deeply nested lists) degrade gracefully to plain paragraphs rather than
+being rendered faithfully.
 
 All user/LLM-derived text is sanitized before insertion (removing characters that are
 invalid in XML), which both prevents corrupt ``.docx`` output and is the export-side of
@@ -32,10 +35,12 @@ def _clean(text: str) -> str:
 
 
 def _inline(text: str) -> str:
-    """Remove Markdown emphasis/code/wikilink syntax for clean Word text."""
+    """Flatten Markdown emphasis/code/wikilink/link syntax to clean Word text."""
     text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
     text = re.sub(r"`([^`]+)`", r"\1", text)
     text = re.sub(r"\[\[([^\]]+)\]\]", r"\1", text)
+    # [label](url) -> label  (also neutralizes [x](javascript:...) style links)
+    text = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", text)
     return text
 
 

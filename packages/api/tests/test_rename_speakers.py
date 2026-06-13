@@ -48,6 +48,22 @@ def test_rename_speakers_ignores_bad_keys_and_sanitizes(client: TestClient, tmp_
     assert "HACK" not in content  # non-speaker key ignored
 
 
+def test_rename_speakers_strips_markdown_metachars(client: TestClient, tmp_path) -> None:
+    """A name cannot smuggle a link/code-span/tag that a non-React viewer would render."""
+    note = tmp_path / "rename-md.md"
+    note.write_text("[SPEAKER_00]: Hola.\n", encoding="utf-8")
+    with patch(PATCH_TARGET, return_value=tmp_path):
+        res = client.post(
+            "/api/notes/rename-md.md/speakers",
+            json={"mapping": {"SPEAKER_00": "Carlos [x](http://evil) `code`"}},
+        )
+    assert res.status_code == 200
+    content = res.json()["content"]
+    assert "Carlos" in content
+    assert "](" not in content  # markdown link syntax neutralized
+    assert "`" not in content  # code span neutralized
+
+
 def test_rename_speakers_rejects_non_md(client: TestClient, tmp_path) -> None:
     """A non-.md filename is rejected before any filesystem access."""
     with patch(PATCH_TARGET, return_value=tmp_path):

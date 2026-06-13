@@ -1,5 +1,6 @@
 """Base class for LLM providers."""
 
+import re
 from abc import ABC, abstractmethod
 
 from rich.console import Console
@@ -59,7 +60,8 @@ def build_transcript_section(transcript: str, lang: str = "es") -> str:
 
     The transcript is untrusted, so it is wrapped in ``<transcripcion>`` delimiters and
     preceded by an instruction telling the model to treat it strictly as data. Any
-    attempt to close the delimiter from inside the transcript is neutralized.
+    attempt to close the delimiter from inside the transcript is neutralized (case- and
+    whitespace-insensitive: ``</TRANSCRIPCION>``, ``< / transcripcion >`` etc.).
     """
     has_speakers = "[SPEAKER_" in transcript
     if lang == "zh":
@@ -68,8 +70,11 @@ def build_transcript_section(transcript: str, lang: str = "es") -> str:
     else:
         context = SPEAKER_CONTEXT_ES if has_speakers else ""
         notice = _UNTRUSTED_NOTICE_ES
-    # Neutralize any attempt to close the delimiter from inside the transcript.
-    safe = transcript.replace("</transcripcion>", "</ transcripcion>")
+    # Neutralize any attempt to close the delimiter from inside the transcript, tolerating
+    # case and stray whitespace (</TRANSCRIPCION>, < / transcripcion >, …).
+    safe = re.sub(
+        r"<\s*/\s*transcripcion\s*>", "</ transcripcion>", transcript, flags=re.IGNORECASE
+    )
     return f"{notice}{context}<transcripcion>\n{safe}\n</transcripcion>"
 
 
