@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Mic,
   FileAudio,
@@ -315,7 +315,7 @@ export default function Home() {
                   Cargando configuración...
                 </div>
               ) : (
-              <AnimatePresence mode="wait">
+              <>
                 {/* ==================== RECORD TAB ==================== */}
                 {activeTab === "record" && (
                   <motion.div
@@ -557,7 +557,7 @@ export default function Home() {
                     )}
                   </motion.div>
                 )}
-              </AnimatePresence>
+              </>
               )}
             </div>
           </div>

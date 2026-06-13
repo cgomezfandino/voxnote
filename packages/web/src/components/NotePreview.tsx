@@ -11,13 +11,14 @@ import {
   FileType2,
   Loader2,
   AlertCircle,
+  Users,
 } from "lucide-react";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { exportNoteDocx } from "@/lib/api";
+import { exportNoteDocx, renameSpeakers } from "@/lib/api";
 
 interface NotePreviewProps {
   content: string;
@@ -203,17 +204,29 @@ function CollapsibleSection({
 }
 
 export default function NotePreview({ content, filename }: NotePreviewProps) {
+  const [noteContent, setNoteContent] = useState(content);
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState(false);
+  const [showRename, setShowRename] = useState(false);
+  const [names, setNames] = useState<Record<string, string>>({});
+  const [renaming, setRenaming] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Keep local content in sync when a different note is opened.
+  useEffect(() => setNoteContent(content), [content]);
+
+  const speakers = useMemo(
+    () => Array.from(new Set(noteContent.match(/SPEAKER_\d+/g) ?? [])).sort(),
+    [noteContent]
+  );
+
   const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(content);
+    await navigator.clipboard.writeText(noteContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [content]);
+  }, [noteContent]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -239,17 +252,17 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
 
   const handleDownloadMarkdown = useCallback(() => {
     triggerDownload(
-      new Blob([content], { type: "text/markdown;charset=utf-8" }),
+      new Blob([noteContent], { type: "text/markdown;charset=utf-8" }),
       filename.endsWith(".md") ? filename : `${filename}.md`
     );
     setMenuOpen(false);
-  }, [content, filename, triggerDownload]);
+  }, [noteContent, filename, triggerDownload]);
 
   const handleDownloadWord = useCallback(async () => {
     setDownloading(true);
     setDownloadError(false);
     try {
-      const blob = await exportNoteDocx(content, filename);
+      const blob = await exportNoteDocx(noteContent, filename);
       triggerDownload(blob, `${filename.replace(/\.md$/, "")}.docx`);
       setMenuOpen(false);
     } catch {
@@ -258,9 +271,32 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
     } finally {
       setDownloading(false);
     }
-  }, [content, filename, triggerDownload]);
+  }, [noteContent, filename, triggerDownload]);
 
-  const { main, transcript, title } = extractTranscript(stripFrontmatter(content));
+  const handleRename = useCallback(async () => {
+    const mapping: Record<string, string> = {};
+    for (const sp of speakers) {
+      const value = (names[sp] ?? "").trim();
+      if (value) mapping[sp] = value;
+    }
+    if (Object.keys(mapping).length === 0) {
+      setShowRename(false);
+      return;
+    }
+    setRenaming(true);
+    try {
+      const updated = await renameSpeakers(filename, mapping);
+      setNoteContent(updated.content);
+      setNames({});
+      setShowRename(false);
+    } catch {
+      // keep the panel open so the user can retry
+    } finally {
+      setRenaming(false);
+    }
+  }, [speakers, names, filename]);
+
+  const { main, transcript, title } = extractTranscript(stripFrontmatter(noteContent));
 
   return (
     <motion.div
@@ -357,6 +393,54 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
           </div>
         </div>
       </div>
+
+      {/* Rename speakers (only when diarization labels are present) */}
+      {speakers.length > 0 && (
+        <div className="mb-4">
+          <button
+            onClick={() => setShowRename((s) => !s)}
+            className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
+          >
+            <Users className="w-3.5 h-3.5" />
+            {showRename ? "Ocultar" : "Renombrar hablantes"} ({speakers.length})
+          </button>
+
+          {showRename && (
+            <div className="mt-3 p-3.5 rounded-lg bg-slate-900/40 border border-white/5 space-y-2.5">
+              {speakers.map((sp) => (
+                <div key={sp} className="flex items-center gap-2.5">
+                  <span className="text-xs font-mono text-muted-foreground w-24 flex-shrink-0">
+                    {sp}
+                  </span>
+                  <span className="text-muted-foreground">→</span>
+                  <input
+                    value={names[sp] ?? ""}
+                    onChange={(e) =>
+                      setNames((n) => ({ ...n, [sp]: e.target.value }))
+                    }
+                    placeholder="Nombre real…"
+                    className="flex-1 bg-slate-950/60 border border-white/10 rounded-md px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none"
+                  />
+                </div>
+              ))}
+              <div className="flex justify-end pt-1">
+                <button
+                  onClick={handleRename}
+                  disabled={renaming}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-primary/15 border border-primary/30 hover:bg-primary/25 text-primary transition-colors disabled:opacity-60"
+                >
+                  {renaming ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
+                  Aplicar nombres
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Content */}
       <div className="bg-slate-950/40 rounded-lg p-4 sm:p-5 max-h-[60vh] overflow-y-auto border border-white/5">

@@ -163,6 +163,22 @@ export async function getNote(filename: string): Promise<NoteDetail> {
   return handleResponse(res);
 }
 
+/** Replace SPEAKER_xx labels in a note with real names (persisted server-side). */
+export async function renameSpeakers(
+  filename: string,
+  mapping: Record<string, string>
+): Promise<NoteDetail> {
+  const res = await fetch(
+    `${API_BASE}/notes/${encodeURIComponent(filename)}/speakers`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mapping }),
+    }
+  );
+  return handleResponse(res);
+}
+
 // --- Ollama ---
 
 export interface OllamaModel {
