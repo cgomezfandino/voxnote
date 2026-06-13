@@ -248,8 +248,6 @@ VOXNOTE_OUTPUT_DIR=output
 Ver [multi-provider-setup.md](multi-provider-setup.md) para configurar:
 - OpenAI (GPT-4)
 - Google Gemini
-- Kimi (Moonshot)
-- GLM (Zhipu AI)
 
 ---
 

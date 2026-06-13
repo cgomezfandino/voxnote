@@ -52,7 +52,7 @@ Voxnote/
 │   │   │   ├── cli.py           # Click CLI
 │   │   │   ├── config.py        # Pydantic Settings
 │   │   │   ├── pipeline/        # models, transcriber, insights, exporter
-│   │   │   └── providers/       # ollama, openai, kimi, glm, google
+│   │   │   └── providers/       # ollama, openai, google
 │   │   ├── tests/
 │   │   └── pyproject.toml
 │   ├── api/                     # FastAPI backend

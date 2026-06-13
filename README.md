@@ -15,6 +15,8 @@ Pipeline local para grabar reuniones, transcribirlas, extraer insights y organiz
 - [API](#api)
 - [Configuración](#configuración)
 - [Proveedores LLM](#proveedores-llm)
+- [Diarización (¿quién dijo qué?)](#diarización-quién-dijo-qué)
+- [Privacidad y aspectos legales](#privacidad-y-aspectos-legales)
 - [Integración con Obsidian](#integración-con-obsidian)
 - [Arquitectura](#arquitectura)
 - [Desarrollo](#desarrollo)
@@ -75,8 +77,8 @@ source .venv/bin/activate
 make dev
 ```
 
-- **API**: http://127.0.0.1:8000
-- **Web**: http://localhost:3001
+- **API**: http://127.0.0.1:8003
+- **Web**: http://localhost:3003
 
 ### Solo API
 
@@ -121,7 +123,7 @@ voxnote process recordings/20260212_193045.wav
 voxnote process entrevista.mp3 --diarize
 ```
 
-**Requisito:** Configurar `VOXNOTE_HF_TOKEN` para diarización.
+**Requisito:** instala whisperX y configura tu token — ver [Diarización](#diarización-quién-dijo-qué).
 
 ### 3. Solo transcribir
 
@@ -176,7 +178,7 @@ opciones:
 
 ## Interfaz web
 
-UI moderna en **http://localhost:3001**:
+UI moderna en **http://localhost:3003**:
 
 ```bash
 make dev
@@ -188,13 +190,14 @@ Funcionalidades:
 - Seleccionar modelo Whisper y proveedor LLM
 - Ver historial de notas generadas
 - Configurar diarización de hablantes
-- Preview de notas estilo Obsidian
+- Preview de notas con render Markdown
+- Descargar notas en **Word (.docx)** o Markdown
 
 ---
 
 ## API
 
-Backend FastAPI en **http://127.0.0.1:8000**
+Backend FastAPI en **http://127.0.0.1:8003**
 
 ### Endpoints
 
@@ -213,17 +216,17 @@ Backend FastAPI en **http://127.0.0.1:8000**
 
 ```bash
 # Transcribir audio
-curl -X POST "http://127.0.0.1:8000/api/transcribe" \
+curl -X POST "http://127.0.0.1:8003/api/transcribe" \
   -F "file=@audio.mp3" \
   -F "model=turbo"
 
 # Extraer insights
-curl -X POST "http://127.0.0.1:8000/api/insights" \
+curl -X POST "http://127.0.0.1:8003/api/insights" \
   -H "Content-Type: application/json" \
   -d '{"transcript": "...", "provider": "ollama"}'
 
 # Exportar nota
-curl -X POST "http://127.0.0.1:8000/api/export" \
+curl -X POST "http://127.0.0.1:8003/api/export" \
   -H "Content-Type: application/json" \
   -d '{"insights": {...}, "title": "Standup 2026-03-02"}'
 ```
@@ -244,6 +247,10 @@ Variables de entorno (prefijo `VOXNOTE_`):
 | `VOXNOTE_OUTPUT_DIR` | `output` | Directorio de notas |
 | `VOXNOTE_DIARIZE` | `false` | Habilitar diarización |
 | `VOXNOTE_HF_TOKEN` | | Token HuggingFace para diarización |
+| `VOXNOTE_DIARIZE_MIN_SPEAKERS` | (auto) | Mínimo de hablantes (vacío = auto-detección) |
+| `VOXNOTE_DIARIZE_MAX_SPEAKERS` | (auto) | Máximo de hablantes (vacío = auto-detección) |
+| `VOXNOTE_API_HOST` | `127.0.0.1` | Host del API. **No** hay autenticación aún: usa `0.0.0.0` solo en redes de confianza |
+| `VOXNOTE_MAX_UPLOAD_MB` | `500` | Tamaño máximo de subida de audio (API) |
 
 ### Archivo .env
 
@@ -279,21 +286,6 @@ VOXNOTE_LLM_PROVIDER=openai
 OPENAI_API_KEY=sk-...
 ```
 
-### Kimi (Moonshot)
-
-```bash
-VOXNOTE_LLM_PROVIDER=kimi
-KIMI_API_KEY=...
-```
-
-### GLM (Zhipu AI)
-
-```bash
-VOXNOTE_LLM_PROVIDER=glm
-GLM_API_KEY=...
-GLM_MODEL=glm-5  # glm-4, glm-4-plus, glm-4-air, glm-4.7, glm-5
-```
-
 ### Google Gemini
 
 ```bash
@@ -302,6 +294,77 @@ GOOGLE_API_KEY=...
 ```
 
 Ver [docs/multi-provider-setup.md](docs/multi-provider-setup.md) para más detalles.
+
+---
+
+## Diarización (¿quién dijo qué?)
+
+La diarización identifica a los distintos hablantes de un audio (`[SPEAKER_00]`, `[SPEAKER_01]`…). Con ella, la nota incluye una sección **Participantes** y atribuye decisiones, tareas y comentarios a cada persona.
+
+> **Es opcional.** Sin diarización igual obtienes resumen, puntos clave, insights y tareas — solo pierdes el "quién dijo qué".
+
+### Activarla (3 pasos)
+
+**1. Instala el extra whisperX** (no viene en la instalación base):
+
+```bash
+.venv/bin/pip install -e "packages/core[whisperx]"
+```
+
+**2. Acepta el modelo de pyannote en HuggingFace** (es "gated"; con tu cuenta, una sola vez):
+
+- https://huggingface.co/pyannote/speaker-diarization-community-1 → *Agree and access repository*
+
+(`community-1` es el que usa whisperX 3.8 por defecto e incluye todos sus componentes —
+segmentación, embedding y PLDA— en un solo repo.)
+
+**3. Configura tu token** en `.env` — un token **válido** de https://huggingface.co/settings/tokens (tipo *Read*, o *fine-grained* con permiso "Read access to public gated repos"). Empieza por `hf_` y tiene ~37 caracteres:
+
+```bash
+VOXNOTE_HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+> Si la diarización da `401 GatedRepoError`, casi siempre es el token (inválido, caducado, de otra cuenta, o sin permiso de repos gated). Verifícalo: `curl -H "Authorization: Bearer $TOKEN" https://huggingface.co/api/whoami-v2`.
+
+> El modelo de diarización es configurable con `VOXNOTE_DIARIZE_MODEL` (default `pyannote/speaker-diarization-community-1`, licencia CC-BY).
+
+### Usarla
+
+```bash
+voxnote process reunion.mp3 --diarize
+```
+
+O en la web, activa el toggle **Diarización**. El número de hablantes se **detecta automáticamente** (funciona igual con 2 o con 6 personas). Si lo conoces, acótalo con `VOXNOTE_DIARIZE_MIN_SPEAKERS` / `VOXNOTE_DIARIZE_MAX_SPEAKERS`.
+
+### Límites
+
+- Funciona bien con **2-4 personas en audio limpio**; voces solapadas, ruido o 6+ personas degradan la precisión (límite de todos los modelos abiertos).
+- En Mac corre en **CPU** (MPS no está soportado por este stack), así que en audios largos tarda.
+
+> **Para distribuir:** los usuarios de la app de escritorio empaquetada **no harán nada de esto** — whisperX y el modelo irán dentro del instalador.
+
+---
+
+## Privacidad y aspectos legales
+
+### Local-first
+
+Por defecto, **el audio, las transcripciones y las notas nunca salen de tu máquina**. No hay servidor central ni telemetría. Tú controlas tus datos (puedes apuntar `VOXNOTE_OUTPUT_DIR` a una carpeta que sincronices tú si quieres respaldo).
+
+### Grabación y consentimiento
+
+La voz es un **dato personal**. Grabar conversaciones puede requerir **avisar o consentir** según el país/estado (leyes de uno o de todos los participantes). Asegúrate de tener permiso para grabar.
+
+### Datos biométricos
+
+- La **diarización** ("hablante 1 vs 2") es de bajo riesgo.
+- La **identificación de voz** entre reuniones (huella de voz — funcionalidad futura) sería **dato biométrico de categoría especial** (GDPR Art. 9, BIPA en Illinois, etc.) y requeriría **consentimiento explícito** y almacenamiento local.
+
+### Licencias
+
+El stack es permisivo (Whisper, faster-whisper, pyannote.audio = MIT; whisperX = BSD). Ver [`NOTICES.md`](NOTICES.md) para atribuciones. Los modelos MIT pueden empaquetarse en una app de escritorio incluyendo su aviso de licencia.
+
+> ⚠️ Esto es orientación general, **no asesoría legal**. Para uso comercial, usuarios en la UE o funcionalidades biométricas, consulta a un profesional.
 
 ---
 
@@ -358,7 +421,7 @@ Voxnote/
 │   │   │   ├── cli.py           # Click CLI
 │   │   │   ├── config.py        # Pydantic Settings
 │   │   │   └── pipeline/        # models, transcriber, insights, exporter
-│   │   │   └── providers/       # ollama, openai, kimi, glm, google
+│   │   │   └── providers/       # ollama, openai, google
 │   │   ├── tests/
 │   │   └── pyproject.toml
 │   ├── api/                     # FastAPI backend
