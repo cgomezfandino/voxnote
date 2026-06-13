@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, Square, RefreshCw, Play, Pause, FileAudio } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
+import { useToast } from "@/hooks/useToast";
 
 interface AudioRecorderProps {
   onRecordingComplete: (blob: Blob, duration: number) => void;
@@ -22,6 +23,7 @@ export default function AudioRecorder({
   onReset,
   onProcess,
 }: AudioRecorderProps) {
+  const { showToast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(initialDuration);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(initialBlob);
@@ -123,10 +125,13 @@ export default function AudioRecorder({
         animationFrameRef.current = requestAnimationFrame(updateVisualizer);
       };
       updateVisualizer();
-    } catch (err) {
-      alert("No se pudo acceder al micrófono. Por favor, concede los permisos necesarios.");
+    } catch {
+      showToast(
+        "No se pudo acceder al micrófono. Por favor, concede los permisos necesarios.",
+        "error"
+      );
     }
-  }, [onRecordingComplete]);
+  }, [onRecordingComplete, showToast]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {

@@ -104,6 +104,33 @@ export async function exportNote(
   return handleResponse(res);
 }
 
+/** Convert a note's Markdown to a Word (.docx) document, returned as a downloadable Blob. */
+export async function exportNoteDocx(
+  content: string,
+  filename: string
+): Promise<Blob> {
+  const res = await fetch(`${API_BASE}/export/docx`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content, filename }),
+  });
+  if (!res.ok) {
+    let detail: string | undefined;
+    try {
+      const body = await res.json();
+      detail = body.detail || body.message;
+    } catch {
+      // ignore parse errors
+    }
+    throw new ApiError(
+      detail || `Error ${res.status}: ${res.statusText}`,
+      res.status,
+      detail
+    );
+  }
+  return res.blob();
+}
+
 // --- Config ---
 
 export async function fetchConfig(): Promise<AppConfig> {

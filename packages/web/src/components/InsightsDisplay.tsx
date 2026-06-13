@@ -10,6 +10,9 @@ import {
   HelpCircle,
   ArrowRight,
   User,
+  Users,
+  Target,
+  Quote,
   Calendar,
   Check,
 } from "lucide-react";
@@ -74,6 +77,74 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
           <p className="text-sm text-slate-200 leading-relaxed font-medium">
             {insights.resumen}
           </p>
+        </Section>
+      )}
+
+      {/* Participantes */}
+      {insights.participantes && insights.participantes.length > 0 && (
+        <Section
+          icon={<Users className="w-4.5 h-4.5 text-teal-400" />}
+          title="Participantes"
+          glowClass="hover:border-teal-500/30 hover:shadow-[0_0_25px_rgba(20,184,166,0.05)]"
+          borderClass="border-l-teal-500"
+          iconBgClass="bg-teal-500/10 border border-teal-500/20"
+          delay={0.03}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {insights.participantes.map((p, i) => {
+              const initials = p.hablante
+                .replace(/[[\]]/g, "")
+                .split(/[\s_]+/)
+                .map((n) => n[0])
+                .join("")
+                .toUpperCase()
+                .slice(0, 2);
+              return (
+                <div
+                  key={i}
+                  className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/40 border border-white/5"
+                >
+                  <span className="w-8 h-8 rounded-full bg-teal-500/15 border border-teal-500/25 text-teal-300 text-[11px] font-black flex items-center justify-center flex-shrink-0">
+                    {initials || <User className="w-4 h-4" />}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-200 truncate">
+                      {p.hablante}
+                    </p>
+                    {p.aporte && (
+                      <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                        {p.aporte}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+      )}
+
+      {/* Puntos clave */}
+      {insights.puntos_clave && insights.puntos_clave.length > 0 && (
+        <Section
+          icon={<Target className="w-4.5 h-4.5 text-primary" />}
+          title="Puntos Clave"
+          glowClass="card-glow-indigo"
+          borderClass="border-l-indigo-500"
+          iconBgClass="bg-primary/10 border border-primary/20"
+          delay={0.04}
+        >
+          <ul className="space-y-2.5">
+            {insights.puntos_clave.map((p, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/40 border border-white/5 text-sm text-slate-200"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                <span className="leading-relaxed">{p}</span>
+              </li>
+            ))}
+          </ul>
         </Section>
       )}
 
@@ -218,6 +289,34 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
               </li>
             ))}
           </ul>
+        </Section>
+      )}
+
+      {/* Comentarios destacados */}
+      {insights.comentarios_destacados && insights.comentarios_destacados.length > 0 && (
+        <Section
+          icon={<Quote className="w-4.5 h-4.5 text-pink-400" />}
+          title="Comentarios Destacados"
+          glowClass="hover:border-pink-500/30 hover:shadow-[0_0_25px_rgba(236,72,153,0.05)]"
+          borderClass="border-l-pink-500"
+          iconBgClass="bg-pink-500/10 border border-pink-500/20"
+          delay={0.18}
+        >
+          <div className="space-y-3">
+            {insights.comentarios_destacados.map((c, i) => (
+              <blockquote
+                key={i}
+                className="p-3.5 rounded-lg bg-slate-900/40 border-l-2 border-pink-500/40 text-sm text-slate-200 italic"
+              >
+                &ldquo;{c.cita}&rdquo;
+                {c.hablante && (
+                  <cite className="block not-italic text-xs text-pink-300/80 font-semibold mt-2">
+                    — {c.hablante}
+                  </cite>
+                )}
+              </blockquote>
+            ))}
+          </div>
         </Section>
       )}
 

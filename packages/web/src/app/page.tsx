@@ -409,14 +409,19 @@ export default function Home() {
 
                       {/* Error display */}
                       {error && (
-                        <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200">
-                          <AlertCircle className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
-                          <p className="text-sm text-accent">{error}</p>
+                        <div className="flex items-start gap-2 p-3 rounded-lg bg-danger-light border border-danger-border">
+                          <AlertCircle className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
+                          <p className="text-sm text-danger">{error}</p>
                         </div>
                       )}
 
                       {/* Processing steps */}
-                      {steps.length > 0 && <ProcessingSteps steps={steps} />}
+                      {steps.length > 0 && (
+                        <ProcessingSteps
+                          steps={steps}
+                          onRetry={canProcess ? handleProcess : undefined}
+                        />
+                      )}
 
                       {/* Insights display */}
                       {processedInsights && (

@@ -20,11 +20,24 @@ export interface ActionItem {
   deadline: string;
 }
 
+export interface Participante {
+  hablante: string;
+  aporte?: string;
+}
+
+export interface Comentario {
+  hablante?: string;
+  cita: string;
+}
+
 export interface InsightsResult {
   resumen: string;
+  participantes?: Participante[];
+  puntos_clave?: string[];
   decisiones: string[];
   action_items: ActionItem[];
   insights: string[];
+  comentarios_destacados?: Comentario[];
   preguntas_abiertas: string[];
   proximos_pasos: string[];
 }
