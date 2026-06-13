@@ -491,8 +491,8 @@ export default function Home() {
                         Cargando notas...
                       </div>
                     ) : notes.length === 0 ? (
-                      <div className="card text-center py-12 border border-white/5">
-                        <div className="w-16 h-16 rounded-full bg-slate-900/60 border border-white/5 flex items-center justify-center mx-auto mb-4">
+                      <div className="card text-center py-12">
+                        <div className="w-16 h-16 rounded-full bg-muted border border-border flex items-center justify-center mx-auto mb-4">
                           <FileText className="w-7 h-7 text-muted-foreground" />
                         </div>
                         <h3 className="font-bold text-foreground mb-2">
@@ -514,26 +514,26 @@ export default function Home() {
                           <button
                             key={note.filename}
                             onClick={() => handleViewNote(note.filename)}
-                            className="card w-full text-left hover:border-primary/40 hover:bg-slate-900/40 transition-all duration-300 group"
+                            className="card w-full text-left hover:border-primary/40 hover:bg-foreground/[0.04] transition-all duration-300 group"
                           >
                             <div className="flex items-start gap-3.5">
                               <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                                 <FileText className="w-5 h-5 text-primary" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-slate-200 text-sm truncate group-hover:text-foreground transition-colors">
+                                <p className="font-semibold text-foreground text-sm truncate transition-colors">
                                   {note.filename}
                                 </p>
                                 <p className="text-xs text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
                                   {note.preview}
                                 </p>
                                 <div className="flex items-center gap-4 mt-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                  <span className="flex items-center gap-1.5 bg-slate-950/40 px-2 py-0.5 rounded border border-white/5">
-                                    <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                                  <span className="flex items-center gap-1.5 bg-muted px-2 py-0.5 rounded border border-border">
+                                    <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                                     {new Date(note.created_at).toLocaleDateString("es")}
                                   </span>
-                                  <span className="flex items-center gap-1.5 bg-slate-950/40 px-2 py-0.5 rounded border border-white/5">
-                                    <Clock className="w-3.5 h-3.5 text-slate-500" />
+                                  <span className="flex items-center gap-1.5 bg-muted px-2 py-0.5 rounded border border-border">
+                                    <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                                     {new Date(note.created_at).toLocaleTimeString("es", {
                                       hour: "2-digit",
                                       minute: "2-digit",
