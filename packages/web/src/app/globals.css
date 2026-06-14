@@ -104,6 +104,17 @@
   --record-shadow: 0 8px 24px rgba(0, 242, 152, 0.35);
 }
 
+/* Root-canvas background, set per theme. The page shell is themed on an inner wrapper, so
+   <html>/<body> otherwise keep the :root (dark) color and it shows through as a dark band
+   when a tall page (e.g. an expanded note) scrolls. Setting it on <html> paints the canvas
+   correctly in both themes (the theme class is mirrored onto <html> from page.tsx). */
+html {
+  background-color: #0f1623;
+}
+html.light-theme {
+  background-color: #e9edf3;
+}
+
 @layer base {
   * {
     @apply border-border;

@@ -95,7 +95,7 @@ export default function FileUpload({ onFileSelected, disabled }: FileUploadProps
             <FileAudio className="w-6 h-6 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-slate-200 truncate">
+            <p className="font-semibold text-foreground truncate">
               {selectedFile.name}
             </p>
             <p className="text-xs text-muted-foreground">
@@ -105,7 +105,7 @@ export default function FileUpload({ onFileSelected, disabled }: FileUploadProps
           <button
             onClick={clearFile}
             disabled={disabled}
-            className="p-1.5 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50"
+            className="p-1.5 rounded-lg hover:bg-foreground/[0.04] transition-colors disabled:opacity-50"
           >
             <X className="w-4 h-4 text-muted-foreground" />
           </button>
@@ -122,7 +122,7 @@ export default function FileUpload({ onFileSelected, disabled }: FileUploadProps
       className={`card border-2 border-dashed cursor-pointer transition-all ${
         dragActive
           ? "border-primary bg-primary/10"
-          : "border-white/10 hover:border-primary/40 hover:bg-slate-900/20"
+          : "border-border hover:border-primary/40 hover:bg-foreground/[0.04]"
       } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
       onClick={() => !disabled && inputRef.current?.click()}
     >
@@ -136,7 +136,7 @@ export default function FileUpload({ onFileSelected, disabled }: FileUploadProps
       />
 
       <div className="py-6 text-center">
-        <div className="w-14 h-14 rounded-full bg-slate-950/40 border border-white/5 flex items-center justify-center mx-auto mb-3">
+        <div className="w-14 h-14 rounded-full bg-muted border border-border flex items-center justify-center mx-auto mb-3">
           <Upload className="w-6 h-6 text-muted-foreground" />
         </div>
         <p className="font-semibold text-foreground mb-1">

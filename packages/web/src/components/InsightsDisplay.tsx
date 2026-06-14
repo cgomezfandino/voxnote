@@ -44,7 +44,7 @@ function Section({ icon, title, glowClass, borderClass, iconBgClass, children, d
         <div className={`w-8 h-8 rounded-lg ${iconBgClass} flex items-center justify-center`}>
           {icon}
         </div>
-        <h3 className="font-bold uppercase tracking-wider text-xs text-slate-300">{title}</h3>
+        <h3 className="font-bold uppercase tracking-wider text-xs text-muted-foreground">{title}</h3>
       </div>
       {children}
     </motion.div>
@@ -74,7 +74,7 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
           iconBgClass="bg-primary/10 border border-primary/20"
           delay={0}
         >
-          <p className="text-sm text-slate-200 leading-relaxed font-medium">
+          <p className="text-sm text-foreground leading-relaxed font-medium">
             {insights.resumen}
           </p>
         </Section>
@@ -102,13 +102,13 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
               return (
                 <div
                   key={i}
-                  className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/40 border border-white/5"
+                  className="flex items-start gap-3 p-3 rounded-lg bg-muted border border-border"
                 >
                   <span className="w-8 h-8 rounded-full bg-teal-500/15 border border-teal-500/25 text-teal-300 text-[11px] font-black flex items-center justify-center flex-shrink-0">
                     {initials || <User className="w-4 h-4" />}
                   </span>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-200 truncate">
+                    <p className="text-sm font-semibold text-foreground truncate">
                       {p.hablante}
                     </p>
                     {p.aporte && (
@@ -138,7 +138,7 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
             {insights.puntos_clave.map((p, i) => (
               <li
                 key={i}
-                className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/40 border border-white/5 text-sm text-slate-200"
+                className="flex items-start gap-3 p-3 rounded-lg bg-muted border border-border text-sm text-foreground"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
                 <span className="leading-relaxed">{p}</span>
@@ -162,7 +162,7 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
             {insights.decisiones.map((d, i) => (
               <li 
                 key={i} 
-                className="flex items-start gap-2.5 p-3 rounded-lg bg-slate-900/40 border border-white/5 text-sm text-slate-200"
+                className="flex items-start gap-2.5 p-3 rounded-lg bg-muted border border-border text-sm text-foreground"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-accent mt-2 flex-shrink-0" />
                 <span className="leading-relaxed">{d}</span>
@@ -206,8 +206,8 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
                   onClick={() => toggleTask(i)}
                   className={`flex flex-col justify-between p-3.5 rounded-xl border transition-all duration-300 cursor-pointer select-none ${
                     isDone
-                      ? "bg-slate-950/20 border-white/5 opacity-50 shadow-none"
-                      : "bg-slate-900/50 border-white/5 hover:border-amber-500/20 shadow-md"
+                      ? "bg-muted/50 border-border opacity-50 shadow-none"
+                      : "bg-muted border-border hover:border-amber-500/20 shadow-md"
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -216,15 +216,15 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
                       className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
                         isDone
                           ? "bg-amber-500 border-amber-500 text-slate-950"
-                          : "border-white/20 bg-slate-950/40 hover:border-amber-500"
+                          : "border-border bg-muted hover:border-amber-500"
                       }`}
                     >
                       {isDone && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                     </div>
 
                     <p
-                      className={`text-sm text-slate-200 leading-normal flex-1 transition-all ${
-                        isDone ? "line-through text-slate-500" : "font-medium"
+                      className={`text-sm text-foreground leading-normal flex-1 transition-all ${
+                        isDone ? "line-through text-muted-foreground" : "font-medium"
                       }`}
                     >
                       {taskText}
@@ -233,7 +233,7 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
 
                   {/* Metadata labels row (Owner, Deadline) */}
                   {(owner || deadline) && (
-                    <div className="flex flex-wrap items-center gap-2 mt-4 pt-3.5 border-t border-white/5">
+                    <div className="flex flex-wrap items-center gap-2 mt-4 pt-3.5 border-t border-border">
                       {owner && (
                         <div 
                           className="flex items-center gap-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full text-[10px] font-bold"
@@ -282,7 +282,7 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
             {insights.insights.map((item, i) => (
               <li 
                 key={i} 
-                className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/40 border border-white/5 text-sm text-slate-200"
+                className="flex items-start gap-3 p-3 rounded-lg bg-muted border border-border text-sm text-foreground"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-2 flex-shrink-0" />
                 <span className="leading-relaxed">{item}</span>
@@ -306,7 +306,7 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
             {insights.comentarios_destacados.map((c, i) => (
               <blockquote
                 key={i}
-                className="p-3.5 rounded-lg bg-slate-900/40 border-l-2 border-pink-500/40 text-sm text-slate-200 italic"
+                className="p-3.5 rounded-lg bg-muted border-l-2 border-pink-500/40 text-sm text-foreground italic"
               >
                 &ldquo;{c.cita}&rdquo;
                 {c.hablante && (
@@ -334,7 +334,7 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
             {insights.preguntas_abiertas.map((q, i) => (
               <li 
                 key={i} 
-                className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/40 border border-white/5 text-sm text-slate-200"
+                className="flex items-start gap-3 p-3 rounded-lg bg-muted border border-border text-sm text-foreground"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-2 flex-shrink-0" />
                 <span className="leading-relaxed font-semibold">{q}</span>
@@ -358,7 +358,7 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
             {insights.proximos_pasos.map((step, i) => (
               <li 
                 key={i} 
-                className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/40 border border-white/5 text-sm text-slate-200"
+                className="flex items-start gap-3 p-3 rounded-lg bg-muted border border-border text-sm text-foreground"
               >
                 <span className="text-primary font-black flex-shrink-0 text-xs mt-0.5">
                   {String(i + 1).padStart(2, "0")}.

@@ -156,7 +156,7 @@ export default function ConfigPanel({
               <Mic className="w-4 h-4 text-primary" />
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Transcripción</span>
             </div>
-            {whisperOpen ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+            {whisperOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
           </button>
           
           {whisperOpen && (
@@ -199,7 +199,7 @@ export default function ConfigPanel({
               <Brain className="w-4 h-4 text-accent" />
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Motor de IA</span>
             </div>
-            {llmOpen ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+            {llmOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
           </button>
           
           {llmOpen && (
@@ -227,7 +227,7 @@ export default function ConfigPanel({
                     <label className="label text-[10px] mb-0">Modelo</label>
                     {modelsToDisplay.length > 5 && (
                       <div className="relative flex items-center">
-                        <Search className="absolute left-1.5 w-3 h-3 text-slate-500" />
+                        <Search className="absolute left-1.5 w-3 h-3 text-muted-foreground" />
                         <input
                           type="text"
                           placeholder="Buscar..."
@@ -274,10 +274,10 @@ export default function ConfigPanel({
             className="w-full flex items-center justify-between p-3 text-left hover:bg-foreground/5 transition-colors"
           >
             <div className="flex items-center gap-2.5">
-              <Users className="w-4 h-4 text-slate-400" />
+              <Users className="w-4 h-4 text-muted-foreground" />
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Conexión / Diarización</span>
             </div>
-            {advancedOpen ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+            {advancedOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
           </button>
           
           {advancedOpen && (
@@ -303,7 +303,7 @@ export default function ConfigPanel({
                 <div className="pt-2.5 border-t border-[var(--accordion-border)] space-y-3">
                   <div>
                     <label className="label text-[10px] flex items-center gap-1.5 mb-1">
-                      <Link className="w-3 h-3 text-slate-400" />
+                      <Link className="w-3 h-3 text-muted-foreground" />
                       URL Base
                     </label>
                     <input

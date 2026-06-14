@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Sun,
   Moon,
+  ChevronDown,
 } from "lucide-react";
 import ConfigPanel from "@/components/ConfigPanel";
 import AudioRecorder from "@/components/AudioRecorder";
@@ -43,6 +44,13 @@ export default function Home() {
       setTheme(savedTheme);
     }
   }, []);
+
+  // Mirror the theme onto <html> so the document background (visible behind the app shell
+  // and any transparent content) follows the theme — otherwise <body> keeps the :root
+  // (dark) --background and shows through as a dark area in light mode.
+  useEffect(() => {
+    document.documentElement.classList.toggle("light-theme", theme === "light");
+  }, [theme]);
 
   const handleToggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -147,14 +155,23 @@ export default function Home() {
     }
   }, [activeTab]);
 
-  const handleViewNote = useCallback(async (filename: string) => {
-    try {
-      const note = await getNote(filename);
-      setSelectedNote({ content: note.content, filename: note.filename });
-    } catch {
-      // silently fail
-    }
-  }, []);
+  const handleViewNote = useCallback(
+    async (filename: string) => {
+      // Accordion (single-open): clicking the open note collapses it; clicking another
+      // switches to it (the previous one closes automatically).
+      if (selectedNote?.filename === filename) {
+        setSelectedNote(null);
+        return;
+      }
+      try {
+        const note = await getNote(filename);
+        setSelectedNote({ content: note.content, filename: note.filename });
+      } catch {
+        // silently fail
+      }
+    },
+    [selectedNote]
+  );
 
   const hasAudio = !!(recordedUrl || uploadedFile);
   const canProcess = hasAudio && !isLoading;
@@ -183,7 +200,7 @@ export default function Home() {
           <h1 className={`text-lg font-bold tracking-tight ${
             theme === "dark"
               ? "text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-400"
-              : "text-slate-900"
+              : "text-foreground"
           }`}>
             Voxnote
           </h1>
@@ -245,9 +262,9 @@ export default function Home() {
                 <Logo size="lg" animated />
                 <div className="text-left">
                   <h1 className={`text-2xl lg:text-3xl font-extrabold tracking-tight ${
-                    theme === "dark" 
-                      ? "text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300" 
-                      : "text-slate-900"
+                    theme === "dark"
+                      ? "text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300"
+                      : "text-foreground"
                   }`}>
                     Voxnote
                   </h1>
@@ -267,12 +284,12 @@ export default function Home() {
                   {theme === "dark" ? (
                     <>
                       <Sun className="w-4 h-4 text-accent" />
-                      <span className="text-slate-300">Modo Claro</span>
+                      <span className="text-muted-foreground">Modo Claro</span>
                     </>
                   ) : (
                     <>
                       <Moon className="w-4 h-4 text-primary" />
-                      <span className="text-slate-700">Modo Oscuro</span>
+                      <span className="text-muted-foreground">Modo Oscuro</span>
                     </>
                   )}
                 </button>
@@ -510,51 +527,63 @@ export default function Home() {
                       </div>
                     ) : (
                       <div className="space-y-3.5">
-                        {notes.map((note) => (
-                          <button
-                            key={note.filename}
-                            onClick={() => handleViewNote(note.filename)}
-                            className="card w-full text-left hover:border-primary/40 hover:bg-foreground/[0.04] transition-all duration-300 group"
-                          >
-                            <div className="flex items-start gap-3.5">
-                              <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-                                <FileText className="w-5 h-5 text-primary" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-foreground text-sm truncate transition-colors">
-                                  {note.filename}
-                                </p>
-                                <p className="text-xs text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
-                                  {note.preview}
-                                </p>
-                                <div className="flex items-center gap-4 mt-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                  <span className="flex items-center gap-1.5 bg-muted px-2 py-0.5 rounded border border-border">
-                                    <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                                    {new Date(note.created_at).toLocaleDateString("es")}
-                                  </span>
-                                  <span className="flex items-center gap-1.5 bg-muted px-2 py-0.5 rounded border border-border">
-                                    <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                                    {new Date(note.created_at).toLocaleTimeString("es", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </span>
+                        {notes.map((note) => {
+                          const isOpen = selectedNote?.filename === note.filename;
+                          return (
+                            <div key={note.filename}>
+                              <button
+                                onClick={() => handleViewNote(note.filename)}
+                                aria-expanded={isOpen}
+                                className={`card w-full text-left transition-all duration-300 group ${
+                                  isOpen
+                                    ? "border-primary/40 bg-foreground/[0.03]"
+                                    : "hover:border-primary/40 hover:bg-foreground/[0.04]"
+                                }`}
+                              >
+                                <div className="flex items-start gap-3.5">
+                                  <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                                    <FileText className="w-5 h-5 text-primary" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-foreground text-sm truncate transition-colors">
+                                      {note.filename}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
+                                      {note.preview}
+                                    </p>
+                                    <div className="flex items-center gap-4 mt-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                      <span className="flex items-center gap-1.5 bg-muted px-2 py-0.5 rounded border border-border">
+                                        <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                                        {new Date(note.created_at).toLocaleDateString("es")}
+                                      </span>
+                                      <span className="flex items-center gap-1.5 bg-muted px-2 py-0.5 rounded border border-border">
+                                        <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                                        {new Date(note.created_at).toLocaleTimeString("es", {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <ChevronDown
+                                    className={`w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5 transition-transform duration-300 ${
+                                      isOpen ? "rotate-180" : ""
+                                    }`}
+                                  />
                                 </div>
-                              </div>
+                              </button>
+                              {isOpen && selectedNote && (
+                                <div className="mt-3">
+                                  <NotePreview
+                                    key={selectedNote.filename}
+                                    content={selectedNote.content}
+                                    filename={selectedNote.filename}
+                                  />
+                                </div>
+                              )}
                             </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Selected note preview */}
-                    {selectedNote && (
-                      <div className="mt-6">
-                        <NotePreview
-                          key={selectedNote.filename}
-                          content={selectedNote.content}
-                          filename={selectedNote.filename}
-                        />
+                          );
+                        })}
                       </div>
                     )}
                   </motion.div>
