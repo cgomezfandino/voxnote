@@ -16,8 +16,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <body className={inter.className}>
+        {/* Apply the saved theme before first paint to avoid a dark→light flash (FOUC). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(localStorage.getItem('voxnote-theme')==='light')document.documentElement.classList.add('light-theme')}catch(e){}",
+          }}
+        />
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>

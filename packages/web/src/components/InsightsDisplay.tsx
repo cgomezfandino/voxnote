@@ -104,7 +104,7 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
                   key={i}
                   className="flex items-start gap-3 p-3 rounded-lg bg-muted border border-border"
                 >
-                  <span className="w-8 h-8 rounded-full bg-teal-500/15 border border-teal-500/25 text-teal-300 text-[11px] font-black flex items-center justify-center flex-shrink-0">
+                  <span className="w-8 h-8 rounded-full bg-teal-500/15 border border-teal-500/25 dark:text-teal-300 text-teal-700 text-[11px] font-black flex items-center justify-center flex-shrink-0">
                     {initials || <User className="w-4 h-4" />}
                   </span>
                   <div className="min-w-0">
@@ -206,7 +206,7 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
                   onClick={() => toggleTask(i)}
                   className={`flex flex-col justify-between p-3.5 rounded-xl border transition-all duration-300 cursor-pointer select-none ${
                     isDone
-                      ? "bg-muted/50 border-border opacity-50 shadow-none"
+                      ? "bg-muted/50 border-border shadow-none"
                       : "bg-muted border-border hover:border-amber-500/20 shadow-md"
                   }`}
                 >
@@ -215,7 +215,7 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
                     <div
                       className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
                         isDone
-                          ? "bg-amber-500 border-amber-500 text-slate-950"
+                          ? "bg-amber-500 border-amber-500 text-background"
                           : "border-border bg-muted hover:border-amber-500"
                       }`}
                     >
@@ -224,7 +224,7 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
 
                     <p
                       className={`text-sm text-foreground leading-normal flex-1 transition-all ${
-                        isDone ? "line-through text-muted-foreground" : "font-medium"
+                        isDone ? "line-through text-muted-foreground opacity-70" : "font-medium"
                       }`}
                     >
                       {taskText}
@@ -236,11 +236,11 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
                     <div className="flex flex-wrap items-center gap-2 mt-4 pt-3.5 border-t border-border">
                       {owner && (
                         <div 
-                          className="flex items-center gap-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                          className="flex items-center gap-1.5 bg-indigo-500/10 border border-indigo-500/20 text-primary px-2 py-0.5 rounded-full text-[10px] font-bold"
                           title={`Responsable: ${owner}`}
                         >
                           {initials ? (
-                            <span className="w-3.5 h-3.5 rounded-full bg-indigo-400 text-slate-950 text-[9px] flex items-center justify-center font-black">
+                            <span className="w-3.5 h-3.5 rounded-full bg-indigo-400 text-background text-[9px] flex items-center justify-center font-black">
                               {initials}
                             </span>
                           ) : (
@@ -252,7 +252,7 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
                       
                       {deadline && (
                         <div 
-                          className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                          className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 dark:text-amber-300 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-bold"
                           title={`Deadline: ${deadline}`}
                         >
                           <Calendar className="w-3 h-3" />
@@ -310,7 +310,7 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
               >
                 &ldquo;{c.cita}&rdquo;
                 {c.hablante && (
-                  <cite className="block not-italic text-xs text-pink-300/80 font-semibold mt-2">
+                  <cite className="block not-italic text-xs dark:text-pink-300/80 text-pink-700 font-semibold mt-2">
                     — {c.hablante}
                   </cite>
                 )}

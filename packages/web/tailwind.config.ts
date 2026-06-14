@@ -1,6 +1,9 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  // The app's default theme is dark; light is opt-in via the `.light-theme` class on <html>.
+  // Map Tailwind's `dark:` variant to that so components can do `dark:text-x-300 text-x-700`.
+  darkMode: ["selector", "html:not(.light-theme)"],
   content: [
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],

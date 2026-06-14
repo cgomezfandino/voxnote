@@ -25,11 +25,16 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
     setCurrentTime("0:00");
     setDuration("0:00");
 
+    const rootStyle = getComputedStyle(document.documentElement);
+    const waveColor = rootStyle.getPropertyValue("--muted-foreground").trim();
+    const progressColor = rootStyle.getPropertyValue("--accent").trim();
+    const cursorColor = rootStyle.getPropertyValue("--primary").trim();
+
     const ws = WaveSurfer.create({
       container: containerRef.current,
-      waveColor: "rgba(30, 41, 59, 0.7)", // Deep slate border-color
-      progressColor: "#00F298",          // Glowing neon green
-      cursorColor: "#6366F1",            // Electric indigo cursor
+      waveColor,         // De-emphasized unplayed wave (theme-aware)
+      progressColor,     // Resolved accent token (visible in light + dark)
+      cursorColor,       // Resolved primary token
       barWidth: 3,
       barGap: 2,
       barRadius: 3,
@@ -116,7 +121,7 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
             disabled={!isReady}
             className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary-hover disabled:opacity-50 transition-all flex-shrink-0 hover:scale-105 active:scale-95 shadow-[0_0_12px_rgba(99,102,241,0.3)]"
           >
-            {isPlaying ? <Pause className="w-4.5 h-4.5" /> : <Play className="w-4.5 h-4.5 ml-0.5" />}
+            {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
           </button>
           
           <span className="text-xs text-muted-foreground font-mono bg-muted border border-border px-2.5 py-1 rounded-md tabular-nums">

@@ -18,7 +18,7 @@ function StepIcon({ status }: { status: StepStatus }) {
           animate={{ scale: 1 }}
           className="w-7 h-7 rounded-full bg-success flex items-center justify-center"
         >
-          <Check className="w-4 h-4 text-white" />
+          <Check className="w-4 h-4 text-accent-foreground" />
         </motion.div>
       );
     case "active":
