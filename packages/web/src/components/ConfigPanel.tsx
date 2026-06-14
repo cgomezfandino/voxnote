@@ -135,7 +135,7 @@ export default function ConfigPanel({
             <h2 className="text-sm font-semibold uppercase tracking-wider">Ajustes</h2>
           </div>
           {isSyncing && (
-            <span className="flex items-center gap-1 text-[10px] text-accent font-medium animate-pulse">
+            <span className="flex items-center gap-1 text-xs text-accent font-medium animate-pulse">
               <span className="w-1.5 h-1.5 rounded-full bg-accent" />
               Sincronizando
             </span>
@@ -326,7 +326,7 @@ export default function ConfigPanel({
                       placeholder="Bearer token o API key"
                       className="input text-xs py-2"
                     />
-                    <p className="text-[9px] text-muted-foreground mt-1">
+                    <p className="text-[10px] text-muted-foreground mt-1">
                       Necesario solo si la instancia de Ollama está protegida por proxy o es Cloud.
                     </p>
                   </div>

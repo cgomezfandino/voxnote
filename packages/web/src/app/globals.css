@@ -66,10 +66,10 @@
   --primary-light: #EEF2FF;
   --secondary: #F1F5F9;
   --secondary-foreground: #334155;
-  --accent: #059669;
+  --accent: #047857;
   --accent-foreground: #FFFFFF;
   --accent-light: #D1FAE5;
-  --success: #059669;
+  --success: #047857;
   --success-light: #ECFDF5;
   --danger: #DC2626;
   --danger-foreground: #FFFFFF;
@@ -113,6 +113,25 @@ html {
 }
 html.light-theme {
   background-color: #e9edf3;
+}
+
+/* Brand wordmark and the decorative top glow are theme-dependent in appearance. Driving
+   them from CSS (not React state) means they render correctly on the very first paint,
+   so they don't flash on reload along with the rest of the theme. */
+.brand-title {
+  background-image: linear-gradient(to right, #ffffff, #f1f5f9, #94a3b8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.light-theme .brand-title {
+  background-image: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  color: var(--foreground);
+}
+.light-theme .bg-glow-line {
+  display: none;
 }
 
 @layer base {
@@ -173,7 +192,7 @@ html.light-theme {
     @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-secondary text-foreground font-medium text-sm transition-all border hover:bg-muted active:scale-[0.98];
   }
   .light-theme .btn-secondary {
-    @apply border-border hover:bg-slate-100;
+    @apply border-border;
   }
   :not(.light-theme) .btn-secondary {
     @apply border-white/5;
@@ -224,6 +243,10 @@ html.light-theme {
   .badge-primary {
     @apply badge bg-primary-light text-primary border border-primary/20;
   }
+  /* In dark mode, indigo-on-translucent-indigo is too low-contrast; lift the text. */
+  :not(.light-theme) .badge-primary {
+    color: #a5b4fc;
+  }
   
   .badge-success {
     @apply badge bg-success-light text-success border border-success/20;
@@ -243,7 +266,7 @@ html.light-theme {
   background: var(--border);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
+  background: var(--muted-foreground);
 }
 
 /* Custom background animation lines */

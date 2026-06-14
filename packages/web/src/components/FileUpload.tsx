@@ -105,7 +105,8 @@ export default function FileUpload({ onFileSelected, disabled }: FileUploadProps
           <button
             onClick={clearFile}
             disabled={disabled}
-            className="p-1.5 rounded-lg hover:bg-foreground/[0.04] transition-colors disabled:opacity-50"
+            aria-label="Quitar archivo"
+            className="p-1.5 rounded-lg hover:bg-foreground/[0.04] transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary"
           >
             <X className="w-4 h-4 text-muted-foreground" />
           </button>
@@ -116,15 +117,25 @@ export default function FileUpload({ onFileSelected, disabled }: FileUploadProps
 
   return (
     <div
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
-      className={`card border-2 border-dashed cursor-pointer transition-all ${
+      className={`card border-2 border-dashed cursor-pointer transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
         dragActive
           ? "border-primary bg-primary/10"
           : "border-border hover:border-primary/40 hover:bg-foreground/[0.04]"
       } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
       onClick={() => !disabled && inputRef.current?.click()}
+      onKeyDown={(e) => {
+        if (disabled) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          inputRef.current?.click();
+        }
+      }}
     >
       <input
         ref={inputRef}

@@ -190,18 +190,14 @@ export default function Home() {
 
   return (
     <div className={`min-h-screen bg-background relative overflow-hidden transition-colors duration-300 ${theme === "light" ? "light-theme" : ""}`}>
-      {/* Dynamic glow decoration background line */}
-      {theme === "dark" && <div className="bg-glow-line top-0 left-0" />}
+      {/* Dynamic glow decoration background line (hidden in light mode via CSS) */}
+      <div className="bg-glow-line top-0 left-0" />
 
       {/* Mobile Header */}
       <header className="lg:hidden flex items-center justify-between p-4 border-b border-[var(--header-border)] bg-[var(--header-bg)]/80 backdrop-blur-md sticky top-0 z-40 relative">
         <div className="flex items-center gap-3">
           <Logo size="sm" animated />
-          <h1 className={`text-lg font-bold tracking-tight ${
-            theme === "dark"
-              ? "text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-400"
-              : "text-foreground"
-          }`}>
+          <h1 className="brand-title text-lg font-bold tracking-tight">
             Voxnote
           </h1>
         </div>
@@ -261,11 +257,7 @@ export default function Home() {
               <div className="inline-flex items-center gap-5 bg-[var(--header-bg)] border border-[var(--header-border)] px-7 py-4 rounded-3xl shadow-[var(--header-shadow)]">
                 <Logo size="lg" animated />
                 <div className="text-left">
-                  <h1 className={`text-2xl lg:text-3xl font-extrabold tracking-tight ${
-                    theme === "dark"
-                      ? "text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300"
-                      : "text-foreground"
-                  }`}>
+                  <h1 className="brand-title text-2xl lg:text-3xl font-extrabold tracking-tight">
                     Voxnote
                   </h1>
                   <p className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase mt-1">

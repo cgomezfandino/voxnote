@@ -119,10 +119,10 @@ const markdownComponents: Components = {
   input: ({ checked }) => (
     <span
       className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
-        checked ? "bg-success/20 border-success" : "border-border bg-muted"
+        checked ? "bg-success border-success" : "border-border bg-muted"
       }`}
     >
-      {checked && <Check className="w-3 h-3 text-success" />}
+      {checked && <Check className="w-3 h-3 text-accent-foreground" />}
     </span>
   ),
   blockquote: ({ children }) => (
@@ -145,7 +145,7 @@ const markdownComponents: Components = {
     </a>
   ),
   code: ({ children }) => (
-    <code className="px-1.5 py-0.5 rounded bg-muted text-primary text-[0.8em] font-mono">
+    <code className="px-1.5 py-0.5 rounded bg-muted text-foreground text-[0.8em] font-mono">
       {children}
     </code>
   ),
@@ -327,7 +327,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
           >
             {copied ? (
               <>
-                <Check className="w-3.5 h-3.5 text-accent" />
+                <Check className="w-3.5 h-3.5 text-success" />
                 Copiado
               </>
             ) : (
@@ -342,7 +342,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
             <button
               onClick={() => setMenuOpen((o) => !o)}
               disabled={downloading}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-primary/15 border border-primary/30 hover:bg-primary/25 text-primary transition-colors disabled:opacity-60"
+              className="btn-primary flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-60"
             >
               {downloading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -399,9 +399,9 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
         <div className="mb-4">
           <button
             onClick={() => setShowRename((s) => !s)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-semibold text-foreground hover:text-foreground/80 transition-colors"
           >
-            <Users className="w-3.5 h-3.5" />
+            <Users className="w-3.5 h-3.5 text-primary" />
             {showRename ? "Ocultar" : "Renombrar hablantes"} ({speakers.length})
           </button>
 
@@ -419,7 +419,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
                       setNames((n) => ({ ...n, [sp]: e.target.value }))
                     }
                     placeholder="Nombre real…"
-                    className="flex-1 bg-background border border-border rounded-md px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none"
+                    className="flex-1 bg-background border border-border rounded-md px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none"
                   />
                 </div>
               ))}
@@ -427,7 +427,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
                 <button
                   onClick={handleRename}
                   disabled={renaming}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-primary/15 border border-primary/30 hover:bg-primary/25 text-primary transition-colors disabled:opacity-60"
+                  className="btn-primary flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-60"
                 >
                   {renaming ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
