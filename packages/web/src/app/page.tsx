@@ -477,7 +477,7 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="card text-center card-glow-green">
-                        <div className="text-3xl font-extrabold text-accent drop-shadow-[0_0_12px_rgba(0,242,152,0.3)]">
+                        <div className="text-3xl font-extrabold text-accent drop-shadow-[0_0_12px_rgba(52,211,153,0.3)]">
                           {notesToday}
                         </div>
                         <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mt-1.5">
@@ -485,7 +485,7 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="card text-center sm:col-span-2 lg:col-span-1 card-glow-green">
-                        <div className="text-3xl font-extrabold text-accent drop-shadow-[0_0_12px_rgba(0,242,152,0.3)]">
+                        <div className="text-3xl font-extrabold text-accent drop-shadow-[0_0_12px_rgba(52,211,153,0.3)]">
                           {notesThisWeek}
                         </div>
                         <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mt-1.5">

@@ -442,8 +442,8 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
         </div>
       )}
 
-      {/* Content */}
-      <div className="bg-muted rounded-lg p-4 sm:p-5 max-h-[60vh] overflow-y-auto border border-border">
+      {/* Content — sits directly on the card surface (clean "document", no gray box) */}
+      <div className="rounded-lg py-1 max-h-[60vh] overflow-y-auto">
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
           {main}
         </ReactMarkdown>

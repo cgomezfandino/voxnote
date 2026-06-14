@@ -111,7 +111,7 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
       </div>
 
       {/* Waveform Canvas Div */}
-      <div ref={containerRef} className="mb-4 relative z-10 filter drop-shadow-[0_2px_8px_rgba(0,242,152,0.15)]" />
+      <div ref={containerRef} className="mb-4 relative z-10 filter drop-shadow-[0_2px_8px_rgba(52,211,153,0.15)]" />
 
       {/* Control Actions Deck */}
       <div className="flex items-center justify-between gap-4 pt-2 border-t border-border relative z-10">
