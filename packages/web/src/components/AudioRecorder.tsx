@@ -249,7 +249,7 @@ export default function AudioRecorder({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-xs sm:text-sm text-slate-400 font-medium max-w-xs mx-auto leading-relaxed"
+              className="text-xs sm:text-sm text-muted-foreground font-medium max-w-xs mx-auto leading-relaxed"
             >
               Haz clic en el botón de abajo para iniciar la grabación de voz.
             </motion.div>
@@ -289,7 +289,7 @@ export default function AudioRecorder({
                 onClick={stopRecording}
                 className="relative z-10 w-16 h-16 rounded-full bg-accent text-background flex items-center justify-center hover:scale-105 hover:bg-accent/90 transition-all shadow-[0_0_20px_rgba(0,242,152,0.45)] focus:outline-none"
               >
-                <Square className="w-5 h-5 fill-slate-900 stroke-none" />
+                <Square className="w-5 h-5 fill-accent-foreground stroke-none" />
               </button>
             </motion.div>
           )}
@@ -312,7 +312,7 @@ export default function AudioRecorder({
                 onClick={onProcess} 
                 className="btn-accent flex-1 py-3 px-4 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,242,152,0.25)]"
               >
-                <FileAudio className="w-4 h-4 text-slate-900" />
+                <FileAudio className="w-4 h-4 text-accent-foreground" />
                 Procesar
               </button>
             </motion.div>

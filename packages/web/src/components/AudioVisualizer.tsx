@@ -92,7 +92,7 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
   };
 
   return (
-    <div className="card border border-white/5 relative overflow-hidden">
+    <div className="card border border-border relative overflow-hidden">
       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
       
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-5 relative z-10">
@@ -109,7 +109,7 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
       <div ref={containerRef} className="mb-4 relative z-10 filter drop-shadow-[0_2px_8px_rgba(0,242,152,0.15)]" />
 
       {/* Control Actions Deck */}
-      <div className="flex items-center justify-between gap-4 pt-2 border-t border-white/5 relative z-10">
+      <div className="flex items-center justify-between gap-4 pt-2 border-t border-border relative z-10">
         <div className="flex items-center gap-3">
           <button
             onClick={togglePlay}
@@ -119,17 +119,17 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
             {isPlaying ? <Pause className="w-4.5 h-4.5" /> : <Play className="w-4.5 h-4.5 ml-0.5" />}
           </button>
           
-          <span className="text-xs text-muted-foreground font-mono bg-slate-900/60 border border-white/5 px-2.5 py-1 rounded-md tabular-nums">
+          <span className="text-xs text-muted-foreground font-mono bg-muted border border-border px-2.5 py-1 rounded-md tabular-nums">
             {currentTime} / {duration}
           </span>
         </div>
 
         <button
           onClick={downloadAudio}
-          className="p-2 rounded-lg bg-slate-900/60 border border-white/5 hover:bg-white/5 transition-colors self-start sm:self-auto"
+          className="p-2 rounded-lg bg-muted border border-border hover:bg-foreground/[0.04] transition-colors self-start sm:self-auto"
           title="Descargar archivo de audio"
         >
-          <Download className="w-4 h-4 text-slate-400" />
+          <Download className="w-4 h-4 text-muted-foreground" />
         </button>
       </div>
     </div>

@@ -82,7 +82,7 @@ const markdownComponents: Components = {
     </h1>
   ),
   h2: ({ children }) => (
-    <h2 className="text-base font-semibold text-foreground mt-6 mb-2.5 pb-1.5 border-b border-white/5 first:mt-0">
+    <h2 className="text-base font-semibold text-foreground mt-6 mb-2.5 pb-1.5 border-b border-border first:mt-0">
       {children}
     </h2>
   ),
@@ -119,7 +119,7 @@ const markdownComponents: Components = {
   input: ({ checked }) => (
     <span
       className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
-        checked ? "bg-success/20 border-success" : "border-white/25 bg-white/5"
+        checked ? "bg-success/20 border-success" : "border-border bg-muted"
       }`}
     >
       {checked && <Check className="w-3 h-3 text-success" />}
@@ -145,23 +145,23 @@ const markdownComponents: Components = {
     </a>
   ),
   code: ({ children }) => (
-    <code className="px-1.5 py-0.5 rounded bg-white/5 text-primary text-[0.8em] font-mono">
+    <code className="px-1.5 py-0.5 rounded bg-muted text-primary text-[0.8em] font-mono">
       {children}
     </code>
   ),
-  hr: () => <hr className="border-white/5 my-5" />,
+  hr: () => <hr className="border-border my-5" />,
   table: ({ children }) => (
-    <div className="overflow-x-auto mb-4 rounded-lg border border-white/10">
+    <div className="overflow-x-auto mb-4 rounded-lg border border-border">
       <table className="w-full text-sm border-collapse">{children}</table>
     </div>
   ),
   th: ({ children }) => (
-    <th className="text-left font-semibold text-foreground bg-white/5 px-3 py-2 border-b border-white/10">
+    <th className="text-left font-semibold text-foreground bg-muted px-3 py-2 border-b border-border">
       {children}
     </th>
   ),
   td: ({ children }) => (
-    <td className="px-3 py-2 border-b border-white/5 text-foreground/90 align-top">
+    <td className="px-3 py-2 border-b border-border text-foreground/90 align-top">
       {children}
     </td>
   ),
@@ -311,7 +311,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
             <FileText className="w-4.5 h-4.5 text-primary" />
           </div>
           <div className="min-w-0">
-            <h3 className="font-bold uppercase tracking-wider text-xs text-slate-300">
+            <h3 className="font-bold uppercase tracking-wider text-xs text-foreground">
               Nota Generada
             </h3>
             <p className="text-[10px] text-muted-foreground font-mono mt-0.5 truncate">
@@ -323,7 +323,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-slate-900/60 border border-white/5 hover:bg-white/5 text-slate-300 transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-muted border border-border hover:bg-foreground/[0.06] text-foreground transition-colors"
           >
             {copied ? (
               <>
@@ -332,7 +332,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
               </>
             ) : (
               <>
-                <Copy className="w-3.5 h-3.5 text-slate-400" />
+                <Copy className="w-3.5 h-3.5 text-muted-foreground" />
                 Copiar
               </>
             )}
@@ -361,11 +361,11 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
-                  className="absolute right-0 mt-1.5 w-56 z-20 rounded-lg border border-white/10 bg-slate-900/95 backdrop-blur shadow-xl overflow-hidden"
+                  className="absolute right-0 mt-1.5 w-56 z-20 rounded-lg border border-border bg-background backdrop-blur shadow-xl overflow-hidden"
                 >
                   <button
                     onClick={handleDownloadWord}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-sm text-slate-200 hover:bg-white/5 transition-colors"
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-sm text-foreground hover:bg-foreground/[0.06] transition-colors"
                   >
                     <FileType2 className="w-4 h-4 text-primary flex-shrink-0" />
                     <span>
@@ -377,9 +377,9 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
                   </button>
                   <button
                     onClick={handleDownloadMarkdown}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-sm text-slate-200 hover:bg-white/5 transition-colors border-t border-white/5"
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-sm text-foreground hover:bg-foreground/[0.06] transition-colors border-t border-border"
                   >
-                    <FileText className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                     <span>
                       Markdown
                       <span className="block text-[10px] text-muted-foreground">
@@ -406,7 +406,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
           </button>
 
           {showRename && (
-            <div className="mt-3 p-3.5 rounded-lg bg-slate-900/40 border border-white/5 space-y-2.5">
+            <div className="mt-3 p-3.5 rounded-lg bg-muted border border-border space-y-2.5">
               {speakers.map((sp) => (
                 <div key={sp} className="flex items-center gap-2.5">
                   <span className="text-xs font-mono text-muted-foreground w-24 flex-shrink-0">
@@ -419,7 +419,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
                       setNames((n) => ({ ...n, [sp]: e.target.value }))
                     }
                     placeholder="Nombre real…"
-                    className="flex-1 bg-slate-950/60 border border-white/10 rounded-md px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none"
+                    className="flex-1 bg-background border border-border rounded-md px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none"
                   />
                 </div>
               ))}
@@ -443,7 +443,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
       )}
 
       {/* Content */}
-      <div className="bg-slate-950/40 rounded-lg p-4 sm:p-5 max-h-[60vh] overflow-y-auto border border-white/5">
+      <div className="bg-muted rounded-lg p-4 sm:p-5 max-h-[60vh] overflow-y-auto border border-border">
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
           {main}
         </ReactMarkdown>

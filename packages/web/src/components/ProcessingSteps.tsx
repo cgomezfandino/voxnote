@@ -39,7 +39,7 @@ function StepIcon({ status }: { status: StepStatus }) {
       );
     default:
       return (
-        <div className="w-7 h-7 rounded-full border-2 border-white/10 bg-slate-950/40" />
+        <div className="w-7 h-7 rounded-full border-2 border-border bg-muted" />
       );
   }
 }
@@ -48,7 +48,7 @@ export default function ProcessingSteps({ steps, onRetry }: ProcessingStepsProps
   if (steps.length === 0) return null;
 
   return (
-    <div className="card border border-white/5">
+    <div className="card border border-border">
       <div className="space-y-0">
         {steps.map((step, index) => (
           <div key={step.id} className="flex items-start gap-3">
@@ -58,7 +58,7 @@ export default function ProcessingSteps({ steps, onRetry }: ProcessingStepsProps
               {index < steps.length - 1 && (
                 <div
                   className={`w-0.5 h-8 mt-1 ${
-                    step.status === "completed" ? "bg-success" : "bg-white/5"
+                    step.status === "completed" ? "bg-success" : "bg-border"
                   }`}
                 />
               )}
