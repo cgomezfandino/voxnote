@@ -3,68 +3,68 @@
 @tailwind utilities;
 
 :root {
-  /* Dark Theme (Concept 1: The Intelligent Voice) */
-  --background: #0F1623;
-  --foreground: #E6E9F0;
-  --muted: #1A2235;
-  --muted-foreground: #98A2B5;
-  --border: rgba(30, 41, 59, 0.8);
+  /* Dark Theme — Concept C "Refined Voice": deep slate surfaces, non-neon emerald accent */
+  --background: #0E1726;
+  --foreground: #E6EAF0;
+  --muted: #1B2740;
+  --muted-foreground: #93A0B4;
+  --border: rgba(40, 52, 74, 0.8);
   --primary: #6366F1;
   --primary-foreground: #FFFFFF;
   --primary-hover: #4F46E5;
   --primary-light: rgba(99, 102, 241, 0.15);
-  --secondary: #1F2A3D;
-  --secondary-foreground: #E6E9F0;
-  --accent: #00F298;
-  --accent-foreground: #0F1623;
-  --accent-light: rgba(0, 242, 152, 0.15);
-  --success: #00F298;
-  --success-light: rgba(0, 242, 152, 0.1);
+  --secondary: #18233A;
+  --secondary-foreground: #E6EAF0;
+  --accent: #34D399;
+  --accent-foreground: #04231A;
+  --accent-light: rgba(52, 211, 153, 0.15);
+  --success: #34D399;
+  --success-light: rgba(52, 211, 153, 0.1);
   --danger: #F4495F;
   --danger-foreground: #FFFFFF;
   --danger-light: rgba(244, 73, 95, 0.12);
   --danger-border: rgba(244, 73, 95, 0.3);
 
   /* Layout custom variables */
-  --card-bg: rgba(26, 34, 53, 0.6);
+  --card-bg: rgba(24, 35, 58, 0.55);
   --card-border: rgba(255, 255, 255, 0.05);
-  --input-bg: rgba(26, 34, 53, 0.7);
-  --sidebar-bg: rgba(22, 30, 47, 0.85);
+  --input-bg: rgba(24, 35, 58, 0.7);
+  --sidebar-bg: rgba(20, 30, 50, 0.85);
   --sidebar-border: rgba(255, 255, 255, 0.05);
   --accordion-bg: rgba(15, 23, 42, 0.3);
   --accordion-content-bg: rgba(15, 23, 42, 0.15);
   --accordion-border: rgba(255, 255, 255, 0.05);
 
   /* Brand and Header specific */
-  --header-bg: rgba(2, 6, 23, 0.25);
+  --header-bg: rgba(6, 12, 24, 0.25);
   --header-border: rgba(255, 255, 255, 0.05);
   --header-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
 
   /* Tabs Navigation styling */
-  --tabs-bg: rgba(17, 22, 37, 0.6);
+  --tabs-bg: rgba(24, 35, 58, 0.6);
   --tabs-border: rgba(255, 255, 255, 0.05);
   --tab-active-bg: rgba(15, 23, 42, 0.6);
-  --tab-active-text: #00F298;
-  --tab-active-border: rgba(0, 242, 152, 0.25);
+  --tab-active-text: #34D399;
+  --tab-active-border: rgba(52, 211, 153, 0.25);
 
   /* Mic Button styling */
-  --record-btn-bg: linear-gradient(135deg, #6366F1, #00F298);
-  --record-mic-color: #0F1623;
-  --record-shadow: 0 0 25px rgba(0, 242, 152, 0.35);
+  --record-btn-bg: linear-gradient(135deg, #6366F1, #34D399);
+  --record-mic-color: #04231A;
+  --record-shadow: 0 0 25px rgba(52, 211, 153, 0.35);
 }
 
 .light-theme {
-  /* Light Theme (Original Minimalist Light Mode) */
-  --background: #E9EDF3;
-  --foreground: #1E293B;
-  --muted: #DCE3EC;
-  --muted-foreground: #566173;
-  --border: #CBD5E1;
+  /* Light Theme — Concept C "Refined Voice": cooler clean surfaces, AA-safe emerald */
+  --background: #F4F7F9;
+  --foreground: #0F172A;
+  --muted: #EAEFF3;
+  --muted-foreground: #5B6878;
+  --border: #DCE3EA;
   --primary: #4F46E5;
   --primary-foreground: #FFFFFF;
   --primary-hover: #4338CA;
   --primary-light: #EEF2FF;
-  --secondary: #F1F5F9;
+  --secondary: #EFF3F6;
   --secondary-foreground: #334155;
   --accent: #047857;
   --accent-foreground: #FFFFFF;
@@ -79,10 +79,10 @@
   /* Layout custom variables */
   --card-bg: #FFFFFF;
   --card-border: #E2E8F0;
-  --input-bg: #F1F5F9;
+  --input-bg: #EFF3F6;
   --sidebar-bg: #FFFFFF;
   --sidebar-border: #E2E8F0;
-  --accordion-bg: #F8FAFC;
+  --accordion-bg: #F4F7F9;
   --accordion-content-bg: #FFFFFF;
   --accordion-border: #E2E8F0;
 
@@ -92,16 +92,16 @@
   --header-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
 
   /* Tabs Navigation styling */
-  --tabs-bg: #E2E8F0;
+  --tabs-bg: #E6ECF1;
   --tabs-border: #E2E8F0;
   --tab-active-bg: #FFFFFF;
   --tab-active-text: #4F46E5;
-  --tab-active-border: #CBD5E1;
+  --tab-active-border: #DCE3EA;
 
   /* Mic Button styling */
-  --record-btn-bg: linear-gradient(135deg, #4F46E5, #00F298);
+  --record-btn-bg: linear-gradient(135deg, #4F46E5, #34D399);
   --record-mic-color: #FFFFFF;
-  --record-shadow: 0 8px 24px rgba(0, 242, 152, 0.35);
+  --record-shadow: 0 8px 24px rgba(52, 211, 153, 0.35);
 }
 
 /* Root-canvas background, set per theme. The page shell is themed on an inner wrapper, so
@@ -109,10 +109,10 @@
    when a tall page (e.g. an expanded note) scrolls. Setting it on <html> paints the canvas
    correctly in both themes (the theme class is mirrored onto <html> from page.tsx). */
 html {
-  background-color: #0f1623;
+  background-color: #0e1726;
 }
 html.light-theme {
-  background-color: #e9edf3;
+  background-color: #f4f7f9;
 }
 
 /* Brand wordmark and the decorative top glow are theme-dependent in appearance. Driving
@@ -166,8 +166,8 @@ html.light-theme {
     @apply card;
   }
   :not(.light-theme) .card-glow-green:hover {
-    border-color: rgba(0, 242, 152, 0.3);
-    box-shadow: 0 0 25px rgba(0, 242, 152, 0.05);
+    border-color: rgba(52, 211, 153, 0.3);
+    box-shadow: 0 0 25px rgba(52, 211, 153, 0.05);
   }
   
   .card-glow-indigo {
@@ -202,7 +202,7 @@ html.light-theme {
     @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-accent text-accent-foreground font-semibold text-sm transition-all active:scale-[0.98];
   }
   :not(.light-theme) .btn-accent {
-    @apply shadow-[0_0_15px_rgba(0,242,152,0.35)] hover:opacity-90 hover:shadow-[0_0_20px_rgba(0,242,152,0.5)];
+    @apply shadow-[0_0_15px_rgba(52,211,153,0.35)] hover:opacity-90 hover:shadow-[0_0_20px_rgba(52,211,153,0.5)];
   }
   .light-theme .btn-accent {
     @apply shadow-button hover:opacity-90;

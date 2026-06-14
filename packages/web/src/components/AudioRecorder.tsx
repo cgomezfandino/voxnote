@@ -183,7 +183,7 @@ export default function AudioRecorder({
             }}
             className={`w-[5px] sm:w-[6px] rounded-full transition-all duration-300 ${
               isRecording 
-                ? "bg-gradient-to-t from-primary via-accent to-accent shadow-[0_0_10px_rgba(0,242,152,0.3)]" 
+                ? "bg-gradient-to-t from-primary via-accent to-accent shadow-[0_0_10px_rgba(52,211,153,0.3)]" 
                 : hasRecording 
                   ? "bg-primary" 
                   : "bg-border"
@@ -203,7 +203,7 @@ export default function AudioRecorder({
               exit={{ opacity: 0, scale: 0.95 }}
               className="space-y-1"
             >
-              <div className="text-4xl sm:text-5xl font-bold text-accent tracking-wider font-mono tabular-nums drop-shadow-[0_0_15px_rgba(0,242,152,0.2)]">
+              <div className="text-4xl sm:text-5xl font-bold text-accent tracking-wider font-mono tabular-nums drop-shadow-[0_0_15px_rgba(52,211,153,0.2)]">
                 {formatDuration(recordingTime)}
               </div>
               <div className="flex items-center justify-center gap-2 text-xs font-semibold text-accent uppercase tracking-widest mt-1">
@@ -287,7 +287,7 @@ export default function AudioRecorder({
               
               <button
                 onClick={stopRecording}
-                className="relative z-10 w-16 h-16 rounded-full bg-accent text-background flex items-center justify-center hover:scale-105 hover:bg-accent/90 transition-all shadow-[0_0_20px_rgba(0,242,152,0.45)] focus:outline-none"
+                className="relative z-10 w-16 h-16 rounded-full bg-accent text-background flex items-center justify-center hover:scale-105 hover:bg-accent/90 transition-all shadow-[0_0_20px_rgba(52,211,153,0.45)] focus:outline-none"
               >
                 <Square className="w-5 h-5 fill-accent-foreground stroke-none" />
               </button>
@@ -310,7 +310,7 @@ export default function AudioRecorder({
               </button>
               <button 
                 onClick={onProcess} 
-                className="btn-accent flex-1 py-3 px-4 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,242,152,0.25)]"
+                className="btn-accent flex-1 py-3 px-4 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(52,211,153,0.25)]"
               >
                 <FileAudio className="w-4 h-4 text-accent-foreground" />
                 Procesar

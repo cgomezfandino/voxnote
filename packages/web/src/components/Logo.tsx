@@ -21,7 +21,7 @@ export default function Logo({ size = "md", animated = true }: LogoProps) {
     <motion.div
       className="relative flex items-center justify-center overflow-hidden rounded-2xl border border-white/10 shadow-[0_0_20px_rgba(99,102,241,0.25)]"
       style={{ width: containerSize, height: containerSize }}
-      whileHover={animated ? { scale: 1.05, boxShadow: "0 0 25px rgba(0, 242, 152, 0.35)" } : undefined}
+      whileHover={animated ? { scale: 1.05, boxShadow: "0 0 25px rgba(52, 211, 153, 0.35)" } : undefined}
       whileTap={animated ? { scale: 0.95 } : undefined}
     >
       <img
