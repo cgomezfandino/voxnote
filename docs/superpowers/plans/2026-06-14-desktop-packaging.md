@@ -685,3 +685,16 @@ Test count: api 32 passing (was 27 + `test_static_serving` / `test_auth` / `test
 **Not verified (deliberately, while the user is away):** a full browser Record→Transcribe→Insights→Export round-trip — it needs the heavy ML stack (torch/whisper) + a running Ollama, intentionally not installed in the light verification venv. Best run with the full `make dev` stack on the user's machine.
 
 **Next:** Stage B starts with A4b (`uv.lock`), then B1 (ffmpeg resolver) — and needs cert procurement (Apple Developer + Windows OV) kicked off in parallel since it gates distribution (C2).
+
+### Real round-trip validation with Ollama (2026-06-15)
+
+Ran the full pipeline against real components on the worktree (installed torch 2.12 + openai-whisper into the verification venv; started the user's Ollama with `gemma4` models): **Record-audio → Whisper transcribe → Ollama insights → export → note in the UI HISTORIAL**. All four stages returned 200 and the generated Obsidian note rendered in the real UI. Findings that feed Stage B and the 3B-vs-8B decision:
+
+1. **Synthetic-TTS audio transcribes poorly** (expected — HANDOFF already noted it). Real Whisper ran fine (200); quality needs a real voice + `turbo`. Not a pipeline bug.
+2. **Small models fail schema-faithful JSON.** `gemma4:e4b` (~4B) returned 200 from Ollama but output that the provider couldn't parse → `400 invalid provider response`. This **confirms the skeptic's risk** for the packaged 3B default.
+3. **The Ollama provider does NOT use Ollama's `format: "json"` constrained-decoding mode** (`packages/core/voxnote/providers/ollama.py:34`) — it relies on the prompt + a regex/repair cleanup. Adding `"format": "json"` (and/or a JSON schema) to the request would force valid JSON and largely fix finding #2. **Actionable B4/insights-reliability item; required before defaulting to 3B.**
+4. **12B is reliable but slow:** `gemma4:12b` produced a perfect 9-key extraction (correct participants, decisions, action items) but took **~129 s** for the full `num_predict=3000` insights generation on this Mac. Confirms the **3B-fast vs 12B-reliable tension** — the packaged 3B + `format:json` + a schema eval is the combination to validate.
+5. **Cold model load exceeds the 120 s default timeout** (`VOXNOTE_OLLAMA_TIMEOUT`): the first 12B call timed out purely on weight-loading. The shell must **warm the model on first run** and/or raise the timeout; B5/B7 first-run UX should cover this.
+6. **Confirmed earlier:** the "Ollama Activo" badge is **hardcoded** (showed active while the API returned 503 with Ollama down) → B4 replaces it with a live `/api/ready` signal.
+
+Net: the end-to-end pipeline works against real Whisper + Ollama + export and into the UI. The reliability gaps are all in the LLM-insights layer and are exactly the Stage B (B4/B5) + 3B-decision items already in this plan — now with concrete repro evidence.
