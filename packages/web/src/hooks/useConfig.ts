@@ -23,6 +23,7 @@ export function useConfig() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingRef = useRef<Partial<AppConfig>>({});
 
   // Load config from backend on mount
   useEffect(() => {
@@ -37,14 +38,18 @@ export function useConfig() {
       });
   }, []);
 
-  // Debounced sync to backend
+  // Debounced sync to backend — accumulates all fields changed within the window
+  // into a single PUT (so e.g. a provider switch + its URL go together).
   const syncToBackend = useCallback((updates: Partial<AppConfig>) => {
+    pendingRef.current = { ...pendingRef.current, ...updates };
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     debounceRef.current = setTimeout(async () => {
+      const payload = pendingRef.current;
+      pendingRef.current = {};
       setIsSyncing(true);
       try {
-        await apiUpdateConfig(updates);
+        await apiUpdateConfig(payload);
       } catch {
         // Silently fail - config is local too
       } finally {
