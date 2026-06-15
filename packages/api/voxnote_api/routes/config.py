@@ -53,6 +53,11 @@ async def update_config(request: ConfigUpdateRequest) -> ConfigResponse:
     if request.ollama_model is not None:
         os.environ["VOXNOTE_OLLAMA_MODEL"] = request.ollama_model
         settings.ollama_model = request.ollama_model
+    if request.ollama_url is not None:
+        # A cleared field falls back to the local default instead of an empty URL.
+        url = request.ollama_url.strip() or "http://localhost:11434"
+        os.environ["VOXNOTE_OLLAMA_URL"] = url
+        settings.ollama_url = url
     if request.ollama_api_key is not None:
         # Don't overwrite if frontend sends "***" (mask)
         if request.ollama_api_key != "***":

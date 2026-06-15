@@ -332,7 +332,7 @@ export default function ConfigPanel({
                     </label>
                     <input
                       type="text"
-                      value={config.ollama_url || defaultBaseUrls[config.llm_provider] || ""}
+                      value={config.ollama_url ?? ""}
                       onChange={(e) => onUpdate("ollama_url", e.target.value)}
                       placeholder="http://localhost:11434"
                       className="input text-xs py-2"

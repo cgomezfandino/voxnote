@@ -200,6 +200,7 @@ class ConfigUpdateRequest(BaseModel):
     language: str | None = None
     llm_provider: str | None = None
     ollama_model: str | None = None
+    ollama_url: str | None = None
     ollama_api_key: str | None = None
     openai_model: str | None = None
     google_model: str | None = None
