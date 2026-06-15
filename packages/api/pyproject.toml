@@ -24,6 +24,7 @@ dev = [
 
 [project.scripts]
 voxnote-api = "voxnote_api.main:run"
+voxnote-desktop = "voxnote_api.desktop:main"
 
 [tool.setuptools.packages.find]
 include = ["voxnote_api*"]

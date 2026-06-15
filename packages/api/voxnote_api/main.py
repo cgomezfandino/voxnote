@@ -19,9 +19,17 @@ from voxnote_api.routes import config, export, health, insights, notes, ollama, 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application startup and shutdown."""
+    import logging
+
     from voxnote.config import settings
 
+    logging.basicConfig(level=logging.INFO)
     settings.output_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        # Notes can contain sensitive meeting content; keep the dir owner-only.
+        settings.output_dir.chmod(0o700)
+    except OSError:
+        logging.getLogger("voxnote").warning("could not chmod 0o700 on output_dir")
     yield
 
 
