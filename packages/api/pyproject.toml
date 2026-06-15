@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "voxnote-api"
 version = "0.1.0"
 description = "FastAPI backend for Voxnote"
-requires-python = ">=3.10"
+requires-python = ">=3.11,<3.14"
 license = { text = "MIT" }
 
 dependencies = [
@@ -30,7 +30,7 @@ voxnote-desktop = "voxnote_api.desktop:main"
 include = ["voxnote_api*"]
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 100
 src = ["voxnote_api", "tests"]
 
