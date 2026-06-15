@@ -80,6 +80,7 @@ export default function ConfigPanel({
   const currentProvider = llmProviders.find(p => p.value === config.llm_provider);
   const [dynamicOllamaModels, setDynamicOllamaModels] = useState<any[]>([]);
   const [modelSearch, setModelSearch] = useState("");
+  const [ollamaStatus, setOllamaStatus] = useState<"checking" | "online" | "offline">("checking");
 
   // Accordion open/close states
   const [whisperOpen, setWhisperOpen] = useState(true);
@@ -88,11 +89,16 @@ export default function ConfigPanel({
 
   useEffect(() => {
     if (config.llm_provider === "ollama") {
+      setOllamaStatus("checking");
       listOllamaModels()
         .then((models) => {
           setDynamicOllamaModels(models);
+          setOllamaStatus("online");
         })
-        .catch(() => setDynamicOllamaModels([]));
+        .catch(() => {
+          setDynamicOllamaModels([]);
+          setOllamaStatus("offline");
+        });
     }
   }, [config.llm_provider]);
 
@@ -254,15 +260,22 @@ export default function ConfigPanel({
                 </div>
               )}
 
-              {/* Status banner for Ollama */}
-              {config.llm_provider === "ollama" && (
-                <div className="p-2 rounded-lg bg-accent/5 border border-accent/15">
-                  <div className="flex items-center gap-1.5 text-[10px] text-accent font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                    Ollama Activo
+              {/* Status banner for Ollama — reflects the live /api/ollama/models probe */}
+              {config.llm_provider === "ollama" && (() => {
+                const status = {
+                  checking: { wrap: "bg-foreground/5 border-border", text: "text-muted-foreground", dot: "bg-muted-foreground animate-pulse", label: "Comprobando Ollama…" },
+                  online: { wrap: "bg-accent/5 border-accent/15", text: "text-accent", dot: "bg-accent animate-pulse", label: "Ollama activo" },
+                  offline: { wrap: "bg-[var(--danger-light)] border-[var(--danger-border)]", text: "text-[var(--danger)]", dot: "bg-[var(--danger)]", label: "Ollama no disponible" },
+                }[ollamaStatus];
+                return (
+                  <div className={`p-2 rounded-lg border ${status.wrap}`}>
+                    <div className={`flex items-center gap-1.5 text-[10px] font-medium ${status.text}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                      {status.label}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           )}
         </div>
