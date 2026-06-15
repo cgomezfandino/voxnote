@@ -289,19 +289,39 @@ cp .env.example .env
 VOXNOTE_LLM_PROVIDER=ollama
 ```
 
+> **Tus credenciales, en tu `.env`.** Las API keys y endpoints de los proveedores en la nube los pones **tú** en `.env` (o variables de entorno), igual que el `VOXNOTE_HF_TOKEN`. La app **nunca** guarda tus claves; solo las lee del entorno.
+
 ### OpenAI
 
 ```bash
 VOXNOTE_LLM_PROVIDER=openai
 OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o-mini
+# OPENAI_BASE_URL=https://api.openai.com/v1   # opcional: proxy / endpoint compatible
 ```
+
+Instala el extra: `pip install -e "packages/core[openai]"`.
 
 ### Google Gemini
 
 ```bash
 VOXNOTE_LLM_PROVIDER=google
-GOOGLE_API_KEY=...
+GOOGLE_API_KEY=...            # o GEMINI_API_KEY
+GOOGLE_MODEL=gemini-2.0-flash
 ```
+
+Instala el extra: `pip install -e "packages/core[google]"`.
+
+### Anthropic (Claude)
+
+```bash
+VOXNOTE_LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_MODEL=claude-opus-4-8   # o claude-sonnet-4-6 / claude-haiku-4-5
+# ANTHROPIC_BASE_URL=...          # opcional: proxy / gateway
+```
+
+Instala el extra: `pip install -e "packages/core[anthropic]"`.
 
 Ver [docs/multi-provider-setup.md](docs/multi-provider-setup.md) para más detalles.
 

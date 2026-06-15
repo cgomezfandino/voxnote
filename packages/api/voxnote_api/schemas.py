@@ -182,6 +182,7 @@ class ConfigResponse(BaseModel):
     ollama_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
     google_model: str = "gemini-2.0-flash"
+    anthropic_model: str = "claude-opus-4-8"
     diarize: bool
     hf_token: str = ""
     output_dir: str
@@ -189,7 +190,7 @@ class ConfigResponse(BaseModel):
 
 
 _ALLOWED_WHISPER_MODELS = {"tiny", "base", "small", "medium", "large-v3", "turbo"}
-_ALLOWED_PROVIDERS = {"ollama", "openai", "google"}
+_ALLOWED_PROVIDERS = {"ollama", "ollama-cloud", "openai", "google", "anthropic"}
 
 
 class ConfigUpdateRequest(BaseModel):
@@ -199,9 +200,11 @@ class ConfigUpdateRequest(BaseModel):
     language: str | None = None
     llm_provider: str | None = None
     ollama_model: str | None = None
+    ollama_url: str | None = None
     ollama_api_key: str | None = None
     openai_model: str | None = None
     google_model: str | None = None
+    anthropic_model: str | None = None
     diarize: bool | None = None
 
     @field_validator("whisper_model")

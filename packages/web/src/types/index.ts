@@ -73,6 +73,7 @@ export interface AppConfig {
   ollama_api_key?: string;
   openai_model: string;
   google_model: string;
+  anthropic_model: string;
   output_dir: string;
   diarize: boolean;
 }
