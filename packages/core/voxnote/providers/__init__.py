@@ -29,6 +29,7 @@ def get_provider(provider_name: str) -> LLMProvider:
     """
     providers = {
         "ollama": OllamaProvider,
+        "ollama-cloud": OllamaProvider,
         "openai": OpenAIProvider,
         "google": GoogleProvider,
         "anthropic": AnthropicProvider,

@@ -10,7 +10,7 @@ from voxnote_api.schemas import ConfigResponse, ConfigUpdateRequest
 
 router = APIRouter()
 
-AVAILABLE_PROVIDERS = ["ollama", "openai", "google", "anthropic"]
+AVAILABLE_PROVIDERS = ["ollama", "ollama-cloud", "openai", "google", "anthropic"]
 
 
 @router.get("/config", response_model=ConfigResponse)

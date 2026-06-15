@@ -190,7 +190,7 @@ class ConfigResponse(BaseModel):
 
 
 _ALLOWED_WHISPER_MODELS = {"tiny", "base", "small", "medium", "large-v3", "turbo"}
-_ALLOWED_PROVIDERS = {"ollama", "openai", "google", "anthropic"}
+_ALLOWED_PROVIDERS = {"ollama", "ollama-cloud", "openai", "google", "anthropic"}
 
 
 class ConfigUpdateRequest(BaseModel):
