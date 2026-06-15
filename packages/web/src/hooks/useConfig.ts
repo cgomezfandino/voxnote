@@ -13,6 +13,7 @@ const DEFAULT_CONFIG: AppConfig = {
   ollama_api_key: "",
   openai_model: "gpt-4o-mini",
   google_model: "gemini-2.0-flash",
+  anthropic_model: "claude-opus-4-8",
   output_dir: "output",
   diarize: false,
 };

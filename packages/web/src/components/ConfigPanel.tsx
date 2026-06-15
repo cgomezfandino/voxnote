@@ -66,6 +66,17 @@ const llmProviders = [
     ],
     modelKey: "google_model" as const,
   },
+  {
+    value: "anthropic",
+    label: "Claude (Anthropic)",
+    needsUrl: false,
+    models: [
+      { value: "claude-opus-4-8", label: "Claude Opus 4.8" },
+      { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
+      { value: "claude-haiku-4-5", label: "Claude Haiku 4.5" },
+    ],
+    modelKey: "anthropic_model" as const,
+  },
 ];
 
 const defaultBaseUrls: Record<string, string> = {
