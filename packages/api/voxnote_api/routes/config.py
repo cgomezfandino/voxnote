@@ -10,7 +10,7 @@ from voxnote_api.schemas import ConfigResponse, ConfigUpdateRequest
 
 router = APIRouter()
 
-AVAILABLE_PROVIDERS = ["ollama", "openai", "google"]
+AVAILABLE_PROVIDERS = ["ollama", "openai", "google", "anthropic"]
 
 
 @router.get("/config", response_model=ConfigResponse)
@@ -28,6 +28,7 @@ async def get_config() -> ConfigResponse:
         ollama_api_key="***" if s.ollama_api_key else "",
         openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
         google_model=os.getenv("GOOGLE_MODEL", "gemini-2.0-flash"),
+        anthropic_model=os.getenv("ANTHROPIC_MODEL", "claude-opus-4-8"),
         diarize=s.diarize,
         hf_token="***" if s.hf_token else "",
         output_dir=str(s.output_dir),
@@ -61,6 +62,8 @@ async def update_config(request: ConfigUpdateRequest) -> ConfigResponse:
         os.environ["OPENAI_MODEL"] = request.openai_model
     if request.google_model is not None:
         os.environ["GOOGLE_MODEL"] = request.google_model
+    if request.anthropic_model is not None:
+        os.environ["ANTHROPIC_MODEL"] = request.anthropic_model
     if request.diarize is not None:
         os.environ["VOXNOTE_DIARIZE"] = str(request.diarize).lower()
         settings.diarize = request.diarize
