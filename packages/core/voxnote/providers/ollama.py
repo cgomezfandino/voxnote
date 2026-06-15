@@ -38,6 +38,10 @@ class OllamaProvider(LLMProvider):
                 "model": settings.ollama_model,
                 "prompt": prompt,
                 "stream": False,
+                # Constrain decoding to valid JSON. Without this, small local models
+                # (e.g. ~3-4B) return prose/markdown that fails to parse; with it Ollama
+                # forces a well-formed JSON object.
+                "format": "json",
                 "options": {
                     "temperature": 0.1,
                     "num_predict": 3000,  # richer structure needs more tokens

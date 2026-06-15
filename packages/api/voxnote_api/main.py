@@ -2,22 +2,34 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
+from voxnote_api.deps import require_token
 from voxnote_api.routes import config, export, health, insights, notes, ollama, transcribe
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application startup and shutdown."""
+    import logging
+
     from voxnote.config import settings
 
+    logging.basicConfig(level=logging.INFO)
     settings.output_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        # Notes can contain sensitive meeting content; keep the dir owner-only.
+        settings.output_dir.chmod(0o700)
+    except OSError:
+        logging.getLogger("voxnote").warning("could not chmod 0o700 on output_dir")
     yield
 
 
@@ -56,13 +68,23 @@ def create_app() -> FastAPI:
                 return JSONResponse(status_code=413, content={"detail": "Request body too large."})
         return await call_next(request)
 
+    # health stays open for the shell's readiness probe; everything else requires the
+    # localhost token (constant-time check, no-op when VOXNOTE_API_TOKEN is unset in dev).
+    _auth = [Depends(require_token)]
     app.include_router(health.router, prefix="/api", tags=["health"])
-    app.include_router(transcribe.router, prefix="/api", tags=["transcribe"])
-    app.include_router(insights.router, prefix="/api", tags=["insights"])
-    app.include_router(export.router, prefix="/api", tags=["export"])
-    app.include_router(config.router, prefix="/api", tags=["config"])
-    app.include_router(notes.router, prefix="/api", tags=["notes"])
-    app.include_router(ollama.router, prefix="/api/ollama", tags=["ollama"])
+    app.include_router(transcribe.router, prefix="/api", tags=["transcribe"], dependencies=_auth)
+    app.include_router(insights.router, prefix="/api", tags=["insights"], dependencies=_auth)
+    app.include_router(export.router, prefix="/api", tags=["export"], dependencies=_auth)
+    app.include_router(config.router, prefix="/api", tags=["config"], dependencies=_auth)
+    app.include_router(notes.router, prefix="/api", tags=["notes"], dependencies=_auth)
+    app.include_router(ollama.router, prefix="/api/ollama", tags=["ollama"], dependencies=_auth)
+
+    # Serve the exported Next.js UI same-origin in the packaged app. Mounted AFTER the
+    # /api routers so /api/* always wins. Gated on VOXNOTE_WEB_DIR so dev (API-only) is
+    # unaffected. html=True serves index.html for "/".
+    web_dir = os.getenv("VOXNOTE_WEB_DIR")
+    if web_dir and Path(web_dir).is_dir():
+        app.mount("/", StaticFiles(directory=web_dir, html=True), name="web")
 
     return app
 

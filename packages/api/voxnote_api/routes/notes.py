@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -55,7 +55,7 @@ async def list_notes() -> list[NoteListItem]:
     for note_path in notes:
         content = note_path.read_text(encoding="utf-8")
         stat = note_path.stat()
-        created_at = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
+        created_at = datetime.fromtimestamp(stat.st_mtime, tz=UTC).isoformat()
         preview = _extract_preview(content)
 
         items.append(
@@ -90,7 +90,7 @@ async def get_note(filename: str) -> NoteDetailResponse:
 
     content = note_path.read_text(encoding="utf-8")
     stat = note_path.stat()
-    created_at = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
+    created_at = datetime.fromtimestamp(stat.st_mtime, tz=UTC).isoformat()
 
     return NoteDetailResponse(
         filename=note_path.name,
@@ -132,5 +132,5 @@ async def rename_speakers(filename: str, request: RenameSpeakersRequest) -> Note
     except OSError:
         pass
 
-    created_at = datetime.fromtimestamp(note_path.stat().st_mtime, tz=timezone.utc).isoformat()
+    created_at = datetime.fromtimestamp(note_path.stat().st_mtime, tz=UTC).isoformat()
     return NoteDetailResponse(filename=note_path.name, content=content, created_at=created_at)
