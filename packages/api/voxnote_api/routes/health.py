@@ -21,7 +21,6 @@ def readiness() -> dict:
     ``requests`` probe runs in the threadpool, not on the event loop.
     """
     import requests
-
     from voxnote.config import Settings
 
     settings = Settings()  # re-read from env each call
