@@ -24,10 +24,9 @@ const whisperModels = [
 const llmProviders = [
   {
     value: "ollama",
-    label: "Ollama",
+    label: "Ollama (Local)",
     needsUrl: true,
     models: [
-      { value: "gemma4:31b-cloud", label: "Gemma 4 31B (Cloud)" },
       { value: "gemma4:12b", label: "Gemma 4 12B" },
       { value: "llama3.1:8b", label: "Llama 3.1 8B" },
       { value: "qwen3:8b", label: "Qwen 3 8B" },
@@ -37,6 +36,13 @@ const llmProviders = [
       { value: "mistral-small3.2:24b", label: "Mistral Small 3.2 24B" },
       { value: "llama3.3:70b", label: "Llama 3.3 70B" },
     ],
+    modelKey: "ollama_model" as const,
+  },
+  {
+    value: "ollama-cloud",
+    label: "Ollama (Cloud)",
+    needsUrl: true,
+    models: [],
     modelKey: "ollama_model" as const,
   },
   {
@@ -81,7 +87,10 @@ const llmProviders = [
 
 const defaultBaseUrls: Record<string, string> = {
   ollama: "http://localhost:11434",
+  "ollama-cloud": "https://ollama.com",
 };
+
+const isOllama = (p: string) => p === "ollama" || p === "ollama-cloud";
 
 export default function ConfigPanel({
   config,
@@ -99,8 +108,11 @@ export default function ConfigPanel({
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
   useEffect(() => {
-    if (config.llm_provider === "ollama") {
-      setOllamaStatus("checking");
+    if (!isOllama(config.llm_provider)) return;
+    setOllamaStatus("checking");
+    // Debounce 700ms (> the 500ms config sync) so the backend has the latest
+    // url/key before we ask it for models.
+    const t = setTimeout(() => {
       listOllamaModels()
         .then((models) => {
           setDynamicOllamaModels(models);
@@ -110,11 +122,12 @@ export default function ConfigPanel({
           setDynamicOllamaModels([]);
           setOllamaStatus("offline");
         });
-    }
-  }, [config.llm_provider]);
+    }, 700);
+    return () => clearTimeout(t);
+  }, [config.llm_provider, config.ollama_url, config.ollama_api_key]);
 
   useEffect(() => {
-    if (config.llm_provider === "ollama" && dynamicOllamaModels.length > 0) {
+    if (isOllama(config.llm_provider) && dynamicOllamaModels.length > 0) {
       const currentModelExists = dynamicOllamaModels.some((m) => m.value === config.ollama_model);
       if (!currentModelExists) {
         // @ts-ignore - we know ollama_model is a valid key
@@ -124,7 +137,7 @@ export default function ConfigPanel({
   }, [config.llm_provider, config.ollama_model, dynamicOllamaModels, onUpdate]);
 
   let modelsToDisplay = currentProvider?.models || [];
-  if (currentProvider?.value === "ollama" && dynamicOllamaModels.length > 0) {
+  if (isOllama(currentProvider?.value ?? "") && dynamicOllamaModels.length > 0) {
     modelsToDisplay = dynamicOllamaModels;
   }
 
@@ -226,8 +239,15 @@ export default function ConfigPanel({
                 <select
                   value={config.llm_provider}
                   onChange={(e) => {
-                    onUpdate("llm_provider", e.target.value);
+                    const p = e.target.value;
+                    onUpdate("llm_provider", p);
                     setModelSearch("");
+                    // Auto-set the endpoint per Ollama variant; the user never types a URL.
+                    if (isOllama(p) && defaultBaseUrls[p]) {
+                      onUpdate("ollama_url", defaultBaseUrls[p]);
+                    }
+                    // Cloud needs the API key — open the Conexión panel so it's visible.
+                    if (p === "ollama-cloud") setAdvancedOpen(true);
                   }}
                   className="select text-xs py-2"
                 >
@@ -272,11 +292,12 @@ export default function ConfigPanel({
               )}
 
               {/* Status banner for Ollama — reflects the live /api/ollama/models probe */}
-              {config.llm_provider === "ollama" && (() => {
+              {isOllama(config.llm_provider) && (() => {
+                const cloud = config.llm_provider === "ollama-cloud";
                 const status = {
-                  checking: { wrap: "bg-foreground/5 border-border", text: "text-muted-foreground", dot: "bg-muted-foreground animate-pulse", label: "Comprobando Ollama…" },
-                  online: { wrap: "bg-accent/5 border-accent/15", text: "text-accent", dot: "bg-accent animate-pulse", label: "Ollama activo" },
-                  offline: { wrap: "bg-[var(--danger-light)] border-[var(--danger-border)]", text: "text-[var(--danger)]", dot: "bg-[var(--danger)]", label: "Ollama no disponible" },
+                  checking: { wrap: "bg-foreground/5 border-border", text: "text-muted-foreground", dot: "bg-muted-foreground animate-pulse", label: cloud ? "Comprobando Ollama Cloud…" : "Comprobando Ollama…" },
+                  online: { wrap: "bg-accent/5 border-accent/15", text: "text-accent", dot: "bg-accent animate-pulse", label: cloud ? "Ollama Cloud activo" : "Ollama activo" },
+                  offline: { wrap: "bg-[var(--danger-light)] border-[var(--danger-border)]", text: "text-[var(--danger)]", dot: "bg-[var(--danger)]", label: cloud ? "Ollama Cloud no disponible" : "Ollama no disponible" },
                 }[ollamaStatus];
                 return (
                   <div className={`p-2 rounded-lg border ${status.wrap}`}>
@@ -341,7 +362,7 @@ export default function ConfigPanel({
 
                   <div>
                     <label className="label text-[10px] mb-1">
-                      API Key (Opcional)
+                      {config.llm_provider === "ollama-cloud" ? "API Key (requerida)" : "API Key (opcional)"}
                     </label>
                     <input
                       type="password"
@@ -351,7 +372,9 @@ export default function ConfigPanel({
                       className="input text-xs py-2"
                     />
                     <p className="text-[10px] text-muted-foreground mt-1">
-                      Necesario solo si la instancia de Ollama está protegida por proxy o es Cloud.
+                      {config.llm_provider === "ollama-cloud"
+                        ? "Tu API key de Ollama Cloud (ollama.com/settings/keys). El endpoint se configura solo."
+                        : "Necesario solo si la instancia de Ollama está protegida por proxy o es Cloud."}
                     </p>
                   </div>
                 </div>
