@@ -658,3 +658,30 @@ Stage A is ready to execute now on localhost and needs **no** decisions. Stages 
 **Two execution options for Stage A:**
 1. **Subagent-Driven (recommended)** — a fresh subagent per task (A1→A4), review between tasks, fast iteration.
 2. **Inline Execution** — execute A1→A4 in-session with checkpoints.
+
+---
+
+## Execution log — Stage A (2026-06-15)
+
+User decisions captured: shell = **Tauri v2**, default LLM = **llama3.2:3b**, diarization = **deferred to v1.1**.
+
+Implemented inline on branch `claude/naughty-swirles-dddfdf`, TDD, one commit per task, verified on localhost with a light venv (no torch — the app imports lazily so API tests need no ML stack) + a real `next build` static export served by FastAPI.
+
+| Task | Status | Commit | Localhost proof |
+|------|--------|--------|-----------------|
+| A1 same-origin serving | ✅ done | `5fdb9a9` | `next build` → `out/`; FastAPI serves `/`→200 (correct title) + `/api/health`→200 + static chunks→200, one origin |
+| A2 token auth | ✅ done | `8c56117` | `/api/config`→401 (no/bad token), →200 (token); `/api/health`→200 open |
+| A3 entrypoint + data dir + /ready | ✅ done | `f0ddada` | single process, free port, `/api/ready`={ok,output_dir_writable:true,ollama_reachable:false}, notes dir `drwx------` |
+| A4 interpreter + tooling pins | ✅ done | `fe244b8` | TOML valid; 32 api tests pass; pins applied |
+| A4b uv workspace + uv.lock + CI audit | ⏳ deferred | — | tracked as a task; required before Stage B, not before the localhost foundation |
+
+Test count: api 32 passing (was 27 + `test_static_serving` / `test_auth` / `test_ready`).
+
+**Divergences from the plan (improvements found while implementing — TDD caught them):**
+1. **A2 token is read from `VOXNOTE_API_TOKEN` env in `deps.py`, NOT added as a Settings field.** (a) the `settings` singleton is created at import, so `monkeypatch.setenv` / any post-import change wouldn't be seen — reading env per-request is correct and matches how the shell injects it; (b) it can never leak through `GET /api/config`.
+2. **A3 `/api/ready` uses `requests` (a core base dep), not `httpx`** (httpx is only an api dev/test dep). The endpoint is a sync `def` so the blocking probe runs in the threadpool.
+3. **A4 split:** interpreter + tooling pins landed now (the reproducibility-landmine fix); the uv workspace + `uv.lock` + CI audit is task A4b (needs workspace setup + a multi-OS CPU-torch resolve; not needed for the localhost foundation).
+
+**Not verified (deliberately, while the user is away):** a full browser Record→Transcribe→Insights→Export round-trip — it needs the heavy ML stack (torch/whisper) + a running Ollama, intentionally not installed in the light verification venv. Best run with the full `make dev` stack on the user's machine.
+
+**Next:** Stage B starts with A4b (`uv.lock`), then B1 (ffmpeg resolver) — and needs cert procurement (Apple Developer + Windows OV) kicked off in parallel since it gates distribution (C2).
