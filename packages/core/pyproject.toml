@@ -34,10 +34,12 @@ dev = [
 ]
 openai = ["openai>=1.0"]
 google = ["google-genai>=0.1"]
+anthropic = ["anthropic>=0.40"]
 whisperx = ["whisperx>=3.8"]
 all-providers = [
     "openai>=1.0",
     "google-genai>=0.1",
+    "anthropic>=0.40",
 ]
 
 [project.scripts]
