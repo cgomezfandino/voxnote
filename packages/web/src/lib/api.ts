@@ -1,6 +1,7 @@
 /**
  * Centralized API client for Voxnote backend.
- * All requests go through Next.js rewrites → FastAPI on :8003.
+ * Packaged build: same-origin relative "/api" (FastAPI serves UI + API on one port).
+ * Dev: NEXT_PUBLIC_API_BASE points at the standalone API on :8003 (see .env.development).
  */
 
 import type {
@@ -12,7 +13,7 @@ import type {
   NoteDetail,
 } from "@/types";
 
-const API_BASE = "http://localhost:8003/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
 
 class ApiError extends Error {
   constructor(
