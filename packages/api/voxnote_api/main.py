@@ -22,8 +22,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     import logging
 
     from voxnote.config import settings
+    from voxnote.logging_setup import install_excepthook, setup_logging
 
-    logging.basicConfig(level=logging.INFO)
+    # Centralized logging: writes to <log_dir>/api/ and <log_dir>/errors/
+    # (plus console). Falls back gracefully if the SSD is not mounted.
+    try:
+        setup_logging(settings.log_dir)
+    except OSError as exc:
+        # SSD not mounted / not writable — keep console logging only.
+        logging.basicConfig(level=logging.INFO)
+        logging.getLogger("voxnote").warning(
+            "could not write logs to %s (%s); using console only",
+            settings.log_dir,
+            exc,
+        )
+    install_excepthook()
+
     settings.output_dir.mkdir(parents=True, exist_ok=True)
     try:
         # Notes can contain sensitive meeting content; keep the dir owner-only.
@@ -102,8 +116,30 @@ def run() -> None:
     import os
 
     import uvicorn
+    from voxnote.config import settings
+    from voxnote.logging_setup import install_excepthook, setup_logging
+
+    # Configure logging BEFORE uvicorn starts so our file handlers aren't wiped.
+    # log_config=None tells uvicorn to leave logging alone (we already set it up).
+    try:
+        setup_logging(settings.log_dir)
+    except OSError:
+        import logging
+
+        logging.basicConfig(level=logging.INFO)
+    install_excepthook()
 
     host = os.getenv("VOXNOTE_API_HOST", "127.0.0.1")
     port = int(os.getenv("VOXNOTE_API_PORT", "8003"))
     reload = os.getenv("VOXNOTE_API_RELOAD", "false").lower() in ("1", "true", "yes")
-    uvicorn.run("voxnote_api.main:app", host=host, port=port, reload=reload)
+    uvicorn.run(
+        "voxnote_api.main:app",
+        host=host,
+        port=port,
+        reload=reload,
+        log_config=None,  # keep our logging configuration (writes to SSD)
+    )
+
+
+if __name__ == "__main__":
+    run()
