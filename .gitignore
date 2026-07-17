@@ -1,5 +1,6 @@
 # Virtual environments
 .venv/
+.venv.*.bak
 venv/
 env/
 
@@ -52,6 +53,10 @@ Thumbs.db
 .pytest_cache/
 htmlcov/
 .coverage
+.coverage.*
+
+# TypeScript incremental build cache
+*.tsbuildinfo
 
 # Claude Code — personal/session artifacts (keep .claude/settings.json shared)
 .claude/launch.json

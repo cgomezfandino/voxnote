@@ -70,6 +70,16 @@ class Settings(BaseSettings):
         default=Path("output"), description="Directory for generated meeting notes"
     )
 
+    # Logging
+    log_dir: Path = Field(
+        default=Path("/Volumes/SSDCX9/data/Voxnote/logs"),
+        description=(
+            "Directory for application logs (api/, dev/, test/, errors/ subfolders). "
+            "Default points to the external SSD; override via VOXNOTE_LOG_DIR if the "
+            "volume is not mounted on this machine."
+        ),
+    )
+
     # API limits
     max_json_mb: int = Field(
         default=10,

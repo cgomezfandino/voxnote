@@ -503,6 +503,69 @@ make format      # ruff format
 make typecheck   # mypy packages/core/
 ```
 
+### Logs
+
+Los logs de **dev** y **testing** se escriben en el SSD externo para no llenar el
+disco local y para conservarlos entre sesiones:
+
+```
+/Volumes/SSDCX9/data/Voxnote/logs/
+├── api/       ← API + app loggers (uvicorn, voxnote_api)
+├── dev/       ← stdout/stderr capturado por `make dev` / `dev-api` / `dev-web`
+├── test/      ← sesiones de pytest (core + api)
+└── errors/    ← WARNING+ y excepciones no capturadas (tracebacks)
+```
+
+Características:
+
+- **Rotación diaria**, se conservan los últimos **7 días** (los archivos viejos
+  se renombran automáticamente y se podan con `make logs-prune`).
+- **Doble salida**: todo se ve en consola **y** se persiste en el SSD, así que
+  el flujo de `make dev` no cambia.
+- **Configurable**: la ruta se controla con `VOXNOTE_LOG_DIR` (ver `.env.example`).
+  Si el SSD no está montado, cae con gracia a solo-consola sin romper nada.
+
+Comandos útiles:
+
+```bash
+make logs        # muestra la carpeta de logs y sus archivos
+make logs-tail   # hace tail -f del log de dev actual
+make logs-prune  # borra logs con más de 7 días
+```
+
+Para apuntar los logs a otra ubicación, por ejemplo en otra máquina sin el SSD:
+
+```bash
+make dev LOG_DIR=./logs           # logs locales en ./logs
+# o definido de forma persistente en .env:
+#   VOXNOTE_LOG_DIR=/var/log/voxnote
+```
+
+### Liberar espacio en disco
+
+Las dependencias (`node_modules`, `.venv`) y los caches pueden ocupar varios GB.
+Todo es **regenerable**, así que puedes borrarlos al final de una sesión para liberar espacio:
+
+```bash
+make clean       # borra caches + node_modules + .next + __pycache__ (~460 MB)
+make clean-all   # además elimina .venv y backups de venv (~2.3 GB más)
+```
+
+**No hay que reconstruir nada manualmente.** La próxima vez que ejecutes
+cualquier comando del proyecto (`make dev`, `make test`, `make install`, etc.)
+el Makefile detecta qué falta y lo restaura automáticamente:
+
+- Si falta `.venv` → lo crea con Python 3.11.
+- Si falta `node_modules` → ejecuta `npm install`.
+- Si faltan paquetes Python → los instala con pip.
+
+La primera vez tras un `clean-all` tarda ~1-2 min en restaurar todo; las
+siguientes es instantáneo.
+
+> Recomendado: ejecuta `make clean` al cerrar cada sesión de trabajo si vas a
+> estar tiempo sin tocar el proyecto. `make clean-all` úsalo si necesitas
+> liberar el máximo espacio posible.
+
 ---
 
 ## Licencia
