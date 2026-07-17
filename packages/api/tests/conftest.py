@@ -14,7 +14,7 @@ def pytest_configure(config: pytest.Config) -> None:
     """Route API test logs to <log_dir>/test/ with daily rotation (7-day)."""
     try:
         from voxnote.config import settings
-        from voxnote.logging_setup import _file_handler, _formatter, _today_filename, DIR_TEST
+        from voxnote.logging_setup import DIR_TEST, _file_handler, _formatter, _today_filename
 
         log_file = Path(settings.log_dir) / DIR_TEST / _today_filename("test")
         handler = _file_handler(log_file, logging.INFO, _formatter())

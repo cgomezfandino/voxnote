@@ -3,8 +3,9 @@
 # ─── Variables ────────────────────────────────────────────────
 PYTHON_VERSION := 3.11
 VENV := .venv
-VENV_PY := $(VENV)/bin/python
-VENV_PIP := $(VENV)/bin/pip
+# Always resolve to absolute path so `cd packages/... && $(VENV_PY)` works.
+VENV_PY := $(abspath $(VENV)/bin/python)
+VENV_PIP := $(abspath $(VENV)/bin/pip)
 WEB_NODE_MODULES := packages/web/node_modules
 
 # Logs live on the SSD by default (see config.Settings.log_dir). Override with:
