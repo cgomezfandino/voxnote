@@ -5,6 +5,8 @@ import os
 
 from rich.console import Console
 
+from voxnote.config import settings
+from voxnote.providers._observability import observe_llm_call
 from voxnote.providers.base import LLMProvider, build_insights_prompt, truncate_transcript
 
 console = Console()
@@ -42,22 +44,35 @@ class OpenAIProvider(LLMProvider):
 
         console.print(f"[bold blue]Extracting insights[/] with {self.name}…")
 
-        client = OpenAI(api_key=self.api_key, base_url=self.base_url)
-
-        response = client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": build_insights_prompt(
-                        truncate_transcript(transcript, MAX_TRANSCRIPT_CHARS)
-                    ),
-                },
-            ],
-            temperature=0.1,
-            response_format={"type": "json_object"},
+        # timeout + max_retries: the SDK applies exponential backoff across retries.
+        client = OpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            timeout=settings.llm_timeout,
+            max_retries=settings.llm_max_retries,
         )
+
+        with observe_llm_call(provider="openai", model=self.model) as obs:
+            response = client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {
+                        "role": "user",
+                        "content": build_insights_prompt(
+                            truncate_transcript(transcript, MAX_TRANSCRIPT_CHARS)
+                        ),
+                    },
+                ],
+                temperature=0.1,
+                response_format={"type": "json_object"},
+            )
+            usage = getattr(response, "usage", None)
+            obs["tokens"] = {
+                "prompt": getattr(usage, "prompt_tokens", None),
+                "completion": getattr(usage, "completion_tokens", None),
+                "total": getattr(usage, "total_tokens", None),
+            }
 
         raw = response.choices[0].message.content
         data: dict = json.loads(raw)

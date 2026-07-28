@@ -6,6 +6,8 @@ import re
 
 from rich.console import Console
 
+from voxnote.config import settings
+from voxnote.providers._observability import observe_llm_call
 from voxnote.providers.base import LLMProvider, build_insights_prompt, truncate_transcript
 
 console = Console()
@@ -46,26 +48,37 @@ class AnthropicProvider(LLMProvider):
 
         console.print(f"[bold blue]Extracting insights[/] with {self.name}…")
 
-        client_kwargs: dict = {"api_key": self.api_key}
+        client_kwargs: dict = {
+            "api_key": self.api_key,
+            "timeout": settings.llm_timeout,
+            "max_retries": settings.llm_max_retries,
+        }
         if self.base_url:
             client_kwargs["base_url"] = self.base_url
         client = anthropic.Anthropic(**client_kwargs)
 
         # No temperature/thinking: Opus 4.8 rejects sampling params, and the system
         # prompt + "ONLY JSON" instruction keeps the output a single JSON object.
-        response = client.messages.create(
-            model=self.model,
-            max_tokens=8192,
-            system=SYSTEM_PROMPT,
-            messages=[
-                {
-                    "role": "user",
-                    "content": build_insights_prompt(
-                        truncate_transcript(transcript, MAX_TRANSCRIPT_CHARS)
-                    ),
-                }
-            ],
-        )
+        with observe_llm_call(provider="anthropic", model=self.model) as obs:
+            response = client.messages.create(
+                model=self.model,
+                max_tokens=8192,
+                system=SYSTEM_PROMPT,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": build_insights_prompt(
+                            truncate_transcript(transcript, MAX_TRANSCRIPT_CHARS)
+                        ),
+                    }
+                ],
+            )
+            usage = getattr(response, "usage", None)
+            obs["tokens"] = {
+                "prompt": getattr(usage, "input_tokens", None),
+                "completion": getattr(usage, "output_tokens", None),
+                "total": None,  # Anthropic does not report a combined total
+            }
 
         raw = "".join(b.text for b in response.content if getattr(b, "type", None) == "text")
         raw = re.sub(r"```json?\n?", "", raw).replace("```", "").strip()

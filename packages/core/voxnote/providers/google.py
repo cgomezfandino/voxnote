@@ -5,6 +5,8 @@ import os
 
 from rich.console import Console
 
+from voxnote.config import settings
+from voxnote.providers._observability import observe_llm_call
 from voxnote.providers.base import LLMProvider, build_insights_prompt, truncate_transcript
 
 console = Console()
@@ -38,18 +40,30 @@ class GoogleProvider(LLMProvider):
 
         console.print(f"[bold blue]Extracting insights[/] with {self.name}…")
 
-        client = genai.Client(api_key=self.api_key)
+        # HttpOptions.timeout is in milliseconds. The SDK retries transient errors with
+        # exponential backoff by default.
+        client = genai.Client(
+            api_key=self.api_key,
+            http_options=types.HttpOptions(timeout=settings.llm_timeout * 1000),
+        )
 
         prompt = build_insights_prompt(truncate_transcript(transcript, MAX_TRANSCRIPT_CHARS))
 
-        response = client.models.generate_content(
-            model=self.model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.1,
-                response_mime_type="application/json",
-            ),
-        )
+        with observe_llm_call(provider="google", model=self.model) as obs:
+            response = client.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.1,
+                    response_mime_type="application/json",
+                ),
+            )
+            usage = getattr(response, "usage_metadata", None)
+            obs["tokens"] = {
+                "prompt": getattr(usage, "prompt_token_count", None),
+                "completion": getattr(usage, "candidates_token_count", None),
+                "total": getattr(usage, "total_token_count", None),
+            }
 
         raw = response.text
         data: dict = json.loads(raw)
