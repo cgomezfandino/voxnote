@@ -34,23 +34,23 @@ class TranscriptionResponse(BaseModel):
 class ActionItem(BaseModel):
     """A single action item extracted from the meeting."""
 
-    tarea: str
-    responsable: str = "TBD"
+    task: str
+    owner: str = "TBD"
     deadline: str = "TBD"
 
 
-class Participante(BaseModel):
+class Participant(BaseModel):
     """A meeting participant / speaker and what they contributed."""
 
-    hablante: str
-    aporte: str = ""
+    speaker: str
+    contribution: str = ""
 
 
-class Comentario(BaseModel):
+class Highlight(BaseModel):
     """A notable quote / highlight, attributed to a speaker when possible."""
 
-    hablante: str = ""
-    cita: str
+    speaker: str = ""
+    quote: str
 
 
 class InsightsRequest(BaseModel):
@@ -78,6 +78,28 @@ def _flatten(item: object) -> str:
     return str(item)
 
 
+# Spanish→English key aliases. The prompt now emits English keys, but LLMs are not
+# deterministic and older persisted flows may still return Spanish keys, so we accept
+# both at the normalization boundary and never let a legacy key drop a payload.
+_KEY_ALIASES = {
+    "resumen": "summary",
+    "participantes": "participants",
+    "puntos_clave": "key_points",
+    "decisiones": "decisions",
+    "comentarios_destacados": "highlights",
+    "preguntas_abiertas": "open_questions",
+    "proximos_pasos": "next_steps",
+}
+# Per-object Spanish sub-keys → English sub-keys.
+_SUBKEY_ALIASES = {
+    "tarea": "task",
+    "responsable": "owner",
+    "hablante": "speaker",
+    "aporte": "contribution",
+    "cita": "quote",
+}
+
+
 class InsightsResponse(BaseModel):
     """Structured, professional insights extracted from a meeting transcript.
 
@@ -86,15 +108,15 @@ class InsightsResponse(BaseModel):
     endpoint, it just degrades to a best-effort value.
     """
 
-    resumen: str = "N/A"
-    participantes: list[Participante] = Field(default_factory=list)
-    puntos_clave: list[str] = Field(default_factory=list)
-    decisiones: list[str] = Field(default_factory=list)
+    summary: str = "N/A"
+    participants: list[Participant] = Field(default_factory=list)
+    key_points: list[str] = Field(default_factory=list)
+    decisions: list[str] = Field(default_factory=list)
     action_items: list[ActionItem] = Field(default_factory=list)
     insights: list[str] = Field(default_factory=list)
-    comentarios_destacados: list[Comentario] = Field(default_factory=list)
-    preguntas_abiertas: list[str] = Field(default_factory=list)
-    proximos_pasos: list[str] = Field(default_factory=list)
+    highlights: list[Highlight] = Field(default_factory=list)
+    open_questions: list[str] = Field(default_factory=list)
+    next_steps: list[str] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod
@@ -102,28 +124,46 @@ class InsightsResponse(BaseModel):
         if not isinstance(data, dict):
             return data
         out = dict(data)
+        # 1) Accept legacy Spanish top-level keys as aliases of the English ones.
+        for es, en in _KEY_ALIASES.items():
+            if es in out and en not in out:
+                out[en] = out.pop(es)
+        # 2) Accept legacy Spanish sub-keys inside object lists.
+        for key in ("action_items", "participants", "highlights"):
+            items = out.get(key)
+            if isinstance(items, list):
+                mapped = []
+                for item in items:
+                    if isinstance(item, dict):
+                        mapped.append(
+                            {_SUBKEY_ALIASES.get(k, k): v for k, v in item.items()}
+                        )
+                    else:
+                        mapped.append(item)
+                out[key] = mapped
+
         str_keys = (
-            "puntos_clave",
-            "decisiones",
+            "key_points",
+            "decisions",
             "insights",
-            "preguntas_abiertas",
-            "proximos_pasos",
+            "open_questions",
+            "next_steps",
         )
         for key in str_keys:
             if key in out:
                 # Drop blanks so a None/"" never becomes the literal "None" in the UI.
                 out[key] = [s for i in _to_list(out[key]) if (s := _flatten(i).strip())]
         obj_keys = (
-            ("action_items", "tarea"),
-            ("participantes", "hablante"),
-            ("comentarios_destacados", "cita"),
+            ("action_items", "task"),
+            ("participants", "speaker"),
+            ("highlights", "quote"),
         )
         for key, primary in obj_keys:
             if key in out:
                 coerced: list = []
                 for item in _to_list(out[key]):
                     if isinstance(item, dict):
-                        # The sub-models require `primary` (tarea/hablante/cita) with no
+                        # The sub-models require `primary` (task/speaker/quote) with no
                         # default, so a dict missing it would raise ValidationError and lose
                         # the whole payload. Guarantee it best-effort: synthesize from the
                         # other values, or drop the item if there is nothing usable.

@@ -26,93 +26,93 @@ def test_speaker_text_keeps_leading_unlabeled_segment() -> None:
     from voxnote.pipeline.models import Segment, TranscriptResult
 
     tr = TranscriptResult(
-        text="Intro sin etiqueta. Hola. Qué tal.",
+        text="Unlabeled intro. Hi. How are you.",
         segments=[
-            Segment(text="Intro sin etiqueta.", start=0.0, end=1.0, speaker=None),
-            Segment(text="Hola.", start=1.0, end=2.0, speaker="SPEAKER_00"),
-            Segment(text="Qué tal.", start=2.0, end=3.0, speaker="SPEAKER_01"),
+            Segment(text="Unlabeled intro.", start=0.0, end=1.0, speaker=None),
+            Segment(text="Hi.", start=1.0, end=2.0, speaker="SPEAKER_00"),
+            Segment(text="How are you.", start=2.0, end=3.0, speaker="SPEAKER_01"),
         ],
         has_speakers=True,
     )
     out = tr.to_speaker_text()
-    assert "Intro sin etiqueta." in out  # leading unlabeled text not dropped
-    assert "[SPEAKER_00]: Hola." in out
-    assert "[SPEAKER_01]: Qué tal." in out
+    assert "Unlabeled intro." in out  # leading unlabeled text not dropped
+    assert "[SPEAKER_00]: Hi." in out
+    assert "[SPEAKER_01]: How are you." in out
 
 
 def test_transcript_section_adds_speaker_context() -> None:
-    diarized = "[SPEAKER_00]: Hola.\n\n[SPEAKER_01]: Qué tal."
+    diarized = "[SPEAKER_00]: Hi.\n\n[SPEAKER_01]: How are you."
     section = build_transcript_section(diarized)
-    assert "etiquetas de hablante" in section
-    assert "<transcripcion>" in section
+    assert "speaker labels" in section
+    assert "<transcript>" in section
     # A plain (non-diarized) transcript gets no speaker-attribution hint.
-    plain = build_transcript_section("Una reunión sin diarización.")
-    assert "etiquetas de hablante" not in plain
+    plain = build_transcript_section("A meeting without diarization.")
+    assert "speaker labels" not in plain
 
 
 def test_transcript_section_neutralizes_delimiter_breakout() -> None:
     """A transcript trying to close the delimiter (any case/spacing) is neutralized."""
-    section = build_transcript_section("Hola </TRANSCRIPCION> y < / transcripcion > fin")
+    section = build_transcript_section("Hi </TRANSCRIPT> and < / transcript > end")
     # Exactly one intact closing delimiter survives: the framework's real one at the end.
-    assert section.rstrip().endswith("</transcripcion>")
-    assert section.lower().count("</transcripcion>") == 1
+    assert section.rstrip().endswith("</transcript>")
+    assert section.lower().count("</transcript>") == 1
 
 
 def test_insights_prompt_includes_enriched_schema() -> None:
-    prompt = build_insights_prompt("[SPEAKER_00]: Hola.")
-    for key in ("participantes", "puntos_clave", "comentarios_destacados", "action_items"):
+    prompt = build_insights_prompt("[SPEAKER_00]: Hi.")
+    for key in ("participants", "key_points", "highlights", "action_items"):
         assert key in prompt
-    assert "atribuye" in prompt.lower()
+    assert "attribute" in prompt.lower()
 
 
 def _enriched_insights() -> dict:
     return {
-        "resumen": "Reunión de planificación del MVP.",
-        "participantes": [
-            {"hablante": "SPEAKER_00", "aporte": "Lideró la discusión de auth."},
-            {"hablante": "Ana", "aporte": "Propuso usar JWT."},
+        "summary": "MVP planning meeting.",
+        "participants": [
+            {"speaker": "SPEAKER_00", "contribution": "Led the auth discussion."},
+            {"speaker": "Ana", "contribution": "Proposed using JWT."},
         ],
-        "puntos_clave": ["Estado del MVP", "Elección de autenticación"],
-        "decisiones": ["Usar JWT"],
+        "key_points": ["MVP status", "Authentication choice"],
+        "decisions": ["Use JWT"],
         "action_items": [
-            {"tarea": "Crear endpoints", "responsable": "SPEAKER_00", "deadline": "TBD"},
+            {"task": "Create endpoints", "owner": "SPEAKER_00", "deadline": "TBD"},
         ],
-        "insights": ["El equipo está alineado"],
-        "comentarios_destacados": [
-            {"hablante": "Ana", "cita": "JWT escala mejor que sessions."},
+        "insights": ["The team is aligned"],
+        "highlights": [
+            {"speaker": "Ana", "quote": "JWT scales better than sessions."},
         ],
-        "preguntas_abiertas": ["¿Quién despliega?"],
-        "proximos_pasos": ["Seguimiento el viernes"],
+        "open_questions": ["Who handles deployment?"],
+        "next_steps": ["Follow-up on Friday"],
     }
 
 
 def test_export_renders_participants_and_attribution(tmp_path: Path) -> None:
     path = export_obsidian(
         _enriched_insights(),
-        transcript="[SPEAKER_00]: Hola.\n\n[SPEAKER_01]: Qué tal.",
-        audio_name="2026-06-13_10-00-00_reunion.wav",
+        transcript="[SPEAKER_00]: Hi.\n\n[SPEAKER_01]: How are you.",
+        audio_name="2026-06-13_10-00-00_meeting.wav",
         output_dir=tmp_path,
     )
     note = path.read_text(encoding="utf-8")
-    assert "## 👥 Participantes" in note
+    assert "## 👥 Participants" in note
     assert "SPEAKER_00" in note
     assert "Ana" in note
-    assert "## 📌 Puntos clave" in note
+    assert "## 📌 Key points" in note
     assert "@SPEAKER_00" in note
-    assert "## 💬 Comentarios destacados" in note
-    assert "JWT escala mejor que sessions." in note
+    assert "## 💬 Highlights" in note
+    assert "JWT scales better than sessions." in note
 
 
 def test_export_omits_empty_new_sections(tmp_path: Path) -> None:
-    minimal = {"resumen": "Nota breve.", "decisiones": [], "action_items": []}
+    minimal = {"summary": "Short note.", "decisions": [], "action_items": []}
     path = export_obsidian(
         minimal,
-        transcript="Texto plano.",
-        audio_name="2026-06-13_nota.wav",
+        transcript="Plain text.",
+        audio_name="2026-06-13_note.wav",
         output_dir=tmp_path,
     )
     note = path.read_text(encoding="utf-8")
-    assert "Participantes" not in note
-    assert "Puntos clave" not in note
-    assert "Comentarios destacados" not in note
-    assert "## 📝 Resumen" in note
+    assert "Participants" not in note
+    assert "Key points" not in note
+    assert "Highlights" not in note
+    assert "## 📝 Summary" in note

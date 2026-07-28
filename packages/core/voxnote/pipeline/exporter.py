@@ -70,47 +70,49 @@ def export_obsidian(
 
     tasks = ""
     for item in _as_list(insights.get("action_items")):
-        if not isinstance(item, dict) or not item.get("tarea"):
+        if not isinstance(item, dict) or not item.get("task"):
             continue
-        resp = item.get("responsable", "TBD")
+        resp = item.get("owner", "TBD")
         dl = item.get("deadline", "TBD")
-        tasks += f"- [ ] {item['tarea']} @{resp} (deadline: {dl})\n"
+        tasks += f"- [ ] {item['task']} @{resp} (deadline: {dl})\n"
 
-    participantes_rows = []
-    for p in _as_list(insights.get("participantes")):
-        if isinstance(p, dict) and p.get("hablante"):
-            aporte = p.get("aporte", "")
-            participantes_rows.append(f"- **{p['hablante']}**" + (f" — {aporte}" if aporte else ""))
+    participants_rows = []
+    for p in _as_list(insights.get("participants")):
+        if isinstance(p, dict) and p.get("speaker"):
+            contribution = p.get("contribution", "")
+            participants_rows.append(
+                f"- **{p['speaker']}**" + (f" — {contribution}" if contribution else "")
+            )
         elif isinstance(p, str) and p.strip():
-            participantes_rows.append(f"- **{p.strip()}**")
+            participants_rows.append(f"- **{p.strip()}**")
 
-    comentarios_rows = []
-    for c in _as_list(insights.get("comentarios_destacados")):
-        if isinstance(c, dict) and c.get("cita"):
-            speaker = c.get("hablante", "")
+    highlights_rows = []
+    for c in _as_list(insights.get("highlights")):
+        if isinstance(c, dict) and c.get("quote"):
+            speaker = c.get("speaker", "")
             prefix = f"**{speaker}:** " if speaker else ""
-            comentarios_rows.append(f"> {prefix}{c['cita']}")
+            highlights_rows.append(f"> {prefix}{c['quote']}")
         elif isinstance(c, str) and c.strip():
-            comentarios_rows.append(f"> {c.strip()}")
+            highlights_rows.append(f"> {c.strip()}")
 
-    decisions = _bullets(insights.get("decisiones", []), "Ninguna")
-    insight_lines = _bullets(insights.get("insights", []), "Ninguno")
-    questions = _bullets(insights.get("preguntas_abiertas", []), "Ninguna")
-    next_steps = _bullets(insights.get("proximos_pasos", []), "Ninguno")
-    tasks_md = tasks.rstrip() if tasks else "- [ ] Sin tareas identificadas"
+    decisions = _bullets(insights.get("decisions", []), "None")
+    insight_lines = _bullets(insights.get("insights", []), "None")
+    questions = _bullets(insights.get("open_questions", []), "None")
+    next_steps = _bullets(insights.get("next_steps", []), "None")
+    tasks_md = tasks.rstrip() if tasks else "- [ ] No tasks identified"
 
-    sections = [f"## 📝 Resumen\n\n{insights.get('resumen', 'N/A')}"]
-    if participantes_rows:
-        sections.append("## 👥 Participantes\n\n" + "\n".join(participantes_rows))
-    if insights.get("puntos_clave"):
-        sections.append("## 📌 Puntos clave\n\n" + _bullets(insights["puntos_clave"], ""))
-    sections.append("## ✅ Decisiones tomadas\n\n" + decisions)
-    sections.append("## 🎯 Tareas pendientes\n\n" + tasks_md)
-    sections.append("## 💡 Insights clave\n\n" + insight_lines)
-    if comentarios_rows:
-        sections.append("## 💬 Comentarios destacados\n\n" + "\n".join(comentarios_rows))
-    sections.append("## ❓ Preguntas abiertas\n\n" + questions)
-    sections.append("## 🔜 Próximos pasos\n\n" + next_steps)
+    sections = [f"## 📝 Summary\n\n{insights.get('summary', 'N/A')}"]
+    if participants_rows:
+        sections.append("## 👥 Participants\n\n" + "\n".join(participants_rows))
+    if insights.get("key_points"):
+        sections.append("## 📌 Key points\n\n" + _bullets(insights["key_points"], ""))
+    sections.append("## ✅ Decisions\n\n" + decisions)
+    sections.append("## 🎯 Action items\n\n" + tasks_md)
+    sections.append("## 💡 Insights\n\n" + insight_lines)
+    if highlights_rows:
+        sections.append("## 💬 Highlights\n\n" + "\n".join(highlights_rows))
+    sections.append("## ❓ Open questions\n\n" + questions)
+    sections.append("## 🔜 Next steps\n\n" + next_steps)
     body = "\n\n---\n\n".join(sections)
 
     note = f"""\
@@ -121,9 +123,9 @@ time: {time_str}
 audio: "[[audio/{Path(audio_name).name}]]"
 ---
 
-# 📋 Reunión — {title_slug}
+# 📋 Meeting — {title_slug}
 
-> 🗓️ **Fecha:** {date_str} · ⏰ **Hora:** {time_str} · 🎧 `{Path(audio_name).name}`
+> 🗓️ **Date:** {date_str} · ⏰ **Time:** {time_str} · 🎧 `{Path(audio_name).name}`
 
 ---
 
@@ -132,7 +134,7 @@ audio: "[[audio/{Path(audio_name).name}]]"
 ---
 
 <details>
-<summary>📄 Transcripción completa</summary>
+<summary>📄 Full transcript</summary>
 
 {transcript_text}
 

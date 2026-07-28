@@ -131,7 +131,7 @@ export default function Home() {
         language: config.language,
         diarize: config.diarize,
         provider: config.llm_provider,
-        audioFilename: uploadedFile?.name || "grabacion.wav",
+        audioFilename: uploadedFile?.name || "recording.wav",
       });
 
       setProcessedInsights(result.insights);
@@ -177,9 +177,9 @@ export default function Home() {
   const canProcess = hasAudio && !isLoading;
 
   const tabs = [
-    { id: "record" as Tab, label: "Grabar", icon: Mic },
-    { id: "process" as Tab, label: "Procesar", icon: FileAudio },
-    { id: "history" as Tab, label: "Historial", icon: History },
+    { id: "record" as Tab, label: "Record", icon: Mic },
+    { id: "process" as Tab, label: "Process", icon: FileAudio },
+    { id: "history" as Tab, label: "History", icon: History },
   ];
 
   // Stats for history
@@ -205,7 +205,7 @@ export default function Home() {
           <button
             onClick={handleToggleTheme}
             className="p-2 rounded-lg hover:bg-foreground/[0.04] transition-colors text-muted-foreground hover:text-foreground"
-            title="Cambiar tema"
+            title="Toggle theme"
           >
             {theme === "dark" ? <Sun className="w-5 h-5 text-accent" /> : <Moon className="w-5 h-5 text-primary" />}
           </button>
@@ -261,7 +261,7 @@ export default function Home() {
                     Voxnote
                   </h1>
                   <p className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase mt-1">
-                    Transcripción Inteligente de Voz
+                    Intelligent Voice Transcription
                   </p>
                 </div>
               </div>
@@ -271,17 +271,17 @@ export default function Home() {
                 <button 
                   onClick={handleToggleTheme}
                   className="p-3 rounded-2xl bg-[var(--header-bg)] border border-[var(--header-border)] hover:bg-foreground/[0.04] transition-all shadow-sm text-foreground flex items-center gap-2.5 font-bold text-xs uppercase tracking-wider"
-                  title="Cambiar tema de color"
+                  title="Toggle theme"
                 >
                   {theme === "dark" ? (
                     <>
                       <Sun className="w-4 h-4 text-accent" />
-                      <span className="text-muted-foreground">Modo Claro</span>
+                      <span className="text-muted-foreground">Light Mode</span>
                     </>
                   ) : (
                     <>
                       <Moon className="w-4 h-4 text-primary" />
-                      <span className="text-muted-foreground">Modo Oscuro</span>
+                      <span className="text-muted-foreground">Dark Mode</span>
                     </>
                   )}
                 </button>
@@ -321,7 +321,7 @@ export default function Home() {
               {!isLoaded ? (
                 <div className="text-center py-20 text-muted-foreground">
                   <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto mb-4"></div>
-                  Cargando configuración...
+                  Loading settings...
                 </div>
               ) : (
               <>
@@ -335,10 +335,10 @@ export default function Home() {
                   >
                     <div className="text-center mb-8">
                       <h2 className="text-xl lg:text-2xl font-semibold text-foreground mb-2">
-                        Grabar reunion
+                        Record meeting
                       </h2>
                       <p className="text-muted-foreground">
-                        Captura audio y conviertelo en notas estructuradas
+                        Capture audio and turn it into structured notes
                       </p>
                     </div>
 
@@ -368,12 +368,12 @@ export default function Home() {
                   >
                     <div className="text-center mb-8">
                       <h2 className="text-xl lg:text-2xl font-semibold text-foreground mb-2">
-                        Procesar archivo
+                        Process file
                       </h2>
                       <p className="text-muted-foreground">
                         {hasAudio
-                          ? "Revisa tu audio y procesalo con IA"
-                          : "Sube un audio existente para transcribir"}
+                          ? "Review your audio and process it with AI"
+                          : "Upload an existing audio file to transcribe"}
                       </p>
                     </div>
 
@@ -383,7 +383,7 @@ export default function Home() {
                         <div className="space-y-4">
                           <AudioVisualizer
                             audioUrl={recordedUrl}
-                            fileName={uploadedFile?.name || "grabacion.wav"}
+                            fileName={uploadedFile?.name || "recording.wav"}
                           />
 
                           {/* Process button */}
@@ -396,15 +396,15 @@ export default function Home() {
                               >
                                 <FileAudio className="w-4 h-4" />
                                 {isLoading
-                                  ? "Procesando..."
-                                  : "Procesar con IA"}
+                                  ? "Processing..."
+                                  : "Process with AI"}
                               </button>
                               <button
                                 onClick={handleResetRecording}
                                 disabled={isLoading}
                                 className="btn-secondary gap-2 disabled:opacity-50"
                               >
-                                Limpiar
+                                Clear
                               </button>
                             </div>
                           )}
@@ -459,10 +459,10 @@ export default function Home() {
                   >
                     <div className="text-center mb-8">
                       <h2 className="text-xl lg:text-2xl font-semibold text-foreground mb-2">
-                        Historial
+                        History
                       </h2>
                       <p className="text-muted-foreground">
-                        Tus notas generadas
+                        Your generated notes
                       </p>
                     </div>
 
@@ -473,7 +473,7 @@ export default function Home() {
                           {notes.length}
                         </div>
                         <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mt-1.5">
-                          Notas totales
+                          Total notes
                         </div>
                       </div>
                       <div className="card text-center card-glow-green">
@@ -481,7 +481,7 @@ export default function Home() {
                           {notesToday}
                         </div>
                         <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mt-1.5">
-                          Hoy
+                          Today
                         </div>
                       </div>
                       <div className="card text-center sm:col-span-2 lg:col-span-1 card-glow-green">
@@ -489,7 +489,7 @@ export default function Home() {
                           {notesThisWeek}
                         </div>
                         <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mt-1.5">
-                          Esta semana
+                          This week
                         </div>
                       </div>
                     </div>
@@ -497,7 +497,7 @@ export default function Home() {
                     {/* Notes list */}
                     {loadingNotes ? (
                       <div className="text-center py-12 text-muted-foreground text-xs font-semibold uppercase tracking-wider animate-pulse">
-                        Cargando notas...
+                        Loading notes...
                       </div>
                     ) : notes.length === 0 ? (
                       <div className="card text-center py-12">
@@ -505,16 +505,16 @@ export default function Home() {
                           <FileText className="w-7 h-7 text-muted-foreground" />
                         </div>
                         <h3 className="font-bold text-foreground mb-2">
-                          Sin notas todavía
+                          No notes yet
                         </h3>
                         <p className="text-xs text-muted-foreground mb-6 max-w-xs mx-auto">
-                          Procesa tu primer audio o sube un archivo para generar notas inteligentes
+                          Process your first audio or upload a file to generate smart notes
                         </p>
                         <button
                           onClick={() => setActiveTab("process")}
                           className="btn-primary gap-2"
                         >
-                          Ir a Procesar
+                          Go to Process
                         </button>
                       </div>
                     ) : (
@@ -546,11 +546,11 @@ export default function Home() {
                                     <div className="flex items-center gap-4 mt-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                                       <span className="flex items-center gap-1.5 bg-muted px-2 py-0.5 rounded border border-border">
                                         <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                                        {new Date(note.created_at).toLocaleDateString("es")}
+                                        {new Date(note.created_at).toLocaleDateString("en")}
                                       </span>
                                       <span className="flex items-center gap-1.5 bg-muted px-2 py-0.5 rounded border border-border">
                                         <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                                        {new Date(note.created_at).toLocaleTimeString("es", {
+                                        {new Date(note.created_at).toLocaleTimeString("en", {
                                           hour: "2-digit",
                                           minute: "2-digit",
                                         })}

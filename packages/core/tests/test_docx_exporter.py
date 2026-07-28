@@ -12,48 +12,48 @@ SAMPLE = """\
 tags: [meeting, 2026-06-13]
 date: 2026-06-13
 time: 10:30
-audio: "[[audio/2026-06-13_10-30-00_reunion.wav]]"
+audio: "[[audio/2026-06-13_10-30-00_meeting.wav]]"
 ---
 
-# 📋 Reunión — reunion
+# 📋 Meeting — meeting
 
-> 🗓️ **Fecha:** 2026-06-13 · ⏰ **Hora:** 10:30 · 🎧 `reunion.wav`
-
----
-
-## 📝 Resumen
-
-Discutimos el lanzamiento del producto.
+> 🗓️ **Date:** 2026-06-13 · ⏰ **Time:** 10:30 · 🎧 `meeting.wav`
 
 ---
 
-## ✅ Decisiones tomadas
+## 📝 Summary
 
-- Lanzar el 1 de julio
-- Contratar a un diseñador
-
----
-
-## 🎯 Tareas pendientes
-
-- [ ] Preparar la demo @SPEAKER_00 (deadline: 2026-06-20)
-- [ ] Revisar el presupuesto @Ana (deadline: TBD)
+We discussed the product launch.
 
 ---
 
-## 🔜 Próximos pasos
+## ✅ Decisions
 
-1. Enviar acta
-2. Agendar seguimiento
+- Launch on July 1
+- Hire a designer
+
+---
+
+## 🎯 Action items
+
+- [ ] Prepare the demo @SPEAKER_00 (deadline: 2026-06-20)
+- [ ] Review the budget @Ana (deadline: TBD)
+
+---
+
+## 🔜 Next steps
+
+1. Send the minutes
+2. Schedule a follow-up
 
 ---
 
 <details>
-<summary>📄 Transcripción completa</summary>
+<summary>📄 Full transcript</summary>
 
-[SPEAKER_00]: Hola a todos.
+[SPEAKER_00]: Hello everyone.
 
-[SPEAKER_01]: Empecemos.
+[SPEAKER_01]: Let's begin.
 
 </details>
 """
@@ -77,9 +77,9 @@ def test_markdown_to_docx_returns_valid_docx() -> None:
 
 def test_markdown_to_docx_includes_key_sections() -> None:
     text = _docx_text(markdown_to_docx(SAMPLE))
-    assert "Resumen" in text
-    assert "Discutimos el lanzamiento del producto." in text
-    assert "Lanzar el 1 de julio" in text
+    assert "Summary" in text
+    assert "We discussed the product launch." in text
+    assert "Launch on July 1" in text
     # Emoji are stripped from headings for a clean professional look.
     assert "📝" not in text
     assert "📋" not in text
@@ -89,27 +89,27 @@ def test_markdown_to_docx_builds_task_table() -> None:
     document = Document(BytesIO(markdown_to_docx(SAMPLE)))
     assert document.tables, "expected a task table"
     header = [c.text for c in document.tables[0].rows[0].cells]
-    assert header == ["Tarea", "Responsable", "Fecha límite"]
+    assert header == ["Task", "Owner", "Deadline"]
     body_text = "\n".join(cell.text for row in document.tables[0].rows for cell in row.cells)
-    assert "Preparar la demo" in body_text
+    assert "Prepare the demo" in body_text
     assert "SPEAKER_00" in body_text
     assert "2026-06-20" in body_text
 
 
 def test_markdown_to_docx_sanitizes_invalid_xml_chars() -> None:
     # Control characters (e.g. from a malicious transcript) must not corrupt the docx.
-    malicious = "## Resumen\n\nTexto con \x00\x07 caracteres de control."
+    malicious = "## Summary\n\nText with \x00\x07 control characters."
     text = _docx_text(markdown_to_docx(malicious))
     assert "\x00" not in text and "\x07" not in text
-    assert "caracteres de control" in text
+    assert "control characters" in text
 
 
 def test_markdown_to_docx_flattens_links() -> None:
     # Markdown links become plain label text (the URL, incl. javascript:, is dropped).
-    md = "## Resumen\n\nVer [el panel](https://example.com/x) y [clic](javascript:alert(1)).\n"
+    md = "## Summary\n\nSee [the panel](https://example.com/x) and [click](javascript:alert(1)).\n"
     text = _docx_text(markdown_to_docx(md))
-    assert "el panel" in text
-    assert "clic" in text
+    assert "the panel" in text
+    assert "click" in text
     assert "https://example.com" not in text
     assert "javascript:" not in text
 
@@ -117,17 +117,17 @@ def test_markdown_to_docx_flattens_links() -> None:
 def test_markdown_to_docx_includes_enriched_sections() -> None:
     # The Word export must carry the speaker-aware enriched sections too.
     md = (
-        "# Reunión\n\n"
-        "## 👥 Participantes\n\n"
-        "- **SPEAKER_00** — Lideró la discusión.\n"
-        "- **Ana** — Propuso usar JWT.\n\n"
-        "## 📌 Puntos clave\n\n- Estado del MVP\n\n"
-        "## 💬 Comentarios destacados\n\n"
-        "> **Ana:** JWT escala mejor que sessions.\n"
+        "# Meeting\n\n"
+        "## 👥 Participants\n\n"
+        "- **SPEAKER_00** — Led the discussion.\n"
+        "- **Ana** — Proposed using JWT.\n\n"
+        "## 📌 Key points\n\n- MVP status\n\n"
+        "## 💬 Highlights\n\n"
+        "> **Ana:** JWT scales better than sessions.\n"
     )
     text = _docx_text(markdown_to_docx(md))
-    assert "Participantes" in text
+    assert "Participants" in text
     assert "SPEAKER_00" in text
     assert "Ana" in text
-    assert "Puntos clave" in text
-    assert "JWT escala mejor que sessions." in text
+    assert "Key points" in text
+    assert "JWT scales better than sessions." in text

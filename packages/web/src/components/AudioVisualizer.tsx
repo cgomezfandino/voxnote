@@ -105,8 +105,8 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
           <Volume2 className="w-5 h-5 text-primary" />
         </div>
         <div className="min-w-0">
-          <h3 className="font-semibold text-sm text-foreground truncate">{isReady ? "Audio Cargado" : "Analizando audio..."}</h3>
-          <p className="text-xs text-muted-foreground">{isReady ? "Visualización de frecuencia lista" : "Preparando reproductor..."}</p>
+          <h3 className="font-semibold text-sm text-foreground truncate">{isReady ? "Audio Loaded" : "Analyzing audio..."}</h3>
+          <p className="text-xs text-muted-foreground">{isReady ? "Frequency visualization ready" : "Preparing player..."}</p>
         </div>
       </div>
 
@@ -132,7 +132,7 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
         <button
           onClick={downloadAudio}
           className="p-2 rounded-lg bg-muted border border-border hover:bg-foreground/[0.04] transition-colors self-start sm:self-auto"
-          title="Descargar archivo de audio"
+          title="Download audio file"
         >
           <Download className="w-4 h-4 text-muted-foreground" />
         </button>

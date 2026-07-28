@@ -14,18 +14,18 @@ LOG_DIR ?= /Volumes/SSDCX9/data/Voxnote/logs
 DEV_LOG := $(LOG_DIR)/dev/dev-$$(date +%Y-%m-%d).log
 
 # ─── Auto-restore helpers ────────────────────────────────────
-# Si no existe .venv, se crea automáticamente. Transparente para el usuario.
+# If .venv does not exist, it is created automatically. Transparent for the user.
 ensure-venv:
 	@if [ ! -x "$(VENV_PY)" ]; then \
-		echo "→ Creando entorno virtual $(VENV) (Python $(PYTHON_VERSION))..."; \
+		echo "→ Creating virtualenv $(VENV) (Python $(PYTHON_VERSION))..."; \
 		python$(PYTHON_VERSION) -m venv $(VENV); \
 		$(VENV_PIP) install --upgrade pip --quiet; \
 	fi
 
-# Si no existe node_modules, se instala automáticamente.
+# If node_modules does not exist, it is installed automatically.
 ensure-web-deps:
 	@if [ ! -d "$(WEB_NODE_MODULES)" ]; then \
-		echo "→ Instalando dependencias web (npm install)..."; \
+		echo "→ Installing web dependencies (npm install)..."; \
 		cd packages/web && npm install --silent; \
 	fi
 
@@ -104,22 +104,22 @@ logs-prune:
 	@echo "✓ Pruned logs older than 7 days from $(LOG_DIR)"
 
 # ─── Clean ────────────────────────────────────────────────────
-# Limpieza segura: borra caches y dependencias instaladas (todo es regenerable).
-# Ejecutar al final de una sesión para liberar espacio en disco.
-# Los targets de uso (dev, test, install) restauran automáticamente lo borrado.
+# Safe cleanup: deletes caches and installed dependencies (everything is regenerable).
+# Run at the end of a session to free up disk space.
+# Usage targets (dev, test, install) restore everything automatically afterwards.
 clean:
 	rm -rf build/ dist/ *.egg-info .pytest_cache .mypy_cache .ruff_cache
 	rm -rf packages/core/build packages/core/dist packages/core/*.egg-info
 	rm -rf packages/api/build packages/api/dist packages/api/*.egg-info
 	rm -rf packages/web/.next $(WEB_NODE_MODULES)
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-	@echo "✓ Caches y dependencias eliminados (~460 MB)."
-	@echo "  Al volver a usar 'make dev' / 'make test' se restauran solos."
+	@echo "✓ Caches and dependencies removed (~460 MB)."
+	@echo "  Running 'make dev' / 'make test' again restores them automatically."
 
-# Limpieza profunda: también elimina entornos virtuales (Python + backups).
-# Solo ejecutar cuando NO vayas a seguir trabajando en esta sesión.
-# Al volver: cualquier target (dev, test, install) recrea .venv automáticamente.
+# Deep clean: also removes virtual environments (Python + backups).
+# Only run when you will NOT keep working in this session.
+# Afterwards: any target (dev, test, install) recreates .venv automatically.
 clean-all: clean
 	rm -rf $(VENV) .venv.*.bak venv/ env/
-	@echo "✓ Entornos virtuales eliminados (~2.7 GB liberados en total)."
-	@echo "  Al volver a usar 'make dev' / 'make test' se restaura todo solo."
+	@echo "✓ Virtual environments removed (~2.7 GB freed in total)."
+	@echo "  Running 'make dev' / 'make test' again restores everything automatically."

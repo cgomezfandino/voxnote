@@ -162,12 +162,12 @@ export default function ConfigPanel({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Settings className="w-4 h-4 text-accent" />
-            <h2 className="text-sm font-semibold uppercase tracking-wider">Ajustes</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wider">Settings</h2>
           </div>
           {isSyncing && (
             <span className="flex items-center gap-1 text-xs text-accent font-medium animate-pulse">
               <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-              Sincronizando
+              Syncing
             </span>
           )}
         </div>
@@ -184,7 +184,7 @@ export default function ConfigPanel({
           >
             <div className="flex items-center gap-2.5">
               <Mic className="w-4 h-4 text-primary" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Transcripción</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Transcription</span>
             </div>
             {whisperOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
           </button>
@@ -192,7 +192,7 @@ export default function ConfigPanel({
           {whisperOpen && (
             <div className="p-3 space-y-3 border-t border-[var(--accordion-border)] bg-[var(--accordion-content-bg)]">
               <div>
-                <label className="label text-[10px] mb-1">Modelo Whisper</label>
+                <label className="label text-[10px] mb-1">Whisper Model</label>
                 <select
                   value={config.whisper_model}
                   onChange={(e) => onUpdate("whisper_model", e.target.value)}
@@ -205,13 +205,13 @@ export default function ConfigPanel({
               </div>
               
               <div>
-                <label className="label text-[10px] mb-1">Idioma</label>
+                <label className="label text-[10px] mb-1">Language</label>
                 <select
                   value={config.language}
                   onChange={(e) => onUpdate("language", e.target.value)}
                   className="select text-xs py-2"
                 >
-                  <option value="es">Español (ES)</option>
+                  <option value="es">Spanish (ES)</option>
                   <option value="en">English (EN)</option>
                 </select>
               </div>
@@ -227,7 +227,7 @@ export default function ConfigPanel({
           >
             <div className="flex items-center gap-2.5">
               <Brain className="w-4 h-4 text-accent" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Motor de IA</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">AI Engine</span>
             </div>
             {llmOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
           </button>
@@ -235,7 +235,7 @@ export default function ConfigPanel({
           {llmOpen && (
             <div className="p-3 space-y-3 border-t border-[var(--accordion-border)] bg-[var(--accordion-content-bg)]">
               <div>
-                <label className="label text-[10px] mb-1">Proveedor</label>
+                <label className="label text-[10px] mb-1">Provider</label>
                 <select
                   value={config.llm_provider}
                   onChange={(e) => {
@@ -246,7 +246,7 @@ export default function ConfigPanel({
                     if (isOllama(p) && defaultBaseUrls[p]) {
                       onUpdate("ollama_url", defaultBaseUrls[p]);
                     }
-                    // Cloud needs the API key — open the Conexión panel so it's visible.
+                    // Cloud needs the API key — open the Connection panel so it's visible.
                     if (p === "ollama-cloud") setAdvancedOpen(true);
                   }}
                   className="select text-xs py-2"
@@ -261,13 +261,13 @@ export default function ConfigPanel({
               {modelsToDisplay.length > 0 && (
                 <div className="pt-2">
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="label text-[10px] mb-0">Modelo</label>
+                    <label className="label text-[10px] mb-0">Model</label>
                     {modelsToDisplay.length > 5 && (
                       <div className="relative flex items-center">
                         <Search className="absolute left-1.5 w-3 h-3 text-muted-foreground" />
                         <input
                           type="text"
-                          placeholder="Buscar..."
+                          placeholder="Search..."
                           value={modelSearch}
                           onChange={(e) => setModelSearch(e.target.value)}
                           className="w-24 pl-5 pr-1 py-0.5 rounded bg-foreground/5 border border-border text-[10px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent"
@@ -285,7 +285,7 @@ export default function ConfigPanel({
                         <option key={m.value} value={m.value}>{m.label}</option>
                       ))
                     ) : (
-                      <option value="" disabled>No hay coincidencias</option>
+                      <option value="" disabled>No matches</option>
                     )}
                   </select>
                 </div>
@@ -295,9 +295,9 @@ export default function ConfigPanel({
               {isOllama(config.llm_provider) && (() => {
                 const cloud = config.llm_provider === "ollama-cloud";
                 const status = {
-                  checking: { wrap: "bg-foreground/5 border-border", text: "text-muted-foreground", dot: "bg-muted-foreground animate-pulse", label: cloud ? "Comprobando Ollama Cloud…" : "Comprobando Ollama…" },
-                  online: { wrap: "bg-accent/5 border-accent/15", text: "text-accent", dot: "bg-accent animate-pulse", label: cloud ? "Ollama Cloud activo" : "Ollama activo" },
-                  offline: { wrap: "bg-[var(--danger-light)] border-[var(--danger-border)]", text: "text-[var(--danger)]", dot: "bg-[var(--danger)]", label: cloud ? "Ollama Cloud no disponible" : "Ollama no disponible" },
+                  checking: { wrap: "bg-foreground/5 border-border", text: "text-muted-foreground", dot: "bg-muted-foreground animate-pulse", label: cloud ? "Checking Ollama Cloud…" : "Checking Ollama…" },
+                  online: { wrap: "bg-accent/5 border-accent/15", text: "text-accent", dot: "bg-accent animate-pulse", label: cloud ? "Ollama Cloud active" : "Ollama active" },
+                  offline: { wrap: "bg-[var(--danger-light)] border-[var(--danger-border)]", text: "text-[var(--danger)]", dot: "bg-[var(--danger)]", label: cloud ? "Ollama Cloud unavailable" : "Ollama unavailable" },
                 }[ollamaStatus];
                 return (
                   <div className={`p-2 rounded-lg border ${status.wrap}`}>
@@ -320,7 +320,7 @@ export default function ConfigPanel({
           >
             <div className="flex items-center gap-2.5">
               <Users className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Conexión / Diarización</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Connection / Diarization</span>
             </div>
             {advancedOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
           </button>
@@ -337,8 +337,8 @@ export default function ConfigPanel({
                     className="mt-0.5 w-4 h-4 rounded border-border text-primary focus:ring-primary/20 bg-background"
                   />
                   <div>
-                    <span className="text-xs font-semibold">Identificar hablantes</span>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Requiere whisperx instalado</p>
+                    <span className="text-xs font-semibold">Identify speakers</span>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Requires whisperx installed</p>
                   </div>
                 </label>
               </div>
@@ -349,7 +349,7 @@ export default function ConfigPanel({
                   <div>
                     <label className="label text-[10px] flex items-center gap-1.5 mb-1">
                       <Link className="w-3 h-3 text-muted-foreground" />
-                      URL Base
+                      Base URL
                     </label>
                     <input
                       type="text"
@@ -362,19 +362,19 @@ export default function ConfigPanel({
 
                   <div>
                     <label className="label text-[10px] mb-1">
-                      {config.llm_provider === "ollama-cloud" ? "API Key (requerida)" : "API Key (opcional)"}
+                      {config.llm_provider === "ollama-cloud" ? "API Key (required)" : "API Key (optional)"}
                     </label>
                     <input
                       type="password"
                       value={config.ollama_api_key || ""}
                       onChange={(e) => onUpdate("ollama_api_key", e.target.value)}
-                      placeholder="Bearer token o API key"
+                      placeholder="Bearer token or API key"
                       className="input text-xs py-2"
                     />
                     <p className="text-[10px] text-muted-foreground mt-1">
                       {config.llm_provider === "ollama-cloud"
-                        ? "Tu API key de Ollama Cloud (ollama.com/settings/keys). El endpoint se configura solo."
-                        : "Necesario solo si la instancia de Ollama está protegida por proxy o es Cloud."}
+                        ? "Your Ollama Cloud API key (ollama.com/settings/keys). The endpoint is configured automatically."
+                        : "Required only if the Ollama instance is protected by a proxy or is Cloud."}
                     </p>
                   </div>
                 </div>

@@ -96,7 +96,7 @@ export default function ProcessingSteps({ steps, onRetry }: ProcessingStepsProps
                   className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-danger-light border border-danger-border text-danger text-xs font-semibold transition-all hover:bg-danger/15 active:scale-[0.98]"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  Reintentar
+                  Retry
                 </button>
               )}
             </div>
