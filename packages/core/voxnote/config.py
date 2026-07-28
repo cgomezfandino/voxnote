@@ -41,6 +41,18 @@ class Settings(BaseSettings):
     )
     ollama_timeout: int = Field(default=120, description="Ollama request timeout in seconds")
 
+    # Cloud LLM providers (openai/anthropic/google). Applies to the insight-extraction
+    # call only. These providers previously had no timeout, so a hung provider could
+    # stall the asyncio.to_thread worker indefinitely.
+    llm_timeout: int = Field(
+        default=90,
+        description="Request timeout (seconds) for cloud LLM insight-extraction calls",
+    )
+    llm_max_retries: int = Field(
+        default=3,
+        description="Max retries (with exponential backoff) for transient cloud LLM errors",
+    )
+
     # Speaker Diarization (whisperX)
     diarize: bool = Field(
         default=False, description="Enable speaker diarization (requires whisperx + HF token)"
