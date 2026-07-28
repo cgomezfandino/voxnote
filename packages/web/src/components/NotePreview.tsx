@@ -57,12 +57,12 @@ function extractTranscript(md: string): {
     const summary = inner.match(/<summary>([\s\S]*?)<\/summary>/i);
     const title = summary
       ? cleanTitle(summary[1].replace(/<\/?[^>]+>/g, "").trim())
-      : "Transcripción completa";
+      : "Full transcript";
     const transcript = inner.replace(/<summary>[\s\S]*?<\/summary>/i, "").trim();
     return { main: md.replace(details[0], "").trim(), transcript, title };
   }
 
-  const heading = md.match(/^##\s+.*transcripci[oó]n.*$/im);
+  const heading = md.match(/^##\s+.*transcript.*$/im);
   if (heading) {
     const idx = md.indexOf(heading[0]);
     const after = md.slice(idx + heading[0].length);
@@ -72,7 +72,7 @@ function extractTranscript(md: string): {
     return { main, transcript, title: cleanTitle(heading[0].replace(/^##\s+/, "")) };
   }
 
-  return { main: md, transcript: null, title: "Transcripción completa" };
+  return { main: md, transcript: null, title: "Full transcript" };
 }
 
 const markdownComponents: Components = {
@@ -312,7 +312,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
           </div>
           <div className="min-w-0">
             <h3 className="font-bold uppercase tracking-wider text-xs text-foreground">
-              Nota Generada
+              Generated Note
             </h3>
             <p className="text-[10px] text-muted-foreground font-mono mt-0.5 truncate">
               {filename}
@@ -328,12 +328,12 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
             {copied ? (
               <>
                 <Check className="w-3.5 h-3.5 text-success" />
-                Copiado
+                Copied
               </>
             ) : (
               <>
                 <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-                Copiar
+                Copy
               </>
             )}
           </button>
@@ -351,7 +351,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
               ) : (
                 <Download className="w-3.5 h-3.5" />
               )}
-              Descargar
+              Download
               <ChevronDown className="w-3 h-3" />
             </button>
 
@@ -369,9 +369,9 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
                   >
                     <FileType2 className="w-4 h-4 text-primary flex-shrink-0" />
                     <span>
-                      Documento Word
+                      Word Document
                       <span className="block text-[10px] text-muted-foreground">
-                        .docx · para compartir e imprimir
+                        .docx · for sharing and printing
                       </span>
                     </span>
                   </button>
@@ -383,7 +383,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
                     <span>
                       Markdown
                       <span className="block text-[10px] text-muted-foreground">
-                        .md · para Obsidian
+                        .md · for Obsidian
                       </span>
                     </span>
                   </button>
@@ -402,7 +402,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
             className="flex items-center gap-1.5 text-xs font-semibold text-foreground hover:text-foreground/80 transition-colors"
           >
             <Users className="w-3.5 h-3.5 text-primary" />
-            {showRename ? "Ocultar" : "Renombrar hablantes"} ({speakers.length})
+            {showRename ? "Hide" : "Rename speakers"} ({speakers.length})
           </button>
 
           {showRename && (
@@ -418,7 +418,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
                     onChange={(e) =>
                       setNames((n) => ({ ...n, [sp]: e.target.value }))
                     }
-                    placeholder="Nombre real…"
+                    placeholder="Real name…"
                     className="flex-1 bg-background border border-border rounded-md px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none"
                   />
                 </div>
@@ -434,7 +434,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
                   ) : (
                     <Check className="w-3.5 h-3.5" />
                   )}
-                  Aplicar nombres
+                  Apply names
                 </button>
               </div>
             </div>

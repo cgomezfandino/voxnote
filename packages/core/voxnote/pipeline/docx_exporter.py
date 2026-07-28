@@ -113,13 +113,13 @@ def markdown_to_docx(markdown: str) -> bytes:
             return
         table = document.add_table(rows=1, cols=3)
         table.style = "Table Grid"
-        for cell, label in zip(table.rows[0].cells, ("Tarea", "Responsable", "Fecha límite")):
+        for cell, label in zip(table.rows[0].cells, ("Task", "Owner", "Deadline")):
             cell.text = label
             for run in cell.paragraphs[0].runs:
                 run.bold = True
-        for tarea, owner, deadline in tasks:
+        for task, owner, deadline in tasks:
             cells = table.add_row().cells
-            cells[0].text = _text(tarea)
+            cells[0].text = _text(task)
             cells[1].text = _text(owner) or "—"
             cells[2].text = _text(deadline) or "—"
         tasks.clear()
@@ -137,7 +137,7 @@ def markdown_to_docx(markdown: str) -> bytes:
         # Transcript collapsible block → heading + paragraphs.
         if stripped.startswith("<details"):
             flush_all()
-            title = "Transcripción completa"
+            title = "Full transcript"
             i += 1
             inner: list[str] = []
             while i < len(lines):
@@ -151,7 +151,7 @@ def markdown_to_docx(markdown: str) -> bytes:
                     break
                 inner.append(lines[i])
                 i += 1
-            document.add_heading(title or "Transcripción completa", level=1)
+            document.add_heading(title or "Full transcript", level=1)
             for block in "\n".join(inner).strip().split("\n"):
                 if block.strip():
                     document.add_paragraph(_text(block))

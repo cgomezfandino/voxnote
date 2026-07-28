@@ -57,8 +57,8 @@ async def export_note_docx(request: DocxExportRequest) -> Response:
             status_code=500, detail="Word export failed. Check server logs for details."
         ) from e
 
-    base = (request.filename or "nota").rsplit(".", 1)[0] or "nota"
-    safe = re.sub(r"[^A-Za-z0-9_.-]", "_", base) or "nota"
+    base = (request.filename or "note").rsplit(".", 1)[0] or "note"
+    safe = re.sub(r"[^A-Za-z0-9_.-]", "_", base) or "note"
     return Response(
         content=data,
         media_type=DOCX_MEDIA_TYPE,

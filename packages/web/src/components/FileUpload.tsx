@@ -37,7 +37,7 @@ export default function FileUpload({ onFileSelected, disabled }: FileUploadProps
         onFileSelected(file);
       } else {
         showToast(
-          "Formato no soportado. Usa WAV, MP3, M4A, OGG, FLAC o WebM.",
+          "Unsupported format. Use WAV, MP3, M4A, OGG, FLAC or WebM.",
           "error"
         );
       }
@@ -105,7 +105,7 @@ export default function FileUpload({ onFileSelected, disabled }: FileUploadProps
           <button
             onClick={clearFile}
             disabled={disabled}
-            aria-label="Quitar archivo"
+            aria-label="Remove file"
             className="p-1.5 rounded-lg hover:bg-foreground/[0.04] transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary"
           >
             <X className="w-4 h-4 text-muted-foreground" />
@@ -151,10 +151,10 @@ export default function FileUpload({ onFileSelected, disabled }: FileUploadProps
           <Upload className="w-6 h-6 text-muted-foreground" />
         </div>
         <p className="font-semibold text-foreground mb-1">
-          {dragActive ? "Suelta el archivo aquí" : "Sube un archivo de audio"}
+          {dragActive ? "Drop the file here" : "Upload an audio file"}
         </p>
         <p className="text-xs text-muted-foreground">
-          WAV, MP3, M4A, OGG, FLAC o WebM (Máximo 25MB recomendado)
+          WAV, MP3, M4A, OGG, FLAC or WebM (25MB max recommended)
         </p>
       </div>
     </div>

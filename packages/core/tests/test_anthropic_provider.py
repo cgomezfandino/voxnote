@@ -24,7 +24,7 @@ def test_extract_parses_text_block(monkeypatch):
 
     text_block = MagicMock()
     text_block.type = "text"
-    text_block.text = '{"resumen": "ok"}'
+    text_block.text = '{"summary": "ok"}'
     fake_msg = MagicMock()
     fake_msg.content = [text_block]
 
@@ -32,9 +32,9 @@ def test_extract_parses_text_block(monkeypatch):
     fake_anthropic.Anthropic.return_value.messages.create.return_value = fake_msg
     monkeypatch.setitem(sys.modules, "anthropic", fake_anthropic)
 
-    result = AnthropicProvider().extract_insights("Una reunión de prueba.")
+    result = AnthropicProvider().extract_insights("A test meeting.")
 
-    assert result["resumen"] == "ok"
+    assert result["summary"] == "ok"
     create = fake_anthropic.Anthropic.return_value.messages.create
     assert create.call_args.kwargs["model"] == "claude-opus-4-8"
     # Opus 4.8 rejects sampling params — they must NOT be sent.

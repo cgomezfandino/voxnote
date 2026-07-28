@@ -8,19 +8,19 @@ from voxnote.pipeline.models import TranscriptResult
 def test_transcribe_returns_transcript_result():
     """transcribe should return a TranscriptResult with text."""
     fake_model = MagicMock()
-    fake_model.transcribe.return_value = {"text": "Hola, esta es una prueba."}
+    fake_model.transcribe.return_value = {"text": "Hello, this is a test."}
 
     with (
         patch("voxnote.pipeline.transcriber._BACKEND", "whisper"),
         patch("voxnote.pipeline.transcriber._transcribe_whisper") as mock_fn,
     ):
-        mock_fn.return_value = TranscriptResult(text="Hola, esta es una prueba.")
+        mock_fn.return_value = TranscriptResult(text="Hello, this is a test.")
         from voxnote.pipeline.transcriber import transcribe
 
         result = transcribe("fake_audio.mp3")
 
     assert isinstance(result, TranscriptResult)
-    assert result.text == "Hola, esta es una prueba."
+    assert result.text == "Hello, this is a test."
     assert not result.has_speakers
 
 

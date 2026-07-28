@@ -15,9 +15,9 @@ import {
 } from "@/lib/api";
 
 const INITIAL_STEPS: ProcessingStep[] = [
-  { id: 1, title: "Transcribiendo audio...", status: "pending" },
-  { id: 2, title: "Extrayendo insights...", status: "pending" },
-  { id: 3, title: "Generando nota...", status: "pending" },
+  { id: 1, title: "Transcribing audio...", status: "pending" },
+  { id: 2, title: "Extracting insights...", status: "pending" },
+  { id: 3, title: "Generating note...", status: "pending" },
 ];
 
 export function useVoxnote() {
@@ -52,13 +52,13 @@ export function useVoxnote() {
 
         updateStep(1, {
           status: "completed",
-          description: `${result.text.length} caracteres`,
+          description: `${result.text.length} characters`,
         });
 
         return result;
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : "Error en transcripción";
+          err instanceof Error ? err.message : "Transcription error";
         updateStep(1, { status: "error", description: message });
         setError(message);
         throw err;
@@ -79,13 +79,13 @@ export function useVoxnote() {
 
         updateStep(2, {
           status: "completed",
-          description: `${result.action_items?.length || 0} tareas encontradas`,
+          description: `${result.action_items?.length || 0} tasks found`,
         });
 
         return result;
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : "Error extrayendo insights";
+          err instanceof Error ? err.message : "Error extracting insights";
         updateStep(2, { status: "error", description: message });
         setError(message);
         throw err;
@@ -113,7 +113,7 @@ export function useVoxnote() {
         return result;
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : "Error generando nota";
+          err instanceof Error ? err.message : "Error generating note";
         updateStep(3, { status: "error", description: message });
         setError(message);
         throw err;

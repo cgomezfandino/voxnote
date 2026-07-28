@@ -7,15 +7,14 @@ from rich.console import Console
 
 from voxnote.config import settings
 from voxnote.providers._observability import observe_llm_call
-from voxnote.providers.base import LLMProvider, build_insights_prompt, truncate_transcript
+from voxnote.providers.base import (
+    SYSTEM_PROMPT,
+    LLMProvider,
+    build_insights_prompt,
+    truncate_transcript,
+)
 
 console = Console()
-
-SYSTEM_PROMPT = """\
-Eres un asistente especializado en analizar transcripciones de reuniones. \
-Extrae insights estructurados y responde ÚNICAMENTE con JSON válido, \
-sin markdown ni backticks.
-"""
 
 MAX_TRANSCRIPT_CHARS = 8000  # OpenAI can handle more
 

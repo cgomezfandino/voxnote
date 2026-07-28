@@ -1,23 +1,23 @@
 #!/bin/bash
 
-echo "🎙️ Iniciando Voxnote Next.js"
+echo "🎙️ Starting Voxnote Next.js"
 echo "=============================="
 echo ""
 
-# Verificar si node_modules existe
+# Check whether node_modules exists
 if [ ! -d "node_modules" ]; then
-    echo "📦 Instalando dependencias..."
+    echo "📦 Installing dependencies..."
     npm install
     if [ $? -ne 0 ]; then
-        echo "❌ Error al instalar dependencias"
+        echo "❌ Failed to install dependencies"
         exit 1
     fi
-    echo "✅ Dependencias instaladas"
+    echo "✅ Dependencies installed"
     echo ""
 fi
 
-echo "🚀 Iniciando servidor en http://localhost:3001"
-echo "Presiona Ctrl+C para detener"
+echo "🚀 Starting server at http://localhost:3001"
+echo "Press Ctrl+C to stop"
 echo ""
 
 npm run dev

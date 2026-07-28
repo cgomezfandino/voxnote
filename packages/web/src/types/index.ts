@@ -15,31 +15,31 @@ export interface TranscriptionResult {
 
 // Insights types
 export interface ActionItem {
-  tarea: string;
-  responsable: string;
+  task: string;
+  owner: string;
   deadline: string;
 }
 
-export interface Participante {
-  hablante: string;
-  aporte?: string;
+export interface Participant {
+  speaker: string;
+  contribution?: string;
 }
 
-export interface Comentario {
-  hablante?: string;
-  cita: string;
+export interface Highlight {
+  speaker?: string;
+  quote: string;
 }
 
 export interface InsightsResult {
-  resumen: string;
-  participantes?: Participante[];
-  puntos_clave?: string[];
-  decisiones: string[];
+  summary: string;
+  participants?: Participant[];
+  key_points?: string[];
+  decisions: string[];
   action_items: ActionItem[];
   insights: string[];
-  comentarios_destacados?: Comentario[];
-  preguntas_abiertas: string[];
-  proximos_pasos: string[];
+  highlights?: Highlight[];
+  open_questions: string[];
+  next_steps: string[];
 }
 
 // Export types

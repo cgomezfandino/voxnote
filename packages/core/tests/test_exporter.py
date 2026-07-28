@@ -48,13 +48,13 @@ def test_export_contains_all_sections(tmp_path, sample_insights, sample_transcri
     content = note.read_text()
 
     for heading in [
-        "📝 Resumen",
-        "✅ Decisiones tomadas",
-        "🎯 Tareas pendientes",
-        "💡 Insights clave",
-        "❓ Preguntas abiertas",
-        "🔜 Próximos pasos",
-        "Transcripción completa",
+        "📝 Summary",
+        "✅ Decisions",
+        "🎯 Action items",
+        "💡 Insights",
+        "❓ Open questions",
+        "🔜 Next steps",
+        "Full transcript",
     ]:
         assert heading in content
 
@@ -71,8 +71,8 @@ def test_export_action_items_as_checkboxes(tmp_path, sample_insights, sample_tra
     )
     content = note.read_text()
 
-    assert "- [ ] Crear endpoints de auth @Carlos" in content
-    assert "- [ ] Diseñar mockups del dashboard @Ana" in content
+    assert "- [ ] Create auth endpoints @Carlos" in content
+    assert "- [ ] Design dashboard mockups @Ana" in content
 
 
 def test_export_empty_insights(tmp_path, sample_transcript):
@@ -87,8 +87,8 @@ def test_export_empty_insights(tmp_path, sample_transcript):
     )
     content = note.read_text()
 
-    assert "N/A" in content  # resumen fallback
-    assert "- [ ] Sin tareas identificadas" in content
+    assert "N/A" in content  # summary fallback
+    assert "- [ ] No tasks identified" in content
 
 
 def test_export_slug_from_audio_name(tmp_path, sample_insights, sample_transcript):
@@ -113,14 +113,14 @@ def test_export_string_field_not_split_per_char(tmp_path, sample_transcript):
     from voxnote.pipeline.exporter import export_obsidian
 
     note = export_obsidian(
-        insights={"resumen": "R", "decisiones": "Usar JWT", "participantes": "Carlos"},
+        insights={"summary": "R", "decisions": "Use JWT", "participants": "Carlos"},
         transcript=sample_transcript,
         audio_name="oneline.mp3",
         output_dir=tmp_path,
     )
     content = note.read_text()
 
-    assert "- Usar JWT" in content  # one bullet, whole string
+    assert "- Use JWT" in content  # one bullet, whole string
     assert "- U\n" not in content  # NOT split into per-character bullets
     assert "- **Carlos**" in content  # participant string handled as a single entry
 
@@ -139,4 +139,4 @@ def test_export_with_diarized_transcript(tmp_path, sample_insights, sample_diari
 
     assert "[SPEAKER_00]:" in content
     assert "[SPEAKER_01]:" in content
-    assert "Transcripción completa" in content
+    assert "Full transcript" in content
