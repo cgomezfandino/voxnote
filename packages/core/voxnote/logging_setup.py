@@ -21,6 +21,7 @@ so this stays portable across machines.
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
@@ -34,11 +35,32 @@ DIR_DEV = "dev"
 DIR_TEST = "test"
 DIR_ERRORS = "errors"
 
+# Restrictive perms: logs can capture meeting-derived content (LLM output, tracebacks),
+# so they must be owner-only — matching audio (0o600) and notes (0o600 / dirs 0o700).
+LOG_FILE_MODE = 0o600
+LOG_DIR_MODE = 0o700
+
+
+def _restrict_path(path: Path, mode: int) -> None:
+    """Tighten an existing path's permissions; ignore if unsupported (e.g. CIFS share)."""
+    try:
+        path.chmod(mode)
+    except OSError:
+        # Network/foreign filesystems may reject chmod; the umask at creation still applies.
+        pass
+
 
 def _file_handler(log_file: Path, level: int, fmt: logging.Formatter) -> TimedRotatingFileHandler:
-    """Build a daily-rotating file handler, creating parent dirs as needed."""
+    """Build a daily-rotating file handler, creating parent dirs as needed.
+
+    Uses :class:`_PrivateFileHandler` so the log file is created ``0o600`` every time
+    it is opened (on first write and after each midnight rotation) — the default
+    ``TimedRotatingFileHandler`` inherits the process umask (typically ``0o644``),
+    and logs can hold meeting-derived content.
+    """
     log_file.parent.mkdir(parents=True, exist_ok=True)
-    handler = TimedRotatingFileHandler(
+    _restrict_path(log_file.parent, LOG_DIR_MODE)
+    handler = _PrivateFileHandler(
         log_file,
         when=ROTATE_WHEN,
         backupCount=ROTATE_BACKUP_COUNT,
@@ -48,6 +70,20 @@ def _file_handler(log_file: Path, level: int, fmt: logging.Formatter) -> TimedRo
     handler.setLevel(level)
     handler.setFormatter(fmt)
     return handler
+
+
+class _PrivateFileHandler(TimedRotatingFileHandler):
+    """``TimedRotatingFileHandler`` that writes files owner-only (``0o600``)."""
+
+    def _open(self):  # type: ignore[override]
+        stream = super()._open()
+        # Applied on first open and after each rotation (doRollover calls _open).
+        try:
+            os.chmod(self.baseFilename, LOG_FILE_MODE)
+        except OSError:
+            # Foreign filesystems may reject chmod; umask at creation still applies.
+            pass
+        return stream
 
 
 def _formatter() -> logging.Formatter:
@@ -75,6 +111,7 @@ def setup_logging(log_dir: Path, *, level: int = logging.INFO) -> dict[str, Path
     """
     log_dir = Path(log_dir).expanduser()
     log_dir.mkdir(parents=True, exist_ok=True)
+    _restrict_path(log_dir, LOG_DIR_MODE)
     fmt = _formatter()
 
     paths = {

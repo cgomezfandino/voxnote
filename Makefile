@@ -46,17 +46,20 @@ install-web: ensure-web-deps
 # Uses the voxnote-api entry point (main:run) which sets up logging to the SSD
 # BEFORE uvicorn starts, so our handlers survive (uvicorn would otherwise wipe them).
 dev-api: ensure-venv install-core install-api
-	@mkdir -p "$(LOG_DIR)/dev"
+	@install -d -m 0700 "$(LOG_DIR)/dev"
+	@touch "$(DEV_LOG)" && chmod 600 "$(DEV_LOG)"
 	@echo "Logging to $(DEV_LOG)"
 	@VOXNOTE_API_RELOAD=true VOXNOTE_API_PORT=8003 $(VENV_PY) -m voxnote_api.main 2>&1 | tee -a "$(DEV_LOG)"
 
 dev-web: ensure-web-deps
-	@mkdir -p "$(LOG_DIR)/dev"
+	@install -d -m 0700 "$(LOG_DIR)/dev"
+	@touch "$(DEV_LOG)" && chmod 600 "$(DEV_LOG)"
 	@echo "Logging to $(DEV_LOG)"
 	@cd packages/web && npm run dev -- --port 3003 2>&1 | tee -a "$(DEV_LOG)"
 
 dev: ensure-venv ensure-web-deps install-core install-api
-	@mkdir -p "$(LOG_DIR)/dev"
+	@install -d -m 0700 "$(LOG_DIR)/dev"
+	@touch "$(DEV_LOG)" && chmod 600 "$(DEV_LOG)"
 	@echo "Starting API (port 8003) and Web (port 3003)... logging to $(DEV_LOG)"
 	@trap 'kill 0' EXIT; \
 		{ VOXNOTE_API_PORT=8003 $(VENV_PY) -m voxnote_api.main \

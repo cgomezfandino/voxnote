@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -227,6 +228,53 @@ class ConfigUpdateRequest(BaseModel):
         if v is not None and v != "" and not re.fullmatch(r"[A-Za-z]{2}", v):
             raise ValueError("language must be a 2-letter ISO 639-1 code or empty")
         return v
+
+    @field_validator("ollama_url")
+    @classmethod
+    def _check_ollama_url(cls, v: str | None) -> str | None:
+        """Validate ``ollama_url`` to prevent SSRF via ``PUT /api/config``.
+
+        ``ollama_url`` is operator-settable, and the Ollama provider POSTs the full
+        meeting-transcript prompt plus a ``Bearer`` key to it. Without validation an
+        attacker who can reach ``PUT /api/config`` (in dev the token check is a no-op)
+        could repoint the LLM endpoint and exfiltrate transcripts + the API key. We
+        therefore require an ``http(s)`` scheme and reject the cloud metadata-sink hosts
+        that are never a legitimate Ollama backend. Local/private hosts are allowed.
+        """
+        if v is None:
+            return v
+        url = v.strip()
+        if not url:
+            return v
+        try:
+            parsed = urlparse(url)
+        except ValueError as exc:  # pragma: no cover - urlparse rarely raises
+            raise ValueError(f"invalid ollama_url: {exc}") from exc
+        scheme = (parsed.scheme or "").lower()
+        if scheme not in {"http", "https"}:
+            raise ValueError(
+                "ollama_url must use an http or https scheme "
+                f"(got '{scheme or 'empty'}')"
+            )
+        host = (parsed.hostname or "").lower().rstrip(".")
+        if host in _SSRF_BLOCKED_HOSTS:
+            raise ValueError("ollama_url must not point at a cloud metadata endpoint")
+        return url
+
+
+# Cloud instance metadata-sink hosts. These expose credentials to anything that can
+# reach them and are never a legitimate Ollama backend, so any request to them is a
+# clear SSRF signal. Bare "0.0.0.0" is also blocked (not a real target for Ollama).
+_SSRF_BLOCKED_HOSTS = frozenset(
+    {
+        "169.254.169.254",          # AWS / Azure / GCP / OpenStack IPv4 metadata
+        "0.0.0.0",                  # non-routable; only used to elide host checks
+        "metadata.google.internal",  # GCP metadata
+        "metadata",                 # GCP metadata (short form)
+        "fd00:ec2::254",            # AWS IMDSv6 metadata
+        "metadata.azure.com",       # Azure metadata
+    }
+)
 
 
 # --- Notes ---

@@ -25,8 +25,14 @@ Tras revisar el código directamente, se corrigen sobre-afirmaciones de los agen
   usa el CLI de uvicorn sin `--host` → `127.0.0.1`. Riesgo = **latente, detona al empaquetar / correr `voxnote-api`**.
 - **CORS NO es `*`.** Está restringido a `localhost:3000/3001/3003` (`main.py`). El item del informe que pedía
   cambiar `allow_origins=["*"]` partía de una premisa falsa.
-- **Los "SSRF" que redirigen tráfico a un servidor atacante NO son explotables.** `ollama_url`/`OPENAI_BASE_URL`
-  **no** son campos de `ConfigUpdateRequest`, así que no se pueden cambiar por `PUT /api/config`.
+- **Los "SSRF" que redirigen tráfico a un servidor atacante.** `ollama_url` **sí** es un campo de
+  `ConfigUpdateRequest` (se añadió tras la auditoría inicial), pero ahora está **validado**:
+  esquema `http`/`https` obligatorio y rechazo de endpoints de metadata cloud
+  (`169.254.169.254`, `metadata.google.internal`, etc.). Ver ``_check_ollama_url`` en
+  `packages/api/voxnote_api/schemas.py`. `OPENAI_BASE_URL`/`ANTHROPIC_BASE_URL` siguen siendo
+  solo env (no settables por `PUT /api/config`). El amplificador SSRF de `/api/ready`
+  (GET saliente a `ollama_url`) queda cubierto por la misma validación. **Nota:** la auth por
+  token (que hoy es no-op en dev) sigue siendo la mitigación estructural pendiente (Fase 0.5).
 - **No hay secretos commiteados** en git (`.env` está ignorado).
 
 ## Hallazgos consolidados

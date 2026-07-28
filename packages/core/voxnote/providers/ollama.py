@@ -63,8 +63,11 @@ class OllamaProvider(LLMProvider):
                 data = json.loads(repaired)
                 console.print("[yellow]JSON repaired (response was truncated)[/]")
             except json.JSONDecodeError as e2:
+                # Do NOT dump the raw response: it is the LLM's insights JSON derived
+                # directly from the meeting transcript, and stdout is tee'd to the dev
+                # log on disk. Log only the length and the parse error.
                 console.print(f"[red]JSON parse error:[/] {e2}")
-                console.print(f"[yellow]Raw response:[/]\n{raw[:500]}")
+                console.print(f"[yellow]Unparseable response:[/] {len(raw)} chars")
                 raise ValueError(f"Failed to parse JSON from Ollama: {e2}") from e2
 
         console.print("[green]Insights extracted[/]")
