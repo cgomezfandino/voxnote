@@ -1,36 +1,36 @@
 # Voxnote
 
-Pipeline local para grabar reuniones, transcribirlas, extraer insights y organizarlas en notas de Obsidian. 100% privado — nada sale de tu máquina.
+A local pipeline to record meetings, transcribe them, extract insights, and organize them into Obsidian notes. 100% private — nothing leaves your machine.
 
 **Audio → Whisper → LLM → Obsidian**
 
-## Tabla de contenidos
+## Table of Contents
 
-- [Requisitos](#requisitos)
-- [Instalación](#instalación)
-- [Iniciar servicios](#iniciar-servicios)
-- [Uso](#uso)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Start services](#start-services)
+- [Usage](#usage)
 - [CLI](#cli)
-- [Interfaz web](#interfaz-web)
+- [Web interface](#web-interface)
 - [API](#api)
-- [Configuración](#configuración)
-- [Proveedores LLM](#proveedores-llm)
-- [Diarización (¿quién dijo qué?)](#diarización-quién-dijo-qué)
-- [Privacidad y aspectos legales](#privacidad-y-aspectos-legales)
-- [Integración con Obsidian](#integración-con-obsidian)
-- [Arquitectura](#arquitectura)
-- [Desarrollo](#desarrollo)
+- [Configuration](#configuration)
+- [LLM Providers](#llm-providers)
+- [Diarization (who said what?)](#diarization-who-said-what)
+- [Privacy and legal considerations](#privacy-and-legal-considerations)
+- [Obsidian Integration](#obsidian-integration)
+- [Architecture](#architecture)
+- [Development](#development)
 
 ---
 
-## Requisitos
+## Requirements
 
-- Python ≥ 3.10 (usa **Python 3.11** si vas a activar la diarización — whisperX no soporta 3.13/3.14)
-- Node.js ≥ 18.18 (recomendado 20+; lo exige Next.js 15)
-- [FFmpeg](https://ffmpeg.org/) — procesamiento de audio
-- [Ollama](https://ollama.com/) — LLM local (opcional si usas otros proveedores)
+- Python ≥ 3.10 (use **Python 3.11** if you plan to enable diarization — whisperX does not support 3.13/3.14)
+- Node.js ≥ 18.18 (20+ recommended; required by Next.js 15)
+- [FFmpeg](https://ffmpeg.org/) — audio processing
+- [Ollama](https://ollama.com/) — local LLM (optional if you use other providers)
 
-### Instalar FFmpeg
+### Install FFmpeg
 
 ```bash
 # macOS
@@ -40,37 +40,37 @@ brew install ffmpeg
 sudo apt update && sudo apt install ffmpeg
 ```
 
-### Instalar Ollama
+### Install Ollama
 
 ```bash
 # macOS / Linux
 curl -fsSL https://ollama.com/install.sh | sh
 
-# Descargar modelo (4.7 GB)
+# Download model (4.7 GB)
 ollama pull llama3.1:8b
 ```
 
 ---
 
-## Instalación
+## Installation
 
 ```bash
 git clone https://github.com/cgomezfandino/voxnote.git
 cd voxnote
 
-# Crear entorno virtual
+# Create virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
 
-# Instalar todos los paquetes
+# Install all packages
 make install
 ```
 
 ---
 
-## Iniciar servicios
+## Start services
 
-### Desarrollo (API + Web)
+### Development (API + Web)
 
 ```bash
 source .venv/bin/activate
@@ -80,58 +80,58 @@ make dev
 - **API**: http://127.0.0.1:8003
 - **Web**: http://localhost:3003
 
-### Solo API
+### API only
 
 ```bash
 make dev-api
 ```
 
-### Solo Web
+### Web only
 
 ```bash
 make dev-web
 ```
 
-### Ollama (LLM local)
+### Ollama (local LLM)
 
 ```bash
-# Iniciar servidor
+# Start server
 ollama serve
 
-# Verificar que está corriendo
+# Verify it is running
 curl http://localhost:11434/api/tags
 ```
 
 ---
 
-## Uso
+## Usage
 
-### 1. Reunión de equipo (standup, sprint planning)
+### 1. Team meeting (standup, sprint planning)
 
 ```bash
-# Grabar la reunión
-voxnote record --duration 900  # 15 minutos
+# Record the meeting
+voxnote record --duration 900  # 15 minutes
 
-# Procesar y generar nota
+# Process and generate note
 voxnote process recordings/20260212_193045.wav
 ```
 
-### 2. Entrevista o podcast (con diarización)
+### 2. Interview or podcast (with diarization)
 
 ```bash
-# Transcribir con identificación de hablantes
+# Transcribe with speaker identification
 voxnote process entrevista.mp3 --diarize
 ```
 
-**Requisito:** instala whisperX y configura tu token — ver [Diarización](#diarización-quién-dijo-qué).
+**Requirement:** install whisperX and configure your token — see [Diarization](#diarization-who-said-what).
 
-### 3. Solo transcribir
+### 3. Transcribe only
 
 ```bash
 voxnote transcribe audio.mp3 > transcript.txt
 ```
 
-### 4. Procesar múltiples archivos
+### 4. Process multiple files
 
 ```bash
 for file in recordings/*.wav; do
@@ -143,92 +143,92 @@ done
 
 ## CLI
 
-### Pipeline completo
+### Full pipeline
 
 ```bash
-voxnote process <audio> [opciones]
+voxnote process <audio> [options]
 
-opciones:
-  -m, --model      Modelo Whisper (default: turbo)
-  --diarize        Identificar hablantes
-  --output-dir     Directorio de salida
+options:
+  -m, --model      Whisper model (default: turbo)
+  --diarize        Identify speakers
+  --output-dir     Output directory
 ```
 
-### Grabar desde micrófono
+### Record from microphone
 
 ```bash
-voxnote record [opciones]
+voxnote record [options]
 
-opciones:
-  -o, --output     Ruta del archivo .wav
-  -d, --duration   Duración en segundos (omitir para manual)
+options:
+  -o, --output     Path to the .wav file
+  -d, --duration   Duration in seconds (omit for manual)
 ```
 
-### Solo transcribir
+### Transcribe only
 
 ```bash
-voxnote transcribe <audio> [opciones]
+voxnote transcribe <audio> [options]
 
-opciones:
-  -m, --model      Modelo Whisper
-  --diarize        Identificar hablantes
+options:
+  -m, --model      Whisper model
+  --diarize        Identify speakers
 ```
 
 ---
 
-## Interfaz web
+## Web interface
 
-UI moderna en **http://localhost:3003**:
+Modern UI at **http://localhost:3003**:
 
 ```bash
 make dev
 ```
 
-Funcionalidades:
-- Grabar audio directamente desde el navegador
-- Subir archivos existentes
-- Seleccionar modelo Whisper y proveedor LLM
-- Ver historial de notas generadas
-- Configurar diarización de hablantes
-- Preview de notas con render Markdown
-- Descargar notas en **Word (.docx)** o Markdown
+Features:
+- Record audio directly from the browser
+- Upload existing files
+- Select Whisper model and LLM provider
+- View history of generated notes
+- Configure speaker diarization
+- Note preview with Markdown rendering
+- Download notes in **Word (.docx)** or Markdown
 
 ---
 
 ## API
 
-Backend FastAPI en **http://127.0.0.1:8003**
+FastAPI backend at **http://127.0.0.1:8003**
 
 ### Endpoints
 
-| Method | Path | Descripción |
+| Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/health` | Health check |
-| POST | `/api/transcribe` | Audio upload → transcripción |
-| POST | `/api/insights` | Transcript → insights estructurados |
-| POST | `/api/export` | Insights → nota Obsidian .md |
-| GET | `/api/config` | Configuración actual |
-| PUT | `/api/config` | Actualizar configuración |
-| GET | `/api/notes` | Listar notas generadas |
-| GET | `/api/notes/{filename}` | Obtener contenido de nota |
-| POST | `/api/notes/{filename}/speakers` | Renombrar etiquetas SPEAKER_xx en una nota |
-| POST | `/api/export/docx` | Nota Markdown → documento Word (.docx) |
-| GET | `/api/ollama/models` | Listar modelos instalados en el servidor Ollama |
+| POST | `/api/transcribe` | Audio upload → transcription |
+| POST | `/api/insights` | Transcript → structured insights |
+| POST | `/api/export` | Insights → Obsidian .md note |
+| GET | `/api/config` | Current configuration |
+| PUT | `/api/config` | Update configuration |
+| GET | `/api/notes` | List generated notes |
+| GET | `/api/notes/{filename}` | Get note content |
+| POST | `/api/notes/{filename}/speakers` | Rename SPEAKER_xx tags in a note |
+| POST | `/api/export/docx` | Markdown note → Word document (.docx) |
+| GET | `/api/ollama/models` | List models installed on the Ollama server |
 
-### Ejemplo
+### Example
 
 ```bash
-# Transcribir audio
+# Transcribe audio
 curl -X POST "http://127.0.0.1:8003/api/transcribe" \
   -F "audio=@audio.mp3" \
   -F "model=turbo"
 
-# Extraer insights
+# Extract insights
 curl -X POST "http://127.0.0.1:8003/api/insights" \
   -H "Content-Type: application/json" \
   -d '{"text": "...", "provider": "ollama"}'
 
-# Exportar nota
+# Export note
 curl -X POST "http://127.0.0.1:8003/api/export" \
   -H "Content-Type: application/json" \
   -d '{"insights": {}, "transcript_text": "...", "audio_name": "reunion.mp3"}'
@@ -236,60 +236,60 @@ curl -X POST "http://127.0.0.1:8003/api/export" \
 
 ---
 
-## Configuración
+## Configuration
 
-Variables de entorno (prefijo `VOXNOTE_`):
+Environment variables (`VOXNOTE_` prefix):
 
-| Variable | Default | Descripción |
+| Variable | Default | Description |
 |----------|---------|-------------|
-| `VOXNOTE_WHISPER_MODEL` | `turbo` | Modelo Whisper |
-| `VOXNOTE_LANGUAGE` | `es` | Idioma (vacío = auto-detect) |
-| `VOXNOTE_LLM_PROVIDER` | `ollama` | Proveedor LLM |
-| `VOXNOTE_OLLAMA_MODEL` | `llama3.1:8b` | Modelo Ollama |
-| `VOXNOTE_OLLAMA_URL` | `http://localhost:11434` | URL Ollama |
-| `VOXNOTE_OUTPUT_DIR` | `output` | Directorio de notas |
-| `VOXNOTE_DIARIZE` | `false` | Habilitar diarización |
-| `VOXNOTE_HF_TOKEN` | | Token HuggingFace para diarización |
-| `VOXNOTE_DIARIZE_MIN_SPEAKERS` | (auto) | Mínimo de hablantes (vacío = auto-detección) |
-| `VOXNOTE_DIARIZE_MAX_SPEAKERS` | (auto) | Máximo de hablantes (vacío = auto-detección) |
-| `VOXNOTE_API_HOST` | `127.0.0.1` | Host del API. **No** hay autenticación aún: usa `0.0.0.0` solo en redes de confianza |
-| `VOXNOTE_MAX_UPLOAD_MB` | `500` | Tamaño máximo de subida de audio (API) |
-| `VOXNOTE_MAX_JSON_MB` | `10` | Tamaño máximo del body JSON (insights/export) |
-| `VOXNOTE_API_PORT` | `8003` | Puerto del API |
-| `VOXNOTE_DIARIZE_MODEL` | `pyannote/speaker-diarization-community-1` | Modelo de diarización (gated) |
-| `VOXNOTE_OLLAMA_API_KEY` | (vacío) | API key para Ollama cloud/proxy |
-| `VOXNOTE_OLLAMA_TIMEOUT` | `120` | Timeout de petición a Ollama (s) |
-| `VOXNOTE_COMPUTE_TYPE` | `int8` | Compute type whisperX (int8/float16/float32) |
-| `VOXNOTE_SAMPLE_RATE` | `16000` | Sample rate de grabación (Hz) |
+| `VOXNOTE_WHISPER_MODEL` | `turbo` | Whisper model |
+| `VOXNOTE_LANGUAGE` | `es` | Audio language (empty = auto-detect) |
+| `VOXNOTE_LLM_PROVIDER` | `ollama` | LLM provider |
+| `VOXNOTE_OLLAMA_MODEL` | `llama3.1:8b` | Ollama model |
+| `VOXNOTE_OLLAMA_URL` | `http://localhost:11434` | Ollama URL |
+| `VOXNOTE_OUTPUT_DIR` | `output` | Notes directory |
+| `VOXNOTE_DIARIZE` | `false` | Enable diarization |
+| `VOXNOTE_HF_TOKEN` | | HuggingFace token for diarization |
+| `VOXNOTE_DIARIZE_MIN_SPEAKERS` | (auto) | Minimum number of speakers (empty = auto-detection) |
+| `VOXNOTE_DIARIZE_MAX_SPEAKERS` | (auto) | Maximum number of speakers (empty = auto-detection) |
+| `VOXNOTE_API_HOST` | `127.0.0.1` | API host. There is **no** authentication yet: use `0.0.0.0` only on trusted networks |
+| `VOXNOTE_MAX_UPLOAD_MB` | `500` | Maximum audio upload size (API) |
+| `VOXNOTE_MAX_JSON_MB` | `10` | Maximum JSON body size (insights/export) |
+| `VOXNOTE_API_PORT` | `8003` | API port |
+| `VOXNOTE_DIARIZE_MODEL` | `pyannote/speaker-diarization-community-1` | Diarization model (gated) |
+| `VOXNOTE_OLLAMA_API_KEY` | (empty) | API key for Ollama cloud/proxy |
+| `VOXNOTE_OLLAMA_TIMEOUT` | `120` | Ollama request timeout (s) |
+| `VOXNOTE_COMPUTE_TYPE` | `int8` | whisperX compute type (int8/float16/float32) |
+| `VOXNOTE_SAMPLE_RATE` | `16000` | Recording sample rate (Hz) |
 
-### Archivo .env
+### .env file
 
 ```bash
 cp .env.example .env
-# Editar .env con tus valores
+# Edit .env with your values
 ```
 
-### Modelos Whisper
+### Whisper models
 
-| Modelo | VRAM | Velocidad | Uso recomendado |
+| Model | VRAM | Speed | Recommended use |
 |--------|------|-----------|-----------------|
-| `tiny` | ~1 GB | Muy rápido | Testing |
-| `base` | ~1 GB | Rápido | Inglés simple |
-| `small` | ~2 GB | Medio | Uso general |
-| `turbo` | ~6 GB | Rápido | **Recomendado** |
-| `large-v3` | ~10 GB | Lento | Máxima precisión |
+| `tiny` | ~1 GB | Very fast | Testing |
+| `base` | ~1 GB | Fast | Simple English |
+| `small` | ~2 GB | Medium | General use |
+| `turbo` | ~6 GB | Fast | **Recommended** |
+| `large-v3` | ~10 GB | Slow | Maximum accuracy |
 
 ---
 
-## Proveedores LLM
+## LLM Providers
 
-### Ollama (local, gratuito)
+### Ollama (local, free)
 
 ```bash
 VOXNOTE_LLM_PROVIDER=ollama
 ```
 
-> **Tus credenciales, en tu `.env`.** Las API keys y endpoints de los proveedores en la nube los pones **tú** en `.env` (o variables de entorno), igual que el `VOXNOTE_HF_TOKEN`. La app **nunca** guarda tus claves; solo las lee del entorno.
+> **Your credentials, in your `.env`.** You add the API keys and endpoints for cloud providers **yourself** in `.env` (or environment variables), just like the `VOXNOTE_HF_TOKEN`. The app **never** stores your keys; it only reads them from the environment.
 
 ### OpenAI
 
@@ -297,116 +297,116 @@ VOXNOTE_LLM_PROVIDER=ollama
 VOXNOTE_LLM_PROVIDER=openai
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4o-mini
-# OPENAI_BASE_URL=https://api.openai.com/v1   # opcional: proxy / endpoint compatible
+# OPENAI_BASE_URL=https://api.openai.com/v1   # optional: proxy / compatible endpoint
 ```
 
-Instala el extra: `pip install -e "packages/core[openai]"`.
+Install the extra: `pip install -e "packages/core[openai]"`.
 
 ### Google Gemini
 
 ```bash
 VOXNOTE_LLM_PROVIDER=google
-GOOGLE_API_KEY=...            # o GEMINI_API_KEY
+GOOGLE_API_KEY=...            # or GEMINI_API_KEY
 GOOGLE_MODEL=gemini-2.0-flash
 ```
 
-Instala el extra: `pip install -e "packages/core[google]"`.
+Install the extra: `pip install -e "packages/core[google]"`.
 
 ### Anthropic (Claude)
 
 ```bash
 VOXNOTE_LLM_PROVIDER=anthropic
 ANTHROPIC_API_KEY=sk-ant-...
-ANTHROPIC_MODEL=claude-opus-4-8   # o claude-sonnet-4-6 / claude-haiku-4-5
-# ANTHROPIC_BASE_URL=...          # opcional: proxy / gateway
+ANTHROPIC_MODEL=claude-opus-4-8   # or claude-sonnet-4-6 / claude-haiku-4-5
+# ANTHROPIC_BASE_URL=...          # optional: proxy / gateway
 ```
 
-Instala el extra: `pip install -e "packages/core[anthropic]"`.
+Install the extra: `pip install -e "packages/core[anthropic]"`.
 
-Ver [docs/multi-provider-setup.md](docs/multi-provider-setup.md) para más detalles.
+See [docs/multi-provider-setup.md](docs/multi-provider-setup.md) for more details.
 
 ---
 
-## Diarización (¿quién dijo qué?)
+## Diarization (who said what?)
 
-La diarización identifica a los distintos hablantes de un audio (`[SPEAKER_00]`, `[SPEAKER_01]`…). Con ella, la nota incluye una sección **Participantes** y atribuye decisiones, tareas y comentarios a cada persona.
+Diarization identifies the different speakers in an audio (`[SPEAKER_00]`, `[SPEAKER_01]`…). With it, the note includes a **Participants** section and attributes decisions, tasks, and comments to each person.
 
-> **Es opcional.** Sin diarización igual obtienes resumen, puntos clave, insights y tareas — solo pierdes el "quién dijo qué".
+> **It is optional.** Without diarization you still get the summary, key points, insights, and tasks — you only lose the "who said what".
 
-### Activarla (3 pasos)
+### Enabling it (3 steps)
 
-> ⚠️ **Importante:** la diarización (whisperX → faster-whisper → ctranslate2) **requiere Python 3.11**. **No funciona en Python 3.13/3.14** (no hay ruedas de ctranslate2/faster-whisper y la instalación falla). Crea el venv con 3.11:
+> ⚠️ **Important:** diarization (whisperX → faster-whisper → ctranslate2) **requires Python 3.11**. **It does not work on Python 3.13/3.14** (there are no ctranslate2/faster-whisper wheels and installation fails). Create the venv with 3.11:
 > ```bash
 > python3.11 -m venv .venv
 > source .venv/bin/activate
 > ```
 
-**1. Instala el extra whisperX** (no viene en la instalación base):
+**1. Install the whisperX extra** (not included in the base install):
 
 ```bash
 .venv/bin/pip install -e "packages/core[whisperx]"
 ```
 
-**2. Acepta el modelo de pyannote en HuggingFace** (es "gated"; con tu cuenta, una sola vez):
+**2. Accept the pyannote model on HuggingFace** (it is "gated"; with your account, just once):
 
 - https://huggingface.co/pyannote/speaker-diarization-community-1 → *Agree and access repository*
 
-(`community-1` es el que usa whisperX 3.8 por defecto e incluye todos sus componentes —
-segmentación, embedding y PLDA— en un solo repo.)
+(`community-1` is the one whisperX 3.8 uses by default and includes all its components —
+segmentation, embedding, and PLDA — in a single repo.)
 
-**3. Configura tu token** en `.env` — un token **válido** de https://huggingface.co/settings/tokens (tipo *Read*, o *fine-grained* con permiso "Read access to public gated repos"). Empieza por `hf_` y tiene ~37 caracteres:
+**3. Configure your token** in `.env` — a **valid** token from https://huggingface.co/settings/tokens (type *Read*, or *fine-grained* with "Read access to public gated repos" permission). It starts with `hf_` and is ~37 characters long:
 
 ```bash
 VOXNOTE_HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-> Si la diarización da `401 GatedRepoError`, casi siempre es el token (inválido, caducado, de otra cuenta, o sin permiso de repos gated). Verifícalo: `curl -H "Authorization: Bearer $TOKEN" https://huggingface.co/api/whoami-v2`.
+> If diarization returns `401 GatedRepoError`, it is almost always the token (invalid, expired, from another account, or without gated-repo permission). Verify it: `curl -H "Authorization: Bearer $TOKEN" https://huggingface.co/api/whoami-v2`.
 
-> El modelo de diarización es configurable con `VOXNOTE_DIARIZE_MODEL` (default `pyannote/speaker-diarization-community-1`, licencia CC-BY).
+> The diarization model is configurable via `VOXNOTE_DIARIZE_MODEL` (default `pyannote/speaker-diarization-community-1`, CC-BY license).
 
-### Usarla
+### Using it
 
 ```bash
 voxnote process reunion.mp3 --diarize
 ```
 
-O en la web, activa el toggle **Diarización**. El número de hablantes se **detecta automáticamente** (funciona igual con 2 o con 6 personas). Si lo conoces, acótalo con `VOXNOTE_DIARIZE_MIN_SPEAKERS` / `VOXNOTE_DIARIZE_MAX_SPEAKERS`.
+Or in the web UI, enable the **Diarization** toggle. The number of speakers is **detected automatically** (it works equally well with 2 or 6 people). If you know it, constrain it with `VOXNOTE_DIARIZE_MIN_SPEAKERS` / `VOXNOTE_DIARIZE_MAX_SPEAKERS`.
 
-### Límites
+### Limitations
 
-- Funciona bien con **2-4 personas en audio limpio**; voces solapadas, ruido o 6+ personas degradan la precisión (límite de todos los modelos abiertos).
-- En Mac corre en **CPU** (MPS no está soportado por este stack), así que en audios largos tarda.
+- Works well with **2-4 people on clean audio**; overlapping voices, noise, or 6+ people degrade accuracy (a limitation of all open models).
+- On Mac it runs on **CPU** (MPS is not supported by this stack), so it is slow on long recordings.
 
-> **Para distribuir:** los usuarios de la app de escritorio empaquetada **no harán nada de esto** — whisperX y el modelo irán dentro del instalador.
+> **For distribution:** users of the packaged desktop app **will not need to do any of this** — whisperX and the model will be bundled inside the installer.
 
 ---
 
-## Privacidad y aspectos legales
+## Privacy and legal considerations
 
 ### Local-first
 
-Por defecto, **el audio, las transcripciones y las notas nunca salen de tu máquina**. No hay servidor central ni telemetría. Tú controlas tus datos (puedes apuntar `VOXNOTE_OUTPUT_DIR` a una carpeta que sincronices tú si quieres respaldo).
+By default, **the audio, transcriptions, and notes never leave your machine**. There is no central server and no telemetry. You control your data (you can point `VOXNOTE_OUTPUT_DIR` to a folder you sync yourself if you want a backup).
 
-### Grabación y consentimiento
+### Recording and consent
 
-La voz es un **dato personal**. Grabar conversaciones puede requerir **avisar o consentir** según el país/estado (leyes de uno o de todos los participantes). Asegúrate de tener permiso para grabar.
+Voice is **personal data**. Recording conversations may require **notice or consent** depending on the country/state (one-party or all-party consent laws). Make sure you have permission to record.
 
-### Datos biométricos
+### Biometric data
 
-- La **diarización** ("hablante 1 vs 2") es de bajo riesgo.
-- La **identificación de voz** entre reuniones (huella de voz — funcionalidad futura) sería **dato biométrico de categoría especial** (GDPR Art. 9, BIPA en Illinois, etc.) y requeriría **consentimiento explícito** y almacenamiento local.
+- **Diarization** ("speaker 1 vs 2") is low risk.
+- **Voice identification** across meetings (voiceprint — a future feature) would be **special-category biometric data** (GDPR Art. 9, BIPA in Illinois, etc.) and would require **explicit consent** and local storage.
 
-### Licencias
+### Licenses
 
-El stack es permisivo (Whisper, faster-whisper, pyannote.audio = MIT; whisperX = BSD). Ver [`NOTICES.md`](NOTICES.md) para atribuciones. Los modelos MIT pueden empaquetarse en una app de escritorio incluyendo su aviso de licencia.
+The stack is permissive (Whisper, faster-whisper, pyannote.audio = MIT; whisperX = BSD). See [`NOTICES.md`](NOTICES.md) for attributions. MIT models can be bundled in a desktop app as long as their license notice is included.
 
-> ⚠️ Esto es orientación general, **no asesoría legal**. Para uso comercial, usuarios en la UE o funcionalidades biométricas, consulta a un profesional.
+> ⚠️ This is general guidance, **not legal advice**. For commercial use, EU users, or biometric features, consult a professional.
 
 ---
 
-## Integración con Obsidian
+## Obsidian Integration
 
-Las notas incluyen YAML frontmatter compatible con Obsidian:
+The notes include Obsidian-compatible YAML frontmatter:
 
 ```yaml
 ---
@@ -417,26 +417,26 @@ audio: "[[audio/20260302_103000.wav]]"
 ---
 ```
 
-### Estructura de vault recomendada
+### Recommended vault structure
 
 ```
-MiVault/
-├── meetings/     ← VOXNOTE_OUTPUT_DIR apunta aquí
-├── audio/        ← Archivos de audio originales
+MyVault/
+├── meetings/     ← VOXNOTE_OUTPUT_DIR points here
+├── audio/        ← Original audio files
 └── templates/
 ```
 
 ```bash
-export VOXNOTE_OUTPUT_DIR=~/MiVault/meetings
+export VOXNOTE_OUTPUT_DIR=~/MyVault/meetings
 ```
 
-### Plugins recomendados
+### Recommended plugins
 
-- **Tasks** — gestionar action items
-- **Dataview** — queries sobre notas
-- **Calendar** — vista calendario
+- **Tasks** — manage action items
+- **Dataview** — queries over notes
+- **Calendar** — calendar view
 
-### Query Dataview para action items pendientes
+### Dataview query for pending action items
 
 ```dataview
 TASK FROM "meetings" WHERE !completed
@@ -445,7 +445,7 @@ SORT date DESC
 
 ---
 
-## Arquitectura
+## Architecture
 
 ### Monorepo Structure
 
@@ -473,9 +473,9 @@ Voxnote/
 │       ├── src/hooks/           # useVoxnote, useConfig
 │       ├── src/lib/api.ts       # Centralized API client
 │       └── package.json
-├── docs/                        # Documentación
-├── recordings/                  # Archivos de audio
-├── output/                      # Notas generadas
+├── docs/                        # Documentation
+├── recordings/                  # Audio files
+├── output/                      # Generated notes
 ├── Makefile
 └── CLAUDE.md
 ```
@@ -486,18 +486,18 @@ Voxnote/
 
 ---
 
-## Desarrollo
+## Development
 
 ```bash
-# Instalar dependencias
+# Install dependencies
 make install
 
-# Ejecutar tests
-make test        # todos
-make test-core   # solo core
-make test-api    # solo api
+# Run tests
+make test        # all
+make test-core   # core only
+make test-api    # api only
 
-# Lint y formato
+# Lint and format
 make lint        # ruff check + eslint
 make format      # ruff format
 make typecheck   # mypy packages/core/
@@ -505,69 +505,69 @@ make typecheck   # mypy packages/core/
 
 ### Logs
 
-Los logs de **dev** y **testing** se escriben en el SSD externo para no llenar el
-disco local y para conservarlos entre sesiones:
+**Dev** and **testing** logs are written to the external SSD so they don't fill up
+the local disk and are preserved across sessions:
 
 ```
 /Volumes/SSDCX9/data/Voxnote/logs/
 ├── api/       ← API + app loggers (uvicorn, voxnote_api)
-├── dev/       ← stdout/stderr capturado por `make dev` / `dev-api` / `dev-web`
-├── test/      ← sesiones de pytest (core + api)
-└── errors/    ← WARNING+ y excepciones no capturadas (tracebacks)
+├── dev/       ← stdout/stderr captured by `make dev` / `dev-api` / `dev-web`
+├── test/      ← pytest sessions (core + api)
+└── errors/    ← WARNING+ and uncaught exceptions (tracebacks)
 ```
 
-Características:
+Features:
 
-- **Rotación diaria**, se conservan los últimos **7 días** (los archivos viejos
-  se renombran automáticamente y se podan con `make logs-prune`).
-- **Doble salida**: todo se ve en consola **y** se persiste en el SSD, así que
-  el flujo de `make dev` no cambia.
-- **Configurable**: la ruta se controla con `VOXNOTE_LOG_DIR` (ver `.env.example`).
-  Si el SSD no está montado, cae con gracia a solo-consola sin romper nada.
+- **Daily rotation**, keeping the last **7 days** (old files are renamed
+  automatically and pruned with `make logs-prune`).
+- **Dual output**: everything shows in the console **and** is persisted to the SSD,
+  so the `make dev` workflow doesn't change.
+- **Configurable**: the path is controlled by `VOXNOTE_LOG_DIR` (see `.env.example`).
+  If the SSD is not mounted, it gracefully falls back to console-only without breaking anything.
 
-Comandos útiles:
+Useful commands:
 
 ```bash
-make logs        # muestra la carpeta de logs y sus archivos
-make logs-tail   # hace tail -f del log de dev actual
-make logs-prune  # borra logs con más de 7 días
+make logs        # shows the logs folder and its files
+make logs-tail   # tails -f the current dev log
+make logs-prune  # deletes logs older than 7 days
 ```
 
-Para apuntar los logs a otra ubicación, por ejemplo en otra máquina sin el SSD:
+To point logs to another location, for example on a machine without the SSD:
 
 ```bash
-make dev LOG_DIR=./logs           # logs locales en ./logs
-# o definido de forma persistente en .env:
+make dev LOG_DIR=./logs           # local logs in ./logs
+# or set persistently in .env:
 #   VOXNOTE_LOG_DIR=/var/log/voxnote
 ```
 
-### Liberar espacio en disco
+### Freeing up disk space
 
-Las dependencias (`node_modules`, `.venv`) y los caches pueden ocupar varios GB.
-Todo es **regenerable**, así que puedes borrarlos al final de una sesión para liberar espacio:
+Dependencies (`node_modules`, `.venv`) and caches can take up several GB.
+Everything is **regenerable**, so you can delete them at the end of a session to free up space:
 
 ```bash
-make clean       # borra caches + node_modules + .next + __pycache__ (~460 MB)
-make clean-all   # además elimina .venv y backups de venv (~2.3 GB más)
+make clean       # deletes caches + node_modules + .next + __pycache__ (~460 MB)
+make clean-all   # also removes .venv and venv backups (~2.3 GB more)
 ```
 
-**No hay que reconstruir nada manualmente.** La próxima vez que ejecutes
-cualquier comando del proyecto (`make dev`, `make test`, `make install`, etc.)
-el Makefile detecta qué falta y lo restaura automáticamente:
+**You don't need to rebuild anything manually.** The next time you run
+any project command (`make dev`, `make test`, `make install`, etc.),
+the Makefile detects what's missing and restores it automatically:
 
-- Si falta `.venv` → lo crea con Python 3.11.
-- Si falta `node_modules` → ejecuta `npm install`.
-- Si faltan paquetes Python → los instala con pip.
+- If `.venv` is missing → it creates it with Python 3.11.
+- If `node_modules` is missing → it runs `npm install`.
+- If Python packages are missing → it installs them with pip.
 
-La primera vez tras un `clean-all` tarda ~1-2 min en restaurar todo; las
-siguientes es instantáneo.
+The first time after a `clean-all` it takes ~1-2 min to restore everything; subsequent
+times it's instant.
 
-> Recomendado: ejecuta `make clean` al cerrar cada sesión de trabajo si vas a
-> estar tiempo sin tocar el proyecto. `make clean-all` úsalo si necesitas
-> liberar el máximo espacio posible.
+> Recommended: run `make clean` when closing each work session if you're going
+> to be away from the project for a while. Use `make clean-all` if you need to
+> free up the maximum possible space.
 
 ---
 
-## Licencia
+## License
 
-Apache License 2.0 — ver [`LICENSE`](LICENSE). Para atribuciones de terceros ver [`NOTICES.md`](NOTICES.md).
+Apache License 2.0 — see [`LICENSE`](LICENSE). For third-party attributions see [`NOTICES.md`](NOTICES.md).

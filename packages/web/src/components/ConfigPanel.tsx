@@ -176,7 +176,7 @@ export default function ConfigPanel({
       {/* Scrollable Accordions */}
       <div className="flex-1 overflow-y-auto pr-1 space-y-3">
 
-        {/* Section 1: Transcripción (Whisper) */}
+        {/* Section 1: Transcription (Whisper) */}
         <div className="border border-[var(--accordion-border)] rounded-xl bg-[var(--accordion-bg)] overflow-hidden">
           <button
             onClick={() => setWhisperOpen(!whisperOpen)}
@@ -312,7 +312,7 @@ export default function ConfigPanel({
           )}
         </div>
 
-        {/* Section 3: Conexión y Avanzado (Diarization, API Urls, Keys) */}
+        {/* Section 3: Connection & Advanced (Diarization, API Urls, Keys) */}
         <div className="border border-[var(--accordion-border)] rounded-xl bg-[var(--accordion-bg)] overflow-hidden">
           <button
             onClick={() => setAdvancedOpen(!advancedOpen)}
