@@ -4,14 +4,14 @@ import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Mic,
-  FileAudio,
-  History,
+  FileMusic,
+  RotateCcwClock,
   Menu,
   X,
   FileText,
   Calendar,
   Clock,
-  AlertCircle,
+  CircleAlert,
   Sun,
   Moon,
   ChevronDown,
@@ -178,8 +178,8 @@ export default function Home() {
 
   const tabs = [
     { id: "record" as Tab, label: "Record", icon: Mic },
-    { id: "process" as Tab, label: "Process", icon: FileAudio },
-    { id: "history" as Tab, label: "History", icon: History },
+    { id: "process" as Tab, label: "Process", icon: FileMusic },
+    { id: "history" as Tab, label: "History", icon: RotateCcwClock },
   ];
 
   // Stats for history
@@ -394,7 +394,7 @@ export default function Home() {
                                 disabled={!canProcess}
                                 className="btn-primary gap-2 disabled:opacity-50"
                               >
-                                <FileAudio className="w-4 h-4" />
+                                <FileMusic className="w-4 h-4" />
                                 {isLoading
                                   ? "Processing..."
                                   : "Process with AI"}
@@ -419,7 +419,7 @@ export default function Home() {
                       {/* Error display */}
                       {error && (
                         <div className="flex items-start gap-2 p-3 rounded-lg bg-danger-light border border-danger-border">
-                          <AlertCircle className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
+                          <CircleAlert className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
                           <p className="text-sm text-danger">{error}</p>
                         </div>
                       )}
@@ -459,7 +459,7 @@ export default function Home() {
                   >
                     <div className="text-center mb-8">
                       <h2 className="text-xl lg:text-2xl font-semibold text-foreground mb-2">
-                        History
+                        RotateCcwClock
                       </h2>
                       <p className="text-muted-foreground">
                         Your generated notes

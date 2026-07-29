@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertCircle, CheckCircle2, Info, X } from "lucide-react";
+import { CircleAlert, CircleCheck, Info, X } from "lucide-react";
 import {
   ToastContext,
   type Toast,
@@ -13,19 +13,19 @@ const AUTO_DISMISS_MS = 5000;
 
 const VARIANT_STYLES: Record<
   ToastVariant,
-  { border: string; iconBg: string; iconColor: string; Icon: typeof AlertCircle }
+  { border: string; iconBg: string; iconColor: string; Icon: typeof CircleAlert }
 > = {
   error: {
     border: "border-danger/40",
     iconBg: "bg-danger/10 border-danger/20",
     iconColor: "text-danger",
-    Icon: AlertCircle,
+    Icon: CircleAlert,
   },
   success: {
     border: "border-success/40",
     iconBg: "bg-success/10 border-success/20",
     iconColor: "text-success",
-    Icon: CheckCircle2,
+    Icon: CircleCheck,
   },
   info: {
     border: "border-primary/40",

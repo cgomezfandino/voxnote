@@ -8,9 +8,9 @@ import {
   ChevronDown,
   ChevronRight,
   Download,
-  FileType2,
-  Loader2,
-  AlertCircle,
+  FileTypeCorner,
+  LoaderCircle,
+  CircleAlert,
   Users,
 } from "lucide-react";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
@@ -345,9 +345,9 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
               className="btn-primary flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-60"
             >
               {downloading ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
               ) : downloadError ? (
-                <AlertCircle className="w-3.5 h-3.5 text-danger" />
+                <CircleAlert className="w-3.5 h-3.5 text-danger" />
               ) : (
                 <Download className="w-3.5 h-3.5" />
               )}
@@ -367,7 +367,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
                     onClick={handleDownloadWord}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-sm text-foreground hover:bg-foreground/[0.06] transition-colors"
                   >
-                    <FileType2 className="w-4 h-4 text-primary flex-shrink-0" />
+                    <FileTypeCorner className="w-4 h-4 text-primary flex-shrink-0" />
                     <span>
                       Word Document
                       <span className="block text-[10px] text-muted-foreground">
@@ -430,7 +430,7 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
                   className="btn-primary flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-60"
                 >
                   {renaming ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <Check className="w-3.5 h-3.5" />
                   )}

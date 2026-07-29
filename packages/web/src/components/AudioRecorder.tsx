@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, Square, RefreshCw, Play, Pause, FileAudio } from "lucide-react";
+import { Mic, Square, RefreshCw, Play, Pause, FileMusic } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
 import { useToast } from "@/hooks/useToast";
 
@@ -312,7 +312,7 @@ export default function AudioRecorder({
                 onClick={onProcess} 
                 className="btn-accent flex-1 py-3 px-4 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(52,211,153,0.25)]"
               >
-                <FileAudio className="w-4 h-4 text-accent-foreground" />
+                <FileMusic className="w-4 h-4 text-accent-foreground" />
                 Process
               </button>
             </motion.div>
