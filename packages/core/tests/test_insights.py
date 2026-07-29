@@ -9,18 +9,18 @@ def test_extract_calls_provider():
     """extract_insights should use the configured provider."""
     mock_provider = MagicMock()
     mock_provider.extract_insights.return_value = {
-        "resumen": "Test summary",
-        "decisiones": [],
+        "summary": "Test summary",
+        "decisions": [],
         "action_items": [],
         "insights": [],
-        "preguntas_abiertas": [],
-        "proximos_pasos": [],
+        "open_questions": [],
+        "next_steps": [],
     }
 
     with patch("voxnote.pipeline.insights.get_provider", return_value=mock_provider):
         result = extract_insights("Test transcript")
 
-    assert result["resumen"] == "Test summary"
+    assert result["summary"] == "Test summary"
     mock_provider.extract_insights.assert_called_once_with("Test transcript")
 
 
@@ -28,31 +28,31 @@ def test_extract_uses_provider_override():
     """Provider can be overridden via parameter."""
     mock_provider = MagicMock()
     mock_provider.extract_insights.return_value = {
-        "resumen": "OpenAI summary",
-        "decisiones": [],
+        "summary": "OpenAI summary",
+        "decisions": [],
         "action_items": [],
         "insights": [],
-        "preguntas_abiertas": [],
-        "proximos_pasos": [],
+        "open_questions": [],
+        "next_steps": [],
     }
 
     with patch("voxnote.pipeline.insights.get_provider", return_value=mock_provider) as mock_get:
         result = extract_insights("Test transcript", provider_name="openai")
 
     mock_get.assert_called_once_with("openai")
-    assert result["resumen"] == "OpenAI summary"
+    assert result["summary"] == "OpenAI summary"
 
 
 def test_extract_uses_settings_by_default():
     """If no provider_name, should use settings.llm_provider."""
     mock_provider = MagicMock()
     mock_provider.extract_insights.return_value = {
-        "resumen": "Ollama summary",
-        "decisiones": [],
+        "summary": "Ollama summary",
+        "decisions": [],
         "action_items": [],
         "insights": [],
-        "preguntas_abiertas": [],
-        "proximos_pasos": [],
+        "open_questions": [],
+        "next_steps": [],
     }
 
     with patch("voxnote.pipeline.insights.settings") as mock_settings:

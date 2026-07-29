@@ -127,7 +127,7 @@ export default function AudioRecorder({
       updateVisualizer();
     } catch {
       showToast(
-        "No se pudo acceder al micrófono. Por favor, concede los permisos necesarios.",
+        "Could not access the microphone. Please grant the necessary permissions.",
         "error"
       );
     }
@@ -208,7 +208,7 @@ export default function AudioRecorder({
               </div>
               <div className="flex items-center justify-center gap-2 text-xs font-semibold text-accent uppercase tracking-widest mt-1">
                 <span className="w-2 h-2 rounded-full bg-accent animate-ping" />
-                Grabando...
+                Recording...
               </div>
             </motion.div>
           ) : hasRecording ? (
@@ -223,7 +223,7 @@ export default function AudioRecorder({
                   <span className="text-accent text-lg">✓</span>
                 </div>
                 <div className="text-left">
-                  <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Grabación Finalizada</div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Recording Finished</div>
                   <div className="text-sm font-semibold text-foreground font-mono mt-0.5">{formatDuration(recordingTime)}</div>
                 </div>
               </div>
@@ -238,7 +238,7 @@ export default function AudioRecorder({
                   >
                     {isPlaying ? <Pause className="w-4.5 h-4.5" /> : <Play className="w-4.5 h-4.5 ml-0.5" />}
                   </button>
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Escuchar audio</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Listen to audio</span>
                 </div>
                 <span className="text-xs text-muted-foreground font-mono bg-[var(--accordion-bg)] px-2.5 py-1 rounded-md">WAV</span>
               </div>
@@ -251,7 +251,7 @@ export default function AudioRecorder({
               exit={{ opacity: 0 }}
               className="text-xs sm:text-sm text-muted-foreground font-medium max-w-xs mx-auto leading-relaxed"
             >
-              Haz clic en el botón de abajo para iniciar la grabación de voz.
+              Click the button below to start voice recording.
             </motion.div>
           )}
         </AnimatePresence>
@@ -306,14 +306,14 @@ export default function AudioRecorder({
                 className="btn-secondary flex-1 py-3 px-4 flex items-center justify-center gap-2"
               >
                 <RefreshCw className="w-4 h-4 text-muted-foreground" />
-                Regrabar
+                Re-record
               </button>
               <button 
                 onClick={onProcess} 
                 className="btn-accent flex-1 py-3 px-4 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(52,211,153,0.25)]"
               >
                 <FileAudio className="w-4 h-4 text-accent-foreground" />
-                Procesar
+                Process
               </button>
             </motion.div>
           )}

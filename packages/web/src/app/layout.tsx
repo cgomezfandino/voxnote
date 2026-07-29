@@ -6,8 +6,8 @@ import ToastProvider from "@/components/ToastProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Voxnote - Transcripción de reuniones",
-  description: "Convierte tus reuniones en notas estructuradas con IA",
+  title: "Voxnote — Meeting Transcription",
+  description: "Turn your meetings into structured notes with AI",
 };
 
 export default function RootLayout({
@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         {/* Apply the saved theme before first paint to avoid a dark→light flash (FOUC). */}
         <script

@@ -22,7 +22,7 @@ def test_cli_version():
     runner = CliRunner()
     result = runner.invoke(main, ["--version"])
     assert result.exit_code == 0
-    assert "0.1.0" in result.output
+    assert "0.2.0" in result.output
 
 
 def test_process_command(tmp_path):
@@ -31,18 +31,18 @@ def test_process_command(tmp_path):
     audio.write_bytes(b"fake audio data")
 
     fake_insights = {
-        "resumen": "Test",
-        "decisiones": [],
+        "summary": "Test",
+        "decisions": [],
         "action_items": [],
         "insights": [],
-        "preguntas_abiertas": [],
-        "proximos_pasos": [],
+        "open_questions": [],
+        "next_steps": [],
     }
 
     with (
         patch(
             "voxnote.pipeline.transcriber.transcribe",
-            return_value=TranscriptResult(text="Transcripción de prueba"),
+            return_value=TranscriptResult(text="Test transcription"),
         ),
         patch(
             "voxnote.pipeline.insights.extract_insights",

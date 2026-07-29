@@ -65,7 +65,7 @@ function ToastCard({
       <button
         onClick={() => onDismiss(toast.id)}
         className="p-1 rounded-lg hover:bg-foreground/[0.04] transition-colors flex-shrink-0"
-        aria-label="Cerrar notificación"
+        aria-label="Close notification"
       >
         <X className="w-4 h-4 text-muted-foreground" />
       </button>
