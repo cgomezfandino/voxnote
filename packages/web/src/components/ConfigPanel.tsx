@@ -107,9 +107,21 @@ export default function ConfigPanel({
   const [llmOpen, setLlmOpen] = useState(true);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
+  // Reset the probe status to "checking" whenever the Ollama inputs change.
+  // This is the idiomatic React 19 "adjust state during render" pattern for
+  // responding to changing inputs, and keeps the effect below free of a
+  // synchronous setState (which would trigger cascading renders).
+  const probeKey = `${config.llm_provider}|${config.ollama_url}|${config.ollama_api_key ?? ""}`;
+  const [lastProbeKey, setLastProbeKey] = useState(probeKey);
+  if (lastProbeKey !== probeKey) {
+    setLastProbeKey(probeKey);
+    if (isOllama(config.llm_provider)) {
+      setOllamaStatus("checking");
+    }
+  }
+
   useEffect(() => {
     if (!isOllama(config.llm_provider)) return;
-    setOllamaStatus("checking");
     // Debounce 700ms (> the 500ms config sync) so the backend has the latest
     // url/key before we ask it for models.
     const t = setTimeout(() => {

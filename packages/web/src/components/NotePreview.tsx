@@ -205,6 +205,7 @@ function CollapsibleSection({
 
 export default function NotePreview({ content, filename }: NotePreviewProps) {
   const [noteContent, setNoteContent] = useState(content);
+  const [prevContent, setPrevContent] = useState(content);
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -214,8 +215,12 @@ export default function NotePreview({ content, filename }: NotePreviewProps) {
   const [renaming, setRenaming] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Keep local content in sync when a different note is opened.
-  useEffect(() => setNoteContent(content), [content]);
+  // Reset local content when a different note is opened. Doing this during
+  // render (rather than in an effect) avoids a cascading re-render.
+  if (content !== prevContent) {
+    setPrevContent(content);
+    setNoteContent(content);
+  }
 
   const speakers = useMemo(
     () => Array.from(new Set(noteContent.match(/SPEAKER_\d+/g) ?? [])).sort(),

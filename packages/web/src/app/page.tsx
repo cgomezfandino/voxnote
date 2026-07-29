@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Mic,
@@ -36,14 +36,18 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Theme State
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("voxnote-theme") as "dark" | "light";
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
+  // Read the saved theme as the initial state. This is the idiomatic way to derive
+  // initial state from a side-effect source (localStorage) without triggering a
+  // setState-in-effect: the lazy initializer runs once during the first render and
+  // the value flows through as state from the start.
+  // NOTE: layout.tsx also applies the saved theme pre-paint via an inline <script>
+  // to avoid a dark→light flash (FOUC); reading here keeps React's state in sync
+  // with that, so the toggle reflects the correct value after hydration.
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    if (typeof window === "undefined") return "dark";
+    const saved = localStorage.getItem("voxnote-theme");
+    return saved === "light" ? "light" : "dark";
+  });
 
   // Mirror the theme onto <html> so the document background (visible behind the app shell
   // and any transparent content) follows the theme — otherwise <body> keeps the :root
@@ -55,7 +59,9 @@ export default function Home() {
   const handleToggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
-    localStorage.setItem("voxnote-theme", nextTheme);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("voxnote-theme", nextTheme);
+    }
   };
 
   // Config from backend
@@ -144,15 +150,30 @@ export default function Home() {
     }
   }, [uploadedFile, recordedBlob, processAudio, config]);
 
-  // Fetch notes when History tab is activated
+  // Fetch notes when History tab is activated.
+  // The fetch logic lives in its own async function so no setState call is made
+  // synchronously in the effect body (which would trigger a cascading render).
+  // `cancelled` guards against updating state after unmount or a rapid tab switch.
   useEffect(() => {
-    if (activeTab === "history") {
+    if (activeTab !== "history") return;
+    let cancelled = false;
+
+    const load = async () => {
       setLoadingNotes(true);
-      listNotes()
-        .then(setNotes)
-        .catch(() => setNotes([]))
-        .finally(() => setLoadingNotes(false));
-    }
+      try {
+        const result = await listNotes();
+        if (!cancelled) setNotes(result);
+      } catch {
+        if (!cancelled) setNotes([]);
+      } finally {
+        if (!cancelled) setLoadingNotes(false);
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, [activeTab]);
 
   const handleViewNote = useCallback(
@@ -182,11 +203,21 @@ export default function Home() {
     { id: "history" as Tab, label: "History", icon: RotateCcwClock },
   ];
 
-  // Stats for history
-  const today = new Date().toISOString().split("T")[0];
-  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
-  const notesToday = notes.filter((n) => n.created_at >= today).length;
-  const notesThisWeek = notes.filter((n) => n.created_at >= weekAgo).length;
+  // Stats for history. Reading "now" is impure, so capture the date boundaries once
+  // via a lazy useState initializer (allowed by the purity rule, runs a single time).
+  // The counts are then derived purely from `notes` + those stable boundaries.
+  const [dateBoundaries] = useState(() => {
+    const today = new Date().toISOString().split("T")[0];
+    const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+    return { today, weekAgo };
+  });
+  const { notesToday, notesThisWeek } = useMemo(() => {
+    const { today, weekAgo } = dateBoundaries;
+    return {
+      notesToday: notes.filter((n) => n.created_at >= today).length,
+      notesThisWeek: notes.filter((n) => n.created_at >= weekAgo).length,
+    };
+  }, [notes, dateBoundaries]);
 
   return (
     <div className={`min-h-screen bg-background relative overflow-hidden transition-colors duration-300 ${theme === "light" ? "light-theme" : ""}`}>

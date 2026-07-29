@@ -17,6 +17,12 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
   const [duration, setDuration] = useState("0:00");
   const [isReady, setIsReady] = useState(false);
 
+  const formatTime = (time: number): string => {
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
   useEffect(() => {
     if (!containerRef.current) return;
     
@@ -78,12 +84,6 @@ export default function AudioVisualizer({ audioUrl, fileName = "audio.wav" }: Au
       }
     };
   }, [audioUrl]);
-
-  const formatTime = (time: number): string => {
-    const mins = Math.floor(time / 60);
-    const secs = Math.floor(time % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
 
   const togglePlay = () => {
     wavesurferRef.current?.playPause();
