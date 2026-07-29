@@ -1,30 +1,30 @@
 # Multi-Provider Setup — Voxnote
 
-Voxnote soporta múltiples proveedores de LLM para la extracción de insights. Puedes usar Ollama local (gratis) o APIs comerciales (OpenAI, Google Gemini).
+Voxnote supports multiple LLM providers for insight extraction. You can use local Ollama (free) or commercial APIs (OpenAI, Google Gemini).
 
-## Proveedores disponibles
+## Available providers
 
-| Provider | Descripción | Ventajas | Requiere API key |
-|----------|-------------|----------|------------------|
-| **ollama** | LLM local (Llama, Mistral, etc.) | ✅ Gratis<br>✅ 100% privado<br>✅ Sin límites | ❌ No |
-| **openai** | OpenAI (GPT-4, GPT-3.5) | ✅ Alta calidad<br>✅ JSON mode nativo | ✅ Sí |
-| **google** | Google Gemini | ✅ Contexto muy largo<br>✅ Multimodal | ✅ Sí |
+| Provider | Description | Advantages | Requires API key |
+|----------|-------------|------------|------------------|
+| **ollama** | Local LLM (Llama, Mistral, etc.) | ✅ Free<br>✅ 100% private<br>✅ No limits | ❌ No |
+| **openai** | OpenAI (GPT-4, GPT-3.5) | ✅ High quality<br>✅ Native JSON mode | ✅ Yes |
+| **google** | Google Gemini | ✅ Very long context<br>✅ Multimodal | ✅ Yes |
 
 ---
 
-## Configuración por provider
+## Configuration per provider
 
 ### 1. Ollama (default)
 
 ```bash
-# Asegúrate de que Ollama esté corriendo
+# Make sure Ollama is running
 ollama serve &
 
-# Descargar modelo (si no lo tienes)
+# Download the model (if you don't already have it)
 ollama pull llama3.1:8b
 ```
 
-Configuración en `.env`:
+Configuration in `.env`:
 
 ```bash
 VOXNOTE_LLM_PROVIDER=ollama
@@ -35,21 +35,21 @@ VOXNOTE_OLLAMA_URL=http://localhost:11434
 ### 2. OpenAI
 
 ```bash
-# Configurar API key
+# Set your API key
 export OPENAI_API_KEY="sk-..."
 ```
 
-Configuración en `.env`:
+Configuration in `.env`:
 
 ```bash
 VOXNOTE_LLM_PROVIDER=openai
 OPENAI_API_KEY=sk-...
 
-# Opcional: cambiar modelo (default: gpt-4o-mini)
+# Optional: change the model (default: gpt-4o-mini)
 OPENAI_MODEL=gpt-4o
 ```
 
-Obtén tu API key en: https://platform.openai.com/api-keys
+Get your API key at: https://platform.openai.com/api-keys
 
 ### 3. Google Gemini
 
@@ -57,25 +57,25 @@ Obtén tu API key en: https://platform.openai.com/api-keys
 export GOOGLE_API_KEY="..."
 ```
 
-Configuración en `.env`:
+Configuration in `.env`:
 
 ```bash
 VOXNOTE_LLM_PROVIDER=google
 GOOGLE_API_KEY=...
 
-# Opcional: cambiar modelo (default: gemini-2.0-flash)
+# Optional: change the model (default: gemini-2.0-flash)
 GOOGLE_MODEL=gemini-pro
 ```
 
-Obtén tu API key en: https://makersuite.google.com/app/apikey
+Get your API key at: https://makersuite.google.com/app/apikey
 
 ---
 
-## Uso
+## Usage
 
 ### CLI
 
-Cambia el provider con la variable `VOXNOTE_LLM_PROVIDER`:
+Switch the provider using the `VOXNOTE_LLM_PROVIDER` variable:
 
 ```bash
 # Ollama (default)
@@ -88,22 +88,22 @@ VOXNOTE_LLM_PROVIDER=openai voxnote process recordings/reunion.wav
 VOXNOTE_LLM_PROVIDER=google voxnote process recordings/reunion.wav
 ```
 
-### Archivo .env
+### .env file
 
-Configura permanentemente en `.env`:
+Set it permanently in `.env`:
 
 ```bash
-# Copiar ejemplo
+# Copy the example file
 cp .env.example .env
 
-# Editar y cambiar:
+# Edit and change:
 VOXNOTE_LLM_PROVIDER=openai
 OPENAI_API_KEY=sk-...
 ```
 
 ### API
 
-Incluye el campo `provider` en las peticiones:
+Include the `provider` field in your requests:
 
 ```bash
 curl -X POST "http://127.0.0.1:8003/api/insights" \
@@ -111,24 +111,24 @@ curl -X POST "http://127.0.0.1:8003/api/insights" \
   -d '{"text": "...", "provider": "openai"}'
 ```
 
-### Interfaz web
+### Web interface
 
-La UI tiene un selector de provider en el panel de configuración. Selecciona el que quieras usar antes de procesar.
+The UI includes a provider selector in the Connection panel. Choose the one you want to use before processing.
 
 ---
 
-## Comparación de costos (estimado)
+## Cost comparison (estimated)
 
-Basado en una reunión de 30 minutos (~5000 palabras de transcripción):
+Based on a 30-minute meeting (~5000 words of transcription):
 
-| Provider | Costo aprox. | Tokens | Latencia |
-|----------|--------------|--------|----------|
-| Ollama | $0 (gratis) | N/A | ~10-30s (local) |
+| Provider | Approx. cost | Tokens | Latency |
+|----------|--------------|--------|---------|
+| Ollama | $0 (free) | N/A | ~10-30s (local) |
 | OpenAI (gpt-4o-mini) | ~$0.01 | ~6K tokens | ~5-10s |
 | OpenAI (gpt-4o) | ~$0.10 | ~6K tokens | ~10-20s |
-| Google (gemini-2.0-flash) | $0 (gratis con límites) | ~6K tokens | ~5-10s |
+| Google (gemini-2.0-flash) | $0 (free with limits) | ~6K tokens | ~5-10s |
 
-> **Nota**: Costos aproximados. Verifica precios actuales en cada proveedor.
+> **Note**: Costs are approximate. Verify current pricing with each provider.
 
 ---
 
@@ -136,13 +136,13 @@ Basado en una reunión de 30 minutos (~5000 palabras de transcripción):
 
 ### Error: "OPENAI_API_KEY environment variable not set"
 
-Asegúrate de exportar la API key:
+Make sure you export the API key:
 
 ```bash
 export OPENAI_API_KEY="sk-..."
 ```
 
-O agrégala a tu `.env`:
+Or add it to your `.env`:
 
 ```bash
 OPENAI_API_KEY=sk-...
@@ -150,29 +150,29 @@ OPENAI_API_KEY=sk-...
 
 ### Error: "Unknown provider 'xxx'"
 
-Verifica el nombre del provider. Válidos: `ollama`, `openai`, `google`.
+Check the provider name. Valid options: `ollama`, `openai`, `google`.
 
 ### Ollama connection refused
 
-Asegúrate de que Ollama esté corriendo:
+Make sure Ollama is running:
 
 ```bash
 ollama serve &
 curl http://localhost:11434/api/tags
 ```
 
-### API key inválida
+### Invalid API key
 
-Verifica que la API key sea correcta y no haya expirado. Cada proveedor muestra el estado en su dashboard.
+Verify that the API key is correct and has not expired. Each provider shows its status on its dashboard.
 
 ---
 
-## Recomendaciones
+## Recommendations
 
-| Escenario | Provider recomendado |
-|-----------|---------------------|
-| **Desarrollo/pruebas** | `ollama` (gratis, ilimitado) |
-| **Producción/mejor calidad** | `openai` (gpt-4o-mini o gpt-4o) |
-| **Privacidad máxima** | `ollama` (100% local) |
-| **Contexto muy largo** (>1 hora) | `google` (gemini-2.0-flash) |
-| **Español** | Todos los proveedores funcionan bien en español |
+| Scenario | Recommended provider |
+|-----------|----------------------|
+| **Development/testing** | `ollama` (free, unlimited) |
+| **Production/best quality** | `openai` (gpt-4o-mini or gpt-4o) |
+| **Maximum privacy** | `ollama` (100% local) |
+| **Very long context** (>1 hour) | `google` (gemini-2.0-flash) |
+| **Spanish** | All providers work well in Spanish |

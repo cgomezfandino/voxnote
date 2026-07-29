@@ -2,32 +2,32 @@
 
 **Whisper → LLM → Obsidian**
 
-Pipeline local para grabar reuniones, transcribirlas, extraer action items e insights, y organizar todo en Obsidian — 100% local, 100% privado.
+A local pipeline to record meetings, transcribe them, extract action items and insights, and organize everything in Obsidian — 100% local, 100% private.
 
 ---
 
-## Arquitectura
+## Architecture
 
 ```
-Audio → Whisper (transcripción) → LLM (insights) → Obsidian (Markdown)
+Audio → Whisper (Transcription) → LLM (Insights) → Obsidian (Markdown)
 ```
 
 ---
 
-## Requisitos del Sistema
+## System Requirements
 
-- **RAM mínima**: 8 GB (16 GB recomendado)
-- **Disco**: ~10 GB para modelos
-- **SO**: macOS, Linux, o Windows (con WSL2)
-- **Python** 3.10+ y **Node.js** 18+
-- **FFmpeg** instalado
-- **GPU** opcional pero recomendada (NVIDIA CUDA o Apple Silicon)
+- **Minimum RAM**: 8 GB (16 GB recommended)
+- **Disk**: ~10 GB for models
+- **OS**: macOS, Linux, or Windows (with WSL2)
+- **Python** 3.10+ and **Node.js** 18+
+- **FFmpeg** installed
+- **GPU** optional but recommended (NVIDIA CUDA or Apple Silicon)
 
 ---
 
-## Instalación Paso a Paso
+## Step-by-Step Installation
 
-### Paso 1: Instalar FFmpeg
+### Step 1: Install FFmpeg
 
 ```bash
 # macOS
@@ -40,69 +40,69 @@ sudo apt update && sudo apt install ffmpeg
 sudo apt update && sudo apt install ffmpeg
 ```
 
-### Paso 2: Instalar Ollama (LLM local)
+### Step 2: Install Ollama (Local LLM)
 
-Descarga desde: [ollama.com](https://ollama.com)
+Download from: [ollama.com](https://ollama.com)
 
 ```bash
-# macOS / Windows — descarga el instalador desde ollama.com
+# macOS / Windows — download the installer from ollama.com
 
 # Linux
 curl -fsSL https://ollama.com/install.sh | sh
 ```
 
-Descarga el modelo Llama 3.1 8B (~4.7 GB):
+Download the Llama 3.1 8B model (~4.7 GB):
 
 ```bash
 ollama pull llama3.1:8b
 ```
 
-Verifica que funciona:
+Verify that it works:
 
 ```bash
 ollama run llama3.1:8b "Dime hola en español"
 ```
 
-### Paso 3: Instalar Voxnote
+### Step 3: Install Voxnote
 
 ```bash
 git clone https://github.com/cgomezfandino/Voxnote.git
 cd Voxnote
 
-# Crear entorno virtual
+# Create virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
 
-# Instalar todos los paquetes
+# Install all packages
 make install
 ```
 
-### Paso 4: Verificar instalación
+### Step 4: Verify installation
 
 ```bash
-# Verificar CLI
+# Verify CLI
 voxnote --help
 
-# Verificar Ollama
+# Verify Ollama
 curl http://localhost:11434/api/tags
 ```
 
 ---
 
-## Modelos Whisper disponibles
+## Available Whisper Models
 
-| Modelo | VRAM | Velocidad | Precisión |
+| Model | VRAM | Speed | Accuracy |
 |--------|------|-----------|-----------|
-| tiny | ~1 GB | Muy rápido | Baja |
-| base | ~1 GB | Rápido | Aceptable |
-| small | ~2 GB | Medio | Buena |
-| medium | ~5 GB | Lento | Muy buena |
-| turbo | ~6 GB | Rápido | **Recomendado** |
-| large-v3 | ~10 GB | Muy lento | Excelente |
+| tiny | ~1 GB | Very fast | Low |
+| base | ~1 GB | Fast | Acceptable |
+| small | ~2 GB | Medium | Good |
+| medium | ~5 GB | Slow | Very good |
+| turbo | ~6 GB | Fast | **Recommended** |
+| large-v3 | ~10 GB | Very slow | Excellent |
 
-> **Recomendación**: Para reuniones en español, usa al menos el modelo `turbo` para buena precisión. Si tienes Apple Silicon (M1/M2/M3), Whisper usa la GPU automáticamente.
+> **Recommendation**: For meetings in Spanish, use at least the `turbo` model for good accuracy. If you have Apple Silicon (M1/M2/M3), Whisper uses the GPU automatically.
 
-Prueba rápida:
+Quick test:
 
 ```bash
 voxnote transcribe mi_reunion.mp3 --model turbo
@@ -110,67 +110,67 @@ voxnote transcribe mi_reunion.mp3 --model turbo
 
 ---
 
-## Uso del Pipeline
+## Using the Pipeline
 
-### Opción A: CLI
+### Option A: CLI
 
-#### Grabar reunión
+#### Record a meeting
 
 ```bash
-# Grabación manual (Ctrl-C para parar)
+# Manual recording (Ctrl-C to stop)
 voxnote record
 
-# Grabación con duración fija (30 min)
+# Fixed-duration recording (30 min)
 voxnote record --duration 1800
 ```
 
-#### Procesar audio
+#### Process audio
 
 ```bash
-# Pipeline completo: transcripción + insights + nota
+# Full pipeline: transcription + insights + note
 voxnote process audio/mi_reunion.mp3
 
-# Con modelo específico
+# With a specific model
 voxnote process audio/mi_reunion.mp3 --model large-v3
 
-# Con diarización (identificar hablantes)
+# With diarization (speaker identification)
 VOXNOTE_DIARIZE=true voxnote process audio/entrevista.mp3
 ```
 
-### Opción B: Interfaz web
+### Option B: Web Interface
 
 ```bash
-# Iniciar API + Web
+# Start API + Web
 make dev
 ```
 
-Abre **http://localhost:3003** para:
-- Grabar audio desde el navegador
-- Subir archivos existentes
-- Ver y descargar notas generadas
-- Configurar modelo y provider
+Open **http://localhost:3003** to:
+- Record audio from the browser
+- Upload existing files
+- View and download generated notes
+- Configure model and provider
 
-### Opción C: API directa
+### Option C: Direct API
 
 ```bash
-# Iniciar solo API
+# Start API only
 make dev-api
 ```
 
-Endpoints disponibles:
+Available endpoints:
 
 ```bash
-# Transcribir
+# Transcribe
 curl -X POST "http://127.0.0.1:8003/api/transcribe" \
   -F "audio=@audio.mp3" \
   -F "model=turbo"
 
-# Extraer insights
+# Extract insights
 curl -X POST "http://127.0.0.1:8003/api/insights" \
   -H "Content-Type: application/json" \
   -d '{"text": "...", "provider": "ollama"}'
 
-# Exportar nota
+# Export note
 curl -X POST "http://127.0.0.1:8003/api/export" \
   -H "Content-Type: application/json" \
   -d '{"insights": {}, "transcript_text": "...", "audio_name": "reunion.mp3"}'
@@ -178,37 +178,37 @@ curl -X POST "http://127.0.0.1:8003/api/export" \
 
 ---
 
-## Integración con Obsidian
+## Obsidian Integration
 
-### Estructura de vault
+### Vault structure
 
 ```
-MeetingNotes/          ← Tu vault de Obsidian
-├── meetings/          ← Notas generadas por el pipeline
-├── audio/             ← Archivos de audio originales
+MeetingNotes/          ← Your Obsidian vault
+├── meetings/          ← Notes generated by the pipeline
+├── audio/             ← Original audio files
 └── templates/
 ```
 
-Configura el directorio de salida:
+Configure the output directory:
 
 ```bash
 export VOXNOTE_OUTPUT_DIR=~/MeetingNotes/meetings
 ```
 
-### Plugins recomendados
+### Recommended plugins
 
-Instálalos desde **Settings → Community Plugins → Browse**:
+Install them from **Settings → Community Plugins → Browse**:
 
-| Plugin | Para qué sirve |
+| Plugin | What it's for |
 |--------|----------------|
-| **Tasks** | Gestionar to-dos con checkbox |
-| **Dataview** | Queries tipo SQL sobre tus notas |
-| **Templater** | Templates con variables dinámicas |
-| **Calendar** | Vista calendario de reuniones |
+| **Tasks** | Manage to-dos with checkboxes |
+| **Dataview** | SQL-like queries over your notes |
+| **Templater** | Templates with dynamic variables |
+| **Calendar** | Calendar view of meetings |
 
-### Queries útiles con Dataview
+### Useful Dataview queries
 
-**Action items pendientes:**
+**Pending action items:**
 
 ````markdown
 ```dataview
@@ -217,7 +217,7 @@ SORT date DESC
 ```
 ````
 
-**Reuniones de esta semana:**
+**Meetings this week:**
 
 ````markdown
 ```dataview
@@ -230,9 +230,9 @@ SORT date DESC
 
 ---
 
-## Configuración avanzada
+## Advanced Configuration
 
-### Variables de entorno
+### Environment variables
 
 ```bash
 # .env
@@ -243,22 +243,22 @@ VOXNOTE_OLLAMA_MODEL=llama3.1:8b
 VOXNOTE_OUTPUT_DIR=output
 ```
 
-### Otros proveedores LLM
+### Other LLM providers
 
-Ver [multi-provider-setup.md](multi-provider-setup.md) para configurar:
+See [multi-provider-setup.md](multi-provider-setup.md) to configure:
 - OpenAI (GPT-4)
 - Google Gemini
 
 ---
 
-## Seguridad y Privacidad
+## Security and Privacy
 
-Todo el pipeline corre **100% local**:
+The entire pipeline runs **100% locally**:
 
-- **Whisper** procesa el audio en tu CPU/GPU sin conexión a internet
-- **Ollama** corre el LLM localmente en `localhost:11434`
-- **Obsidian** almacena todo como archivos Markdown planos
+- **Whisper** processes audio on your CPU/GPU without an internet connection
+- **Ollama** runs the LLM locally at `localhost:11434`
+- **Obsidian** stores everything as plain Markdown files
 
-No hay telemetría, no hay cuentas, no hay cloud.
+No telemetry, no accounts, no cloud.
 
-Si quieres seguridad adicional, puedes cifrar el vault de Obsidian con [Cryptomator](https://cryptomator.org/) o [VeraCrypt](https://www.veracrypt.fr/).
+If you want additional security, you can encrypt your Obsidian vault with [Cryptomator](https://cryptomator.org/) or [VeraCrypt](https://www.veracrypt.fr/).
