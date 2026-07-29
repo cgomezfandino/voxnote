@@ -1,29 +1,29 @@
 # Voxnote Next.js
 
-Versión moderna de Voxnote construida con Next.js.
+The modern Voxnote frontend, built with Next.js.
 
-## 🎨 Diseño
+## 🎨 Design
 
-- **Fondo**: Blanco puro (#FFFFFF)
-- **Cards**: Blanco con bordes grises suaves
-- **Texto**: Gris oscuro (#1F2937)
-- **Acento**: Índigo (#4F46E5)
-- **Éxito**: Verde esmeralda (#10B981)
-- **Grabación**: Rojo (#EF4444)
+- **Background**: Pure white (#FFFFFF)
+- **Cards**: White with soft gray borders
+- **Text**: Dark gray (#1F2937)
+- **Accent**: Indigo (#4F46E5)
+- **Success**: Emerald green (#10B981)
+- **Recording**: Red (#EF4444)
 
-## 🚀 Iniciar
+## 🚀 Getting started
 
 ```bash
-# Instalar dependencias
+# Install dependencies
 npm install
 
-# Iniciar desarrollo
+# Start development
 npm run dev
 
-# Abrir http://localhost:3001
+# Open http://localhost:3001
 ```
 
-## 📁 Estructura
+## 📁 Structure
 
 ```
 src/
@@ -32,20 +32,20 @@ src/
 │   ├── page.tsx
 │   └── globals.css
 ├── components/
-│   ├── AudioRecorder.tsx      # Grabación con visualizer
+│   ├── AudioRecorder.tsx      # Recording with visualizer
 │   ├── AudioVisualizer.tsx    # Wavesurfer.js
-│   └── ConfigPanel.tsx        # Panel de configuración
+│   └── ConfigPanel.tsx        # Settings panel
 ├── hooks/
-│   └── useVoxnote.ts          # Hook de API
+│   └── useVoxnote.ts          # API hook
 ├── lib/
-│   └── utils.ts               # Utilidades
+│   └── utils.ts               # Utilities
 └── types/
-    └── index.ts               # Tipos TypeScript
+    └── index.ts               # TypeScript types
 ```
 
-## 🔌 API Backend
+## 🔌 Backend API
 
-Conecta con tu backend Python FastAPI:
+Connects to your Python FastAPI backend:
 
 ```javascript
 // next.config.js
@@ -58,18 +58,18 @@ async rewrites() {
   ];
 }
 
-// Puerto personalizado en package.json: "dev": "next dev -p 3001"
+// Custom port in package.json: "dev": "next dev -p 3001"
 ```
 
-Endpoints necesarios:
-- `POST /api/transcribe` - Transcripción con Whisper
-- `POST /api/insights` - Extracción de insights
-- `POST /api/export` - Exportar nota
+Required endpoints:
+- `POST /api/transcribe` - Whisper transcription
+- `POST /api/insights` - Insight extraction
+- `POST /api/export` - Export note
 
 ## ✨ Features
 
-- ✅ Grabadora con visualizador de ondas en tiempo real
-- ✅ Audio player con Wavesurfer.js
-- ✅ Diseño minimalista y profesional
-- ✅ Total control del UI (sin limitaciones de Streamlit)
+- ✅ Recorder with real-time waveform visualizer
+- ✅ Audio player with Wavesurfer.js
+- ✅ Minimalist, professional design
+- ✅ Full UI control (no Streamlit limitations)
 - ✅ TypeScript + Tailwind CSS
