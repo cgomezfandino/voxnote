@@ -4,10 +4,10 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   FileText,
-  CheckCircle2,
+  CircleCheck,
   ListChecks,
   Lightbulb,
-  HelpCircle,
+  CircleQuestionMark,
   ArrowRight,
   User,
   Users,
@@ -151,7 +151,7 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
       {/* Decisions */}
       {insights.decisions?.length > 0 && (
         <Section
-          icon={<CheckCircle2 className="w-4.5 h-4.5 text-accent" />}
+          icon={<CircleCheck className="w-4.5 h-4.5 text-accent" />}
           title="Agreements & Decisions"
           glowClass="card-glow-green"
           borderClass="border-l-accent"
@@ -323,7 +323,7 @@ export default function InsightsDisplay({ insights }: InsightsDisplayProps) {
       {/* Open questions */}
       {insights.open_questions?.length > 0 && (
         <Section
-          icon={<HelpCircle className="w-4.5 h-4.5 text-sky-400" />}
+          icon={<CircleQuestionMark className="w-4.5 h-4.5 text-sky-400" />}
           title="Questions & Open Items"
           glowClass="hover:border-sky-500/30 hover:shadow-[0_0_25px_rgba(14,165,233,0.05)]"
           borderClass="border-l-sky-500"

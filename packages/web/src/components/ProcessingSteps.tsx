@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Check, Loader2, AlertTriangle, RotateCcw } from "lucide-react";
+import { Check, LoaderCircle, TriangleAlert, RotateCcw } from "lucide-react";
 import type { ProcessingStep, StepStatus } from "@/types";
 
 interface ProcessingStepsProps {
@@ -24,7 +24,7 @@ function StepIcon({ status }: { status: StepStatus }) {
     case "active":
       return (
         <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
-          <Loader2 className="w-4 h-4 text-white animate-spin" />
+          <LoaderCircle className="w-4 h-4 text-white animate-spin" />
         </div>
       );
     case "error":
@@ -34,7 +34,7 @@ function StepIcon({ status }: { status: StepStatus }) {
           animate={{ scale: 1 }}
           className="w-7 h-7 rounded-full bg-danger flex items-center justify-center shadow-[0_0_12px_var(--danger-light)]"
         >
-          <AlertTriangle className="w-4 h-4 text-danger-foreground" />
+          <TriangleAlert className="w-4 h-4 text-danger-foreground" />
         </motion.div>
       );
     default:

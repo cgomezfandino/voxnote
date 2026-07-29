@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { Upload, FileAudio, X } from "lucide-react";
+import { Upload, FileMusic, X } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 
 const ACCEPTED_TYPES = [
@@ -92,7 +92,7 @@ export default function FileUpload({ onFileSelected, disabled }: FileUploadProps
       <div className="card border border-primary/30 bg-primary/5">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
-            <FileAudio className="w-6 h-6 text-primary" />
+            <FileMusic className="w-6 h-6 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-foreground truncate">

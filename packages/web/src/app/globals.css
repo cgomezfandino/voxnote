@@ -1,6 +1,45 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Dark mode is the default and applies whenever <html> does NOT carry .light-theme.
+   This inverts Tailwind's standard class-based dark mode; the custom-variant keeps
+   the `dark:` utilities (used in InsightsDisplay.tsx) resolving to that selector. */
+@custom-variant dark (&:where(html:not(.light-theme), html:not(.light-theme) *));
+
+/* Tailwind v4 theme config (formerly tailwind.config.ts). Literal values here. */
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-card-hover: 0 4px 6px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.03);
+  --shadow-button: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Wire Tailwind's color namespaces to the theme-token CSS variables defined below
+   in :root / .light-theme. `inline` is required because the values are var()
+   references, not literal colors. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-light: var(--primary-light);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-light: var(--accent-light);
+  --color-success: var(--success);
+  --color-success-light: var(--success-light);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-danger-light: var(--danger-light);
+  --color-danger-border: var(--danger-border);
+}
 
 :root {
   /* Dark Theme — Concept C "Refined Voice": deep slate surfaces, non-neon emerald accent */
@@ -138,21 +177,27 @@ html.light-theme {
   * {
     @apply border-border;
   }
-  
+
   body {
     @apply bg-background text-foreground font-sans antialiased transition-colors duration-300;
   }
 }
 
-@layer components {
-  .card {
-    background: var(--card-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--card-border);
-    @apply rounded-xl p-4 sm:p-6 shadow-2xl transition-all duration-300;
-  }
+/* `card` and `badge` are applied from other component classes (card-glow-*, badge-*),
+   so they must be registered as custom utilities (@utility) to be @apply-able in v4. */
+@utility card {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--card-border);
+  @apply rounded-xl p-4 sm:p-6 shadow-2xl transition-all duration-300;
+}
 
+@utility badge {
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold tracking-wide;
+}
+
+@layer components {
   .light-theme .card {
     @apply shadow-card hover:shadow-card-hover border-border;
   }
@@ -161,7 +206,7 @@ html.light-theme {
     border-color: rgba(99, 102, 241, 0.2);
     box-shadow: 0 0 20px rgba(99, 102, 241, 0.04);
   }
-  
+
   .card-glow-green {
     @apply card;
   }
@@ -169,7 +214,7 @@ html.light-theme {
     border-color: rgba(52, 211, 153, 0.3);
     box-shadow: 0 0 25px rgba(52, 211, 153, 0.05);
   }
-  
+
   .card-glow-indigo {
     @apply card;
   }
@@ -177,7 +222,7 @@ html.light-theme {
     border-color: rgba(99, 102, 241, 0.3);
     box-shadow: 0 0 25px rgba(99, 102, 241, 0.05);
   }
-  
+
   .btn-primary {
     @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-primary text-white font-medium text-sm transition-all active:scale-[0.98] hover:bg-primary-hover;
   }
@@ -187,7 +232,7 @@ html.light-theme {
   .light-theme .btn-primary {
     @apply shadow-button hover:bg-primary-hover;
   }
-  
+
   .btn-secondary {
     @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-secondary text-foreground font-medium text-sm transition-all border hover:bg-muted active:scale-[0.98];
   }
@@ -197,7 +242,7 @@ html.light-theme {
   :not(.light-theme) .btn-secondary {
     @apply border-white/5;
   }
-  
+
   .btn-accent {
     @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-accent text-accent-foreground font-semibold text-sm transition-all active:scale-[0.98];
   }
@@ -207,7 +252,7 @@ html.light-theme {
   .light-theme .btn-accent {
     @apply shadow-button hover:opacity-90;
   }
-  
+
   .input {
     background: var(--input-bg);
     @apply w-full px-3 sm:px-4 py-2.5 rounded-lg border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all;
@@ -215,7 +260,7 @@ html.light-theme {
   :not(.light-theme) .input {
     @apply border-white/10;
   }
-  
+
   .select {
     background-color: var(--input-bg);
     @apply w-full px-3 sm:px-4 py-2.5 rounded-lg border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all appearance-none cursor-pointer;
@@ -231,15 +276,11 @@ html.light-theme {
     @apply border-white/10;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   }
-  
+
   .label {
     @apply block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5;
   }
-  
-  .badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold tracking-wide;
-  }
-  
+
   .badge-primary {
     @apply badge bg-primary-light text-primary border border-primary/20;
   }
@@ -247,7 +288,7 @@ html.light-theme {
   :not(.light-theme) .badge-primary {
     color: #a5b4fc;
   }
-  
+
   .badge-success {
     @apply badge bg-success-light text-success border border-success/20;
   }
