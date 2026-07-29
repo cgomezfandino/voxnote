@@ -604,7 +604,7 @@ git commit -m "build(packaging): pin Python 3.11 + uv.lock with CPU-only torch +
 # STAGE C — Distribution & hardening (needs certs; gates public release)
 
 ### C1: `torch.load` hardening + tokenless diarization (decision #3; required before any diarization SKU)
-- **Do:** replace the global `weights_only=False` monkeypatch in `transcriber.py` with `torch.serialization.add_safe_globals(...)` (keep `weights_only=True`); pin `diarize_model` to a specific HF revision and verify a SHA-256 before load. Then make diarization tokenless: stop gating on `hf_token`, load community-1 from a pre-bundled local snapshot with `HF_HUB_OFFLINE=1`. **Verify the community-1 LICENSE actually permits redistribution of the weights** (don't trust HANDOFF.md), and that the build machine holds an HF token to fetch it once for bundling.
+- **Do:** replace the global `weights_only=False` monkeypatch in `transcriber.py` with `torch.serialization.add_safe_globals(...)` (keep `weights_only=True`); pin `diarize_model` to a specific HF revision and verify a SHA-256 before load. Then make diarization tokenless: stop gating on `hf_token`, load community-1 from a pre-bundled local snapshot with `HF_HUB_OFFLINE=1`. **Verify the community-1 LICENSE actually permits redistribution of the weights** (verify against the upstream HuggingFace model card directly), and that the build machine holds an HF token to fetch it once for bundling.
 - **Localhost test:** offline, empty token, bundled snapshot → a diarized run produces SPEAKER_xx output (not silently skipped).
 
 ### C2: Code-signing + notarization (decision #4 — procure certs NOW)
