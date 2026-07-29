@@ -245,7 +245,7 @@ Display: `if (isOllama(currentProvider?.value ?? "") && dynamicOllamaModels.leng
                     if (isOllama(p) && defaultBaseUrls[p]) {
                       onUpdate("ollama_url", defaultBaseUrls[p]);
                     }
-                    // Cloud needs the API key — open the Conexión panel so it's visible.
+                    // Cloud needs the API key — open the Connection panel so it's visible.
                     if (p === "ollama-cloud") setAdvancedOpen(true);
                   }}
 ```
@@ -293,7 +293,7 @@ Run: `npm --prefix packages/web exec -- tsc --noEmit` → no errors.
 
 - [ ] **Step 8: Verify in the browser (localhost)**
 
-With API (:8003) + web (:3003) up: select **"Ollama (Cloud)"** → the URL field auto-fills `https://ollama.com`, the Conexión panel opens, the API Key label says "requerida", and the badge reads "Ollama Cloud …". Select **"Ollama (Local)"** → URL becomes `http://localhost:11434`, badge "Ollama …". Confirm via `preview_network` that `PUT /api/config` carries `llm_provider` + `ollama_url` together (the useConfig fix). Screenshot for proof.
+With API (:8003) + web (:3003) up: select **"Ollama (Cloud)"** → the URL field auto-fills `https://ollama.com`, the Connection panel opens, the API Key label says "required", and the badge reads "Ollama Cloud …". Select **"Ollama (Local)"** → URL becomes `http://localhost:11434`, badge "Ollama …". Confirm via `preview_network` that `PUT /api/config` carries `llm_provider` + `ollama_url` together (the useConfig fix). Screenshot for proof.
 
 - [ ] **Step 9: Commit**
 

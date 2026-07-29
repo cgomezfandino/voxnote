@@ -41,7 +41,7 @@ These are already selectable in the UI provider dropdown and already read keys f
 ### Frontend (`packages/web/src/components/ConfigPanel.tsx`)
 - Add a `claude`/`anthropic` entry to `llmProviders` with `modelKey: "anthropic_model"` and a model list: `claude-opus-4-8` (Opus 4.8, default), `claude-sonnet-4-6` (Sonnet 4.6), `claude-haiku-4-5` (Haiku 4.5).
 - Add `anthropic_model` to the `AppConfig` type (`packages/web/src/types`).
-- **No API-key field** for openai/google/anthropic — keys are `.env` only (a short note in the "Conexión" panel can point users to `.env`).
+- **No API-key field** for openai/google/anthropic — keys are `.env` only (a short note in the "Connection" panel can point users to `.env`).
 
 ### Docs
 - `.env.example` (create if missing) + README "Proveedores LLM" section: document `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL` / `ANTHROPIC_BASE_URL`, and surface the already-supported `OPENAI_BASE_URL`, next to the existing HF-token guidance.
