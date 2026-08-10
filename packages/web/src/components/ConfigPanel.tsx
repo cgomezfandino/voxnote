@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Mic, Brain, ChevronDown, ChevronRight, Settings, Cpu, ShieldCheck } from "lucide-react";
 
 import type { AppConfig } from "@/types";
-import { WHISPER_MODELS } from "@/lib/whisper";
+import { WHISPER_MODELS, ENGLISH_ONLY_MODELS } from "@/lib/whisper";
 
 interface ConfigPanelProps {
   config: AppConfig;
@@ -140,6 +140,11 @@ export default function ConfigPanel({
                   <option value="zh">Chinese (ZH)</option>
                   <option value="ja">Japanese (JA)</option>
                 </select>
+                {ENGLISH_ONLY_MODELS.has(config.whisper_model) && config.language !== "en" && (
+                  <p className="text-[10px] text-[var(--danger)] mt-1">
+                    This model is English-only. Switch to English or pick a multilingual model.
+                  </p>
+                )}
               </div>
 
               <div className="flex items-start gap-2 p-2 rounded-lg bg-primary/5 border border-primary/15">

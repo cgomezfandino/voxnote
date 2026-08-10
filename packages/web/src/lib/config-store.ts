@@ -9,7 +9,7 @@ import type { AppConfig } from "@/types";
 const STORAGE_KEY = "voxnote:config";
 
 export const DEFAULT_CONFIG: AppConfig = {
-  whisper_model: "turbo",
+  whisper_model: "distil",
   language: "es",
   llm_provider: "openai",
   openai_model: "gpt-4o-mini",

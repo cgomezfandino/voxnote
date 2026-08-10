@@ -44,6 +44,11 @@ const MODEL_IDS: Record<string, string> = {
   base: "onnx-community/whisper-base",
   small: "onnx-community/whisper-small",
   turbo: "onnx-community/whisper-large-v3-turbo",
+  // Distil-Whisper Large v3.5: same architecture family as turbo, ~1.5x faster and
+  // ~49% smaller with parity-or-better WER. Multilingual.
+  distil: "onnx-community/distil-large-v3.5-ONNX",
+  // Moonshine Tiny (27M): English-only, real-time-capable on modest hardware.
+  moonshine: "onnx-community/moonshine-tiny-ONNX",
 };
 
 /**
@@ -55,7 +60,12 @@ const MODEL_DTYPES: Record<string, Record<string, "fp32" | "fp16" | "q8" | "q4">
   base: { encoder: "q8", decoder: "q8" },
   small: { encoder: "q8", decoder: "q8" },
   turbo: { encoder: "fp32", decoder: "q4" },
+  distil: { encoder: "fp32", decoder: "q4" },
+  moonshine: { encoder: "fp32", decoder: "fp32" },
 };
+
+/** English-only models that must not receive a `language` option. */
+const ENGLISH_ONLY = new Set(["moonshine"]);
 
 export interface TranscribeRequest {
   audio: Float32Array;
@@ -125,14 +135,18 @@ self.onmessage = async (e: MessageEvent<TranscribeRequest>) => {
 
     // return_timestamps gives segment-level chunk boundaries, which we map to the
     // Segment shape the rest of the app expects. We run the full audio at once since the
-    // worker is already off the main thread (no streaming needed).
-    const output = await transcriber(audio, {
+    // worker is already off the main thread (no streaming needed). English-only models
+    // (Moonshine) reject the `language` option, so it is omitted for them.
+    const opts: Record<string, unknown> = {
       return_timestamps: true,
       chunk_length_s: 30,
       stride_length_s: 5,
-      language,
       task: "transcribe",
-    });
+    };
+    if (!ENGLISH_ONLY.has(model)) {
+      opts.language = language;
+    }
+    const output = await transcriber(audio, opts as Parameters<ASRTranscriber>[1]);
 
     // transformers.js returns either a string or { text, chunks } depending on options.
     const text = typeof output === "string" ? output : (output.text ?? "");

@@ -13,12 +13,19 @@ import type { TranscriptionResult } from "@/types";
 
 export type ProgressCb = (progress: number, file?: string) => void;
 
-/** Whisper model catalog surfaced in the UI. Sizes are approximate download sizes. */
+/** Speech-to-text model catalog surfaced in the UI. Sizes are approximate download sizes. */
 export const WHISPER_MODELS = [
-  { value: "turbo", label: "Turbo", size: "~1.5 GB", hint: "Best quality" },
-  { value: "small", label: "Small", size: "~480 MB", hint: "Balanced" },
-  { value: "base", label: "Base", size: "~150 MB", hint: "Fastest" },
+  // Distil-Whisper Large v3.5 is the recommended default: same quality family as turbo,
+  // ~1.5x faster and ~49% smaller, multilingual.
+  { value: "distil", label: "Distil Large v3.5", size: "~0.8 GB", hint: "Recommended · best speed/quality" },
+  { value: "turbo", label: "Turbo", size: "~1.5 GB", hint: "Best quality · multilingual" },
+  { value: "small", label: "Small", size: "~480 MB", hint: "Balanced · multilingual" },
+  { value: "base", label: "Base", size: "~150 MB", hint: "Fastest · multilingual" },
+  { value: "moonshine", label: "Moonshine Tiny", size: "~100 MB", hint: "Fastest · English only" },
 ] as const;
+
+/** English-only models (used by the UI to warn when a non-English language is selected). */
+export const ENGLISH_ONLY_MODELS = new Set(["moonshine"]);
 
 /** Decode an arbitrary audio Blob into 16 kHz mono Float32 PCM (whisper input). */
 export async function blobToFloat32(audio: Blob): Promise<Float32Array> {

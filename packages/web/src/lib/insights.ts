@@ -199,6 +199,79 @@ function coerce(data: Record<string, unknown>): InsightsResult {
   };
 }
 
+// --- Structured output schema (provider-native constrained decoding) ---------
+//
+// Rather than relying on "respond ONLY with JSON" prompt hacks, we pass a real JSON
+// Schema to each provider's native structured-output mechanism:
+//  - OpenAI: response_format json_schema + strict:true (token-level constrained decoding)
+//  - Gemini: generationConfig.responseSchema
+//  - Anthropic: forced tool-use (the tool's input_schema constrains the output)
+// This eliminates the #1 reliability bug (malformed JSON breaking the Obsidian export).
+// OpenAI strict mode requires every object to declare additionalProperties:false and
+// every property to be required; we comply by listing all keys and optional ones as
+// nullable.
+
+const INSIGHTS_RESPONSE_SCHEMA = {
+  type: "object",
+  properties: {
+    summary: { type: "string" },
+    participants: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          speaker: { type: "string" },
+          contribution: { type: "string" },
+        },
+        required: ["speaker", "contribution"],
+        additionalProperties: false,
+      },
+    },
+    key_points: { type: "array", items: { type: "string" } },
+    decisions: { type: "array", items: { type: "string" } },
+    action_items: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          task: { type: "string" },
+          owner: { type: "string" },
+          deadline: { type: "string" },
+        },
+        required: ["task", "owner", "deadline"],
+        additionalProperties: false,
+      },
+    },
+    insights: { type: "array", items: { type: "string" } },
+    highlights: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          speaker: { type: "string" },
+          quote: { type: "string" },
+        },
+        required: ["speaker", "quote"],
+        additionalProperties: false,
+      },
+    },
+    open_questions: { type: "array", items: { type: "string" } },
+    next_steps: { type: "array", items: { type: "string" } },
+  },
+  required: [
+    "summary",
+    "participants",
+    "key_points",
+    "decisions",
+    "action_items",
+    "insights",
+    "highlights",
+    "open_questions",
+    "next_steps",
+  ],
+  additionalProperties: false,
+} as const;
+
 // --- Provider limits (mirror the Python MAX_TRANSCRIPT_CHARS per provider) ---
 
 const MAX_CHARS: Record<LlmProvider, number> = {
@@ -232,35 +305,71 @@ async function readError(res: Response): Promise<string> {
   return `Error ${res.status}: ${res.statusText}`;
 }
 
-/** OpenAI Chat Completions (CORS-enabled, supports JSON mode). */
+/** OpenAI Chat Completions with native Structured Outputs (strict json_schema). */
 async function callOpenAI(
   transcript: string,
   apiKey: string,
   model: string,
   lang: string,
 ): Promise<string> {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: buildInsightsPrompt(truncate(transcript, MAX_CHARS.openai), lang) },
-      ],
-      temperature: 0.1,
-      response_format: { type: "json_object" },
-    }),
+  const payload = (responseFormat: unknown) => ({
+    model,
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: buildInsightsPrompt(truncate(transcript, MAX_CHARS.openai), lang) },
+    ],
+    temperature: 0.1,
+    response_format: responseFormat,
   });
+
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${apiKey}`,
+  };
+
+  // Try strict json_schema first; older models that don't support it return a 400 with
+  // an "unsupported_parameter" / "json_schema" error — fall back to json_object, which
+  // still constrains to valid JSON (the tolerant parser handles the rest).
+  const strictRes = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(
+      payload({
+        type: "json_schema",
+        json_schema: {
+          name: "meeting_insights",
+          strict: true,
+          schema: INSIGHTS_RESPONSE_SCHEMA,
+        },
+      }),
+    ),
+  });
+  let res = strictRes;
+  if (strictRes.status === 400) {
+    const errBody = await strictRes.json().catch(() => ({}));
+    const code: string = errBody?.error?.code ?? "";
+    const msg: string = errBody?.error?.message ?? "";
+    if (code.includes("unsupported") || msg.toLowerCase().includes("json_schema") || msg.toLowerCase().includes("response_format")) {
+      res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload({ type: "json_object" })),
+      });
+    }
+  }
   if (!res.ok) throw new HttpError(await readError(res), res.status);
   const body = await res.json();
   return body?.choices?.[0]?.message?.content ?? "";
 }
 
-/** Anthropic Messages API (requires the direct-browser-access header for CORS). */
+/**
+ * Anthropic Messages API with forced tool-use (native structured-output path).
+ *
+ * Anthropic doesn't offer OpenAI-style strict json_schema, but forcing a single tool
+ * with our schema as its input_schema constrains the model to emit exactly that shape
+ * inside a tool_use block. We extract the tool input directly — no prompt-hack JSON
+ * parsing. Falls back to text JSON if the model ignores the forced tool.
+ */
 async function callAnthropic(
   transcript: string,
   apiKey: string,
@@ -283,14 +392,27 @@ async function callAnthropic(
       messages: [
         { role: "user", content: buildInsightsPrompt(truncate(transcript, MAX_CHARS.anthropic), lang) },
       ],
+      tools: [
+        {
+          name: "emit_insights",
+          description: "Emit the structured meeting insights extracted from the transcript.",
+          input_schema: INSIGHTS_RESPONSE_SCHEMA,
+        },
+      ],
+      // Force the model to call this specific tool, so the output is the tool input.
+      tool_choice: { type: "tool", name: "emit_insights" },
     }),
   });
   if (!res.ok) throw new HttpError(await readError(res), res.status);
   const body = await res.json();
-  const text = Array.isArray(body?.content)
+  // Prefer the tool_use block (structured); fall back to any text block (older models).
+  const toolInput = Array.isArray(body?.content)
+    ? body.content.find((b: { type?: string }) => b?.type === "tool_use")?.input
+    : undefined;
+  if (toolInput) return JSON.stringify(toolInput);
+  return Array.isArray(body?.content)
     ? body.content.filter((b: { type?: string }) => b?.type === "text").map((b: { text?: string }) => b.text ?? "").join("")
     : "";
-  return text;
 }
 
 /** Google Gemini (Generative Language API; key passed in the query string). */
@@ -313,7 +435,13 @@ async function callGoogle(
           parts: [{ text: `${SYSTEM_PROMPT}\n\n${buildInsightsPrompt(truncate(transcript, MAX_CHARS.google), lang)}` }],
         },
       ],
-      generationConfig: { temperature: 0.1, responseMimeType: "application/json" },
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: "application/json",
+        // Native structured output: constrains decoding to the schema. Gemini supports
+        // this alongside responseMimeType: application/json on 1.5/2.0/2.5 models.
+        responseSchema: INSIGHTS_RESPONSE_SCHEMA,
+      },
     }),
   });
   if (!res.ok) throw new HttpError(await readError(res), res.status);
