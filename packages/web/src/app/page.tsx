@@ -135,7 +135,6 @@ export default function Home() {
       const result = await processAudio(audioBlob, {
         model: config.whisper_model,
         language: config.language,
-        diarize: config.diarize,
         provider: config.llm_provider,
         audioFilename: uploadedFile?.name || "recording.wav",
       });
