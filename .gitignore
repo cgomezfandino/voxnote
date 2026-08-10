@@ -61,3 +61,15 @@ htmlcov/
 # Claude Code — personal/session artifacts (keep .claude/settings.json shared)
 .claude/launch.json
 .claude/plans/
+
+# ZCode agent — session artifacts
+.zcode/
+
+# Playwright MCP — screenshots/snapshots from browser testing
+.playwright-mcp/
+
+# Serwist service worker — generated at build time from src/app/sw.ts
+packages/web/public/sw.js
+packages/web/public/sw.js.map
+packages/web/public/swe-worker-*.js
+packages/web/public/workbox-*.js

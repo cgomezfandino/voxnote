@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Mic, Brain, Users, Link, ChevronDown, ChevronRight, Search, Settings } from "lucide-react";
+import { useState } from "react";
+import { Mic, Brain, ChevronDown, ChevronRight, Settings, Cpu, ShieldCheck } from "lucide-react";
 
 import type { AppConfig } from "@/types";
-import { listOllamaModels } from "@/lib/api";
+import { WHISPER_MODELS, ENGLISH_ONLY_MODELS } from "@/lib/whisper";
 
 interface ConfigPanelProps {
   config: AppConfig;
@@ -12,164 +12,65 @@ interface ConfigPanelProps {
   isSyncing?: boolean;
 }
 
-const whisperModels = [
-  { value: "tiny", label: "Tiny" },
-  { value: "base", label: "Base" },
-  { value: "small", label: "Small" },
-  { value: "medium", label: "Medium" },
-  { value: "turbo", label: "Turbo" },
-  { value: "large-v3", label: "Large" },
-];
-
 const llmProviders = [
-  {
-    value: "ollama",
-    label: "Ollama (Local)",
-    needsUrl: true,
-    models: [
-      { value: "gemma4:12b", label: "Gemma 4 12B" },
-      { value: "llama3.1:8b", label: "Llama 3.1 8B" },
-      { value: "qwen3:8b", label: "Qwen 3 8B" },
-      { value: "gemma3:12b", label: "Gemma 3 12B" },
-      { value: "phi4:14b", label: "Phi-4 14B" },
-      { value: "deepseek-r1:8b", label: "DeepSeek R1 8B" },
-      { value: "mistral-small3.2:24b", label: "Mistral Small 3.2 24B" },
-      { value: "llama3.3:70b", label: "Llama 3.3 70B" },
-    ],
-    modelKey: "ollama_model" as const,
-  },
-  {
-    value: "ollama-cloud",
-    label: "Ollama (Cloud)",
-    needsUrl: true,
-    models: [],
-    modelKey: "ollama_model" as const,
-  },
   {
     value: "openai",
     label: "OpenAI",
-    needsUrl: false,
+    modelKey: "openai_model" as const,
+    keyField: "api_key_openai" as const,
     models: [
       { value: "gpt-4.1-mini", label: "GPT-4.1 Mini" },
       { value: "gpt-4.1", label: "GPT-4.1" },
-      { value: "o4-mini", label: "o4 Mini" },
       { value: "gpt-4o-mini", label: "GPT-4o Mini" },
       { value: "gpt-4o", label: "GPT-4o" },
-      { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
+      { value: "o4-mini", label: "o4 Mini" },
     ],
-    modelKey: "openai_model" as const,
+    keyPlaceholder: "sk-...",
+    keyHint: "platform.openai.com/api-keys",
   },
   {
     value: "google",
-    label: "Google",
-    needsUrl: false,
+    label: "Google Gemini",
+    modelKey: "google_model" as const,
+    keyField: "api_key_google" as const,
     models: [
       { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
       { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
       { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
-      { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
-      { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash" },
     ],
-    modelKey: "google_model" as const,
+    keyPlaceholder: "AIza...",
+    keyHint: "aistudio.google.com/apikey",
   },
   {
     value: "anthropic",
     label: "Claude (Anthropic)",
-    needsUrl: false,
+    modelKey: "anthropic_model" as const,
+    keyField: "api_key_anthropic" as const,
     models: [
       { value: "claude-opus-4-8", label: "Claude Opus 4.8" },
       { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
       { value: "claude-haiku-4-5", label: "Claude Haiku 4.5" },
     ],
-    modelKey: "anthropic_model" as const,
+    keyPlaceholder: "sk-ant-...",
+    keyHint: "console.anthropic.com/settings/keys",
   },
 ];
-
-const defaultBaseUrls: Record<string, string> = {
-  ollama: "http://localhost:11434",
-  "ollama-cloud": "https://ollama.com",
-};
-
-const isOllama = (p: string) => p === "ollama" || p === "ollama-cloud";
 
 export default function ConfigPanel({
   config,
   onUpdate,
   isSyncing,
 }: ConfigPanelProps) {
-  const currentProvider = llmProviders.find(p => p.value === config.llm_provider);
-  const [dynamicOllamaModels, setDynamicOllamaModels] = useState<any[]>([]);
-  const [modelSearch, setModelSearch] = useState("");
-  const [ollamaStatus, setOllamaStatus] = useState<"checking" | "online" | "offline">("checking");
-
-  // Accordion open/close states
   const [whisperOpen, setWhisperOpen] = useState(true);
   const [llmOpen, setLlmOpen] = useState(true);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [showKey, setShowKey] = useState(false);
 
-  // Reset the probe status to "checking" whenever the Ollama inputs change.
-  // This is the idiomatic React 19 "adjust state during render" pattern for
-  // responding to changing inputs, and keeps the effect below free of a
-  // synchronous setState (which would trigger cascading renders).
-  const probeKey = `${config.llm_provider}|${config.ollama_url}|${config.ollama_api_key ?? ""}`;
-  const [lastProbeKey, setLastProbeKey] = useState(probeKey);
-  if (lastProbeKey !== probeKey) {
-    setLastProbeKey(probeKey);
-    if (isOllama(config.llm_provider)) {
-      setOllamaStatus("checking");
-    }
-  }
-
-  useEffect(() => {
-    if (!isOllama(config.llm_provider)) return;
-    // Debounce 700ms (> the 500ms config sync) so the backend has the latest
-    // url/key before we ask it for models.
-    const t = setTimeout(() => {
-      listOllamaModels()
-        .then((models) => {
-          setDynamicOllamaModels(models);
-          setOllamaStatus("online");
-        })
-        .catch(() => {
-          setDynamicOllamaModels([]);
-          setOllamaStatus("offline");
-        });
-    }, 700);
-    return () => clearTimeout(t);
-  }, [config.llm_provider, config.ollama_url, config.ollama_api_key]);
-
-  useEffect(() => {
-    if (isOllama(config.llm_provider) && dynamicOllamaModels.length > 0) {
-      const currentModelExists = dynamicOllamaModels.some((m) => m.value === config.ollama_model);
-      if (!currentModelExists) {
-        // @ts-ignore - we know ollama_model is a valid key
-        onUpdate("ollama_model", dynamicOllamaModels[0].value);
-      }
-    }
-  }, [config.llm_provider, config.ollama_model, dynamicOllamaModels, onUpdate]);
-
-  let modelsToDisplay = currentProvider?.models || [];
-  if (isOllama(currentProvider?.value ?? "") && dynamicOllamaModels.length > 0) {
-    modelsToDisplay = dynamicOllamaModels;
-  }
-
-  // Filter models based on search term
-  const filteredModels = modelsToDisplay.filter(m =>
-    m.label.toLowerCase().includes(modelSearch.toLowerCase()) ||
-    m.value.toLowerCase().includes(modelSearch.toLowerCase())
-  );
-
-  let selectedModel = "";
-  if (currentProvider && currentProvider.modelKey) {
-    selectedModel = config[currentProvider.modelKey as keyof AppConfig] as string;
-  }
-  if (!selectedModel && modelsToDisplay.length > 0) {
-    selectedModel = modelsToDisplay[0].value;
-  }
+  const currentProvider = llmProviders.find((p) => p.value === config.llm_provider) ?? llmProviders[0];
+  const selectedModel = (config[currentProvider.modelKey] as string) || currentProvider.models[0]?.value || "";
 
   return (
     <div className="flex flex-col h-full text-foreground">
-      {/* Header - Compact */}
+      {/* Header */}
       <div className="flex-shrink-0 mb-4 pb-3 border-b border-[var(--sidebar-border)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -179,15 +80,14 @@ export default function ConfigPanel({
           {isSyncing && (
             <span className="flex items-center gap-1 text-xs text-accent font-medium animate-pulse">
               <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-              Syncing
+              Saved
             </span>
           )}
         </div>
       </div>
-      
+
       {/* Scrollable Accordions */}
       <div className="flex-1 overflow-y-auto pr-1 space-y-3">
-
         {/* Section 1: Transcription (Whisper) */}
         <div className="border border-[var(--accordion-border)] rounded-xl bg-[var(--accordion-bg)] overflow-hidden">
           <button
@@ -200,7 +100,7 @@ export default function ConfigPanel({
             </div>
             {whisperOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
           </button>
-          
+
           {whisperOpen && (
             <div className="p-3 space-y-3 border-t border-[var(--accordion-border)] bg-[var(--accordion-content-bg)]">
               <div>
@@ -210,12 +110,20 @@ export default function ConfigPanel({
                   onChange={(e) => onUpdate("whisper_model", e.target.value)}
                   className="select text-xs py-2"
                 >
-                  {whisperModels.map((m) => (
-                    <option key={m.value} value={m.value}>{m.label}</option>
+                  {WHISPER_MODELS.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label} ({m.size})
+                    </option>
                   ))}
                 </select>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {(() => {
+                    const m = WHISPER_MODELS.find((x) => x.value === config.whisper_model);
+                    return m ? `${m.hint} · downloads once, then works offline` : "";
+                  })()}
+                </p>
               </div>
-              
+
               <div>
                 <label className="label text-[10px] mb-1">Language</label>
                 <select
@@ -225,7 +133,25 @@ export default function ConfigPanel({
                 >
                   <option value="es">Spanish (ES)</option>
                   <option value="en">English (EN)</option>
+                  <option value="fr">French (FR)</option>
+                  <option value="de">German (DE)</option>
+                  <option value="it">Italian (IT)</option>
+                  <option value="pt">Portuguese (PT)</option>
+                  <option value="zh">Chinese (ZH)</option>
+                  <option value="ja">Japanese (JA)</option>
                 </select>
+                {ENGLISH_ONLY_MODELS.has(config.whisper_model) && config.language !== "en" && (
+                  <p className="text-[10px] text-[var(--danger)] mt-1">
+                    This model is English-only. Switch to English or pick a multilingual model.
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-start gap-2 p-2 rounded-lg bg-primary/5 border border-primary/15">
+                <Cpu className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  Runs entirely in your browser. WebGPU is used when available; otherwise CPU (slower).
+                </p>
               </div>
             </div>
           )}
@@ -243,24 +169,14 @@ export default function ConfigPanel({
             </div>
             {llmOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
           </button>
-          
+
           {llmOpen && (
             <div className="p-3 space-y-3 border-t border-[var(--accordion-border)] bg-[var(--accordion-content-bg)]">
               <div>
                 <label className="label text-[10px] mb-1">Provider</label>
                 <select
                   value={config.llm_provider}
-                  onChange={(e) => {
-                    const p = e.target.value;
-                    onUpdate("llm_provider", p);
-                    setModelSearch("");
-                    // Auto-set the endpoint per Ollama variant; the user never types a URL.
-                    if (isOllama(p) && defaultBaseUrls[p]) {
-                      onUpdate("ollama_url", defaultBaseUrls[p]);
-                    }
-                    // Cloud needs the API key — open the Connection panel so it's visible.
-                    if (p === "ollama-cloud") setAdvancedOpen(true);
-                  }}
+                  onChange={(e) => onUpdate("llm_provider", e.target.value)}
                   className="select text-xs py-2"
                 >
                   {llmProviders.map((provider) => (
@@ -269,128 +185,49 @@ export default function ConfigPanel({
                 </select>
               </div>
 
-              {/* Model selector per provider */}
-              {modelsToDisplay.length > 0 && (
-                <div className="pt-2">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="label text-[10px] mb-0">Model</label>
-                    {modelsToDisplay.length > 5 && (
-                      <div className="relative flex items-center">
-                        <Search className="absolute left-1.5 w-3 h-3 text-muted-foreground" />
-                        <input
-                          type="text"
-                          placeholder="Search..."
-                          value={modelSearch}
-                          onChange={(e) => setModelSearch(e.target.value)}
-                          className="w-24 pl-5 pr-1 py-0.5 rounded bg-foreground/5 border border-border text-[10px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent"
-                        />
-                      </div>
-                    )}
-                  </div>
-                  <select
-                    value={selectedModel}
-                    onChange={(e) => onUpdate(currentProvider!.modelKey as keyof AppConfig, e.target.value as never)}
-                    className="select text-xs py-2"
-                  >
-                    {filteredModels.length > 0 ? (
-                      filteredModels.map((m) => (
-                        <option key={m.value} value={m.value}>{m.label}</option>
-                      ))
-                    ) : (
-                      <option value="" disabled>No matches</option>
-                    )}
-                  </select>
-                </div>
-              )}
-
-              {/* Status banner for Ollama — reflects the live /api/ollama/models probe */}
-              {isOllama(config.llm_provider) && (() => {
-                const cloud = config.llm_provider === "ollama-cloud";
-                const status = {
-                  checking: { wrap: "bg-foreground/5 border-border", text: "text-muted-foreground", dot: "bg-muted-foreground animate-pulse", label: cloud ? "Checking Ollama Cloud…" : "Checking Ollama…" },
-                  online: { wrap: "bg-accent/5 border-accent/15", text: "text-accent", dot: "bg-accent animate-pulse", label: cloud ? "Ollama Cloud active" : "Ollama active" },
-                  offline: { wrap: "bg-[var(--danger-light)] border-[var(--danger-border)]", text: "text-[var(--danger)]", dot: "bg-[var(--danger)]", label: cloud ? "Ollama Cloud unavailable" : "Ollama unavailable" },
-                }[ollamaStatus];
-                return (
-                  <div className={`p-2 rounded-lg border ${status.wrap}`}>
-                    <div className={`flex items-center gap-1.5 text-[10px] font-medium ${status.text}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
-                      {status.label}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-        </div>
-
-        {/* Section 3: Connection & Advanced (Diarization, API Urls, Keys) */}
-        <div className="border border-[var(--accordion-border)] rounded-xl bg-[var(--accordion-bg)] overflow-hidden">
-          <button
-            onClick={() => setAdvancedOpen(!advancedOpen)}
-            className="w-full flex items-center justify-between p-3 text-left hover:bg-foreground/5 transition-colors"
-          >
-            <div className="flex items-center gap-2.5">
-              <Users className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Connection / Diarization</span>
-            </div>
-            {advancedOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-          </button>
-          
-          {advancedOpen && (
-            <div className="p-3 space-y-3 border-t border-[var(--accordion-border)] bg-[var(--accordion-content-bg)]">
-              {/* Speaker Diarization */}
-              <div className="py-1">
-                <label className="flex items-start gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={config.diarize}
-                    onChange={(e) => onUpdate("diarize", e.target.checked)}
-                    className="mt-0.5 w-4 h-4 rounded border-border text-primary focus:ring-primary/20 bg-background"
-                  />
-                  <div>
-                    <span className="text-xs font-semibold">Identify speakers</span>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Requires whisperx installed</p>
-                  </div>
-                </label>
+              <div>
+                <label className="label text-[10px] mb-1">Model</label>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => onUpdate(currentProvider.modelKey, e.target.value as never)}
+                  className="select text-xs py-2"
+                >
+                  {currentProvider.models.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
               </div>
 
-              {/* Base URL Input for Ollama */}
-              {currentProvider?.needsUrl && (
-                <div className="pt-2.5 border-t border-[var(--accordion-border)] space-y-3">
-                  <div>
-                    <label className="label text-[10px] flex items-center gap-1.5 mb-1">
-                      <Link className="w-3 h-3 text-muted-foreground" />
-                      Base URL
-                    </label>
-                    <input
-                      type="text"
-                      value={config.ollama_url ?? ""}
-                      onChange={(e) => onUpdate("ollama_url", e.target.value)}
-                      placeholder="http://localhost:11434"
-                      className="input text-xs py-2"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="label text-[10px] mb-1">
-                      {config.llm_provider === "ollama-cloud" ? "API Key (required)" : "API Key (optional)"}
-                    </label>
-                    <input
-                      type="password"
-                      value={config.ollama_api_key || ""}
-                      onChange={(e) => onUpdate("ollama_api_key", e.target.value)}
-                      placeholder="Bearer token or API key"
-                      className="input text-xs py-2"
-                    />
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      {config.llm_provider === "ollama-cloud"
-                        ? "Your Ollama Cloud API key (ollama.com/settings/keys). The endpoint is configured automatically."
-                        : "Required only if the Ollama instance is protected by a proxy or is Cloud."}
-                    </p>
-                  </div>
+              <div>
+                <label className="label text-[10px] mb-1">API Key</label>
+                <div className="relative">
+                  <input
+                    type={showKey ? "text" : "password"}
+                    value={(config[currentProvider.keyField] as string) ?? ""}
+                    onChange={(e) => onUpdate(currentProvider.keyField, e.target.value as never)}
+                    placeholder={currentProvider.keyPlaceholder}
+                    className="input text-xs py-2 pr-12"
+                    autoComplete="off"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowKey((s) => !s)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                  >
+                    {showKey ? "Hide" : "Show"}
+                  </button>
                 </div>
-              )}
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Get yours at {currentProvider.keyHint}. Stored only in this browser.
+                </p>
+              </div>
+
+              <div className="flex items-start gap-2 p-2 rounded-lg bg-accent/5 border border-accent/15">
+                <ShieldCheck className="w-3.5 h-3.5 text-accent flex-shrink-0 mt-0.5" />
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  Your key is stored locally and sent only to {currentProvider.label} — never to our servers. Insights need an internet connection; transcription is offline.
+                </p>
+              </div>
             </div>
           )}
         </div>

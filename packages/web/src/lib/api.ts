@@ -1,7 +1,11 @@
 /**
- * Centralized API client for Voxnote backend.
- * Packaged build: same-origin relative "/api" (FastAPI serves UI + API on one port).
- * Dev: NEXT_PUBLIC_API_BASE points at the standalone API on :8003 (see .env.development).
+ * Local API client for Voxnote's web build.
+ *
+ * This module used to talk to the FastAPI backend (whisperX + Ollama). In the browser
+ * build it is fully self-contained: transcription runs in a Web Worker via
+ * transformers.js, insights come from a direct call to the user's LLM provider, notes
+ * are generated client-side and persisted in IndexedDB. The function signatures match
+ * the old client so the hooks/components that consume them barely change.
  */
 
 import type {
@@ -12,195 +16,132 @@ import type {
   NoteListItem,
   NoteDetail,
 } from "@/types";
+import { transcribeInBrowser } from "./whisper";
+import { exportNote as buildNote } from "./exporter";
+import {
+  listNotes as dbListNotes,
+  getNote as dbGetNote,
+  renameSpeakers as dbRenameSpeakers,
+  saveNote,
+} from "./notes-db";
+import { markdownToDocxBlob } from "./docx";
+import { getStoredConfig } from "./config-store";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
-
-// The desktop shell injects the per-launch token on window at runtime (never NEXT_PUBLIC,
-// so it is not baked into the static bundle). Dev has no token -> header omitted.
-function authHeaders(): Record<string, string> {
-  const t =
-    (typeof window !== "undefined" &&
-      (window as unknown as { __VOXNOTE_TOKEN__?: string }).__VOXNOTE_TOKEN__) ||
-    undefined;
-  return t ? { "X-Voxnote-Token": t } : {};
-}
-
-class ApiError extends Error {
-  constructor(
-    message: string,
-    public status: number,
-    public detail?: string
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
-}
-
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    let detail: string | undefined;
-    try {
-      const body = await response.json();
-      detail = body.detail || body.message;
-    } catch {
-      // ignore parse errors
-    }
-    throw new ApiError(
-      detail || `Error ${response.status}: ${response.statusText}`,
-      response.status,
-      detail
-    );
-  }
-  return response.json();
-}
-
-// --- Health ---
+// --- Health -----------------------------------------------------------------
 
 export async function checkHealth(): Promise<{ status: string }> {
-  const res = await fetch(`${API_BASE}/health`);
-  return handleResponse(res);
+  // No backend to ping; the app is self-contained. Always healthy.
+  return { status: "ok" };
 }
 
-// --- Transcription ---
+// --- Transcription ----------------------------------------------------------
 
 export interface TranscribeOptions {
   model?: string;
   language?: string;
-  diarize?: boolean;
+  diarize?: boolean; // accepted for API compatibility; diarization is not supported in-browser
+  onProgress?: (progress: number, file?: string) => void;
 }
 
 export async function transcribeAudio(
   audio: Blob,
-  options: TranscribeOptions = {}
+  options: TranscribeOptions = {},
 ): Promise<TranscriptionResult> {
-  const formData = new FormData();
-  formData.append("audio", audio, "recording.wav");
-  formData.append("model", options.model || "turbo");
-  formData.append("language", options.language || "es");
-  formData.append("diarize", String(options.diarize || false));
-
-  // No Content-Type: the browser sets the multipart boundary.
-  const res = await fetch(`${API_BASE}/transcribe`, {
-    method: "POST",
-    headers: { ...authHeaders() },
-    body: formData,
+  return transcribeInBrowser(audio, {
+    model: options.model,
+    language: options.language,
+    onProgress: options.onProgress,
   });
-  return handleResponse(res);
 }
 
-// --- Insights ---
+// --- Insights ---------------------------------------------------------------
 
 export async function extractInsights(
   text: string,
-  provider: string = "ollama"
+  provider: string = "openai",
 ): Promise<InsightsResult> {
-  const res = await fetch(`${API_BASE}/insights`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ text, provider }),
+  const cfg = getStoredConfig();
+  const keyForProvider: Record<string, string> = {
+    openai: cfg.api_key_openai,
+    anthropic: cfg.api_key_anthropic,
+    google: cfg.api_key_google,
+  };
+  const modelForProvider: Record<string, string> = {
+    openai: cfg.openai_model,
+    anthropic: cfg.anthropic_model,
+    google: cfg.google_model,
+  };
+  const key = keyForProvider[provider] ?? "";
+  const model = modelForProvider[provider] ?? "";
+  const { extractInsightsInBrowser } = await import("./insights");
+  return extractInsightsInBrowser(text, {
+    provider: provider as "openai" | "anthropic" | "google",
+    apiKey: key,
+    model,
+    language: cfg.language,
   });
-  return handleResponse(res);
 }
 
-// --- Export ---
+// --- Export -----------------------------------------------------------------
 
 export async function exportNote(
   transcript: string,
   insights: InsightsResult,
-  audio_filename?: string
+  audio_filename?: string,
 ): Promise<ExportResult> {
-  const res = await fetch(`${API_BASE}/export`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ transcript_text: transcript, insights, audio_name: audio_filename }),
+  const note = buildNote(transcript, insights, audio_filename || "recording.wav");
+  // Persist to IndexedDB so the History tab picks it up.
+  await saveNote(note.filename, note.content).catch(() => {
+    // Non-fatal: the note is still returned to the caller for immediate preview.
   });
-  return handleResponse(res);
+  return note;
 }
 
 /** Convert a note's Markdown to a Word (.docx) document, returned as a downloadable Blob. */
 export async function exportNoteDocx(
   content: string,
-  filename: string
+  filename: string,
 ): Promise<Blob> {
-  const res = await fetch(`${API_BASE}/export/docx`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ content, filename }),
-  });
-  if (!res.ok) {
-    let detail: string | undefined;
-    try {
-      const body = await res.json();
-      detail = body.detail || body.message;
-    } catch {
-      // ignore parse errors
-    }
-    throw new ApiError(
-      detail || `Error ${res.status}: ${res.statusText}`,
-      res.status,
-      detail
-    );
-  }
-  return res.blob();
+  return markdownToDocxBlob(content, filename);
 }
 
-// --- Config ---
+// --- Config -----------------------------------------------------------------
 
 export async function fetchConfig(): Promise<AppConfig> {
-  const res = await fetch(`${API_BASE}/config`, { headers: { ...authHeaders() } });
-  return handleResponse(res);
+  return getStoredConfig();
 }
 
-export async function updateConfig(
-  config: Partial<AppConfig>
-): Promise<AppConfig> {
-  const res = await fetch(`${API_BASE}/config`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify(config),
-  });
-  return handleResponse(res);
+export async function updateConfig(_config: Partial<AppConfig>): Promise<AppConfig> {
+  // Config writes go straight to localStorage via the hook; no-op here for compat.
+  return getStoredConfig();
 }
 
-// --- Notes ---
+// --- Notes ------------------------------------------------------------------
 
 export async function listNotes(): Promise<NoteListItem[]> {
-  const res = await fetch(`${API_BASE}/notes`, { headers: { ...authHeaders() } });
-  return handleResponse(res);
+  return dbListNotes();
 }
 
 export async function getNote(filename: string): Promise<NoteDetail> {
-  const res = await fetch(
-    `${API_BASE}/notes/${encodeURIComponent(filename)}`,
-    { headers: { ...authHeaders() } }
-  );
-  return handleResponse(res);
+  return dbGetNote(filename);
 }
 
-/** Replace SPEAKER_xx labels in a note with real names (persisted server-side). */
+/** Replace SPEAKER_xx labels in a note with real names (persisted in IndexedDB). */
 export async function renameSpeakers(
   filename: string,
-  mapping: Record<string, string>
+  mapping: Record<string, string>,
 ): Promise<NoteDetail> {
-  const res = await fetch(
-    `${API_BASE}/notes/${encodeURIComponent(filename)}/speakers`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify({ mapping }),
-    }
-  );
-  return handleResponse(res);
+  return dbRenameSpeakers(filename, mapping);
 }
 
-// --- Ollama ---
-
-export interface OllamaModel {
-  value: string;
-  label: string;
+/** Bundle every stored note into a single ZIP download (each note = one .md file). */
+export async function exportAllNotes(): Promise<Blob> {
+  const { exportAllNotes: zip } = await import("./notes-db");
+  return zip();
 }
 
-export async function listOllamaModels(): Promise<OllamaModel[]> {
-  const res = await fetch(`${API_BASE}/ollama/models`, { headers: { ...authHeaders() } });
-  return handleResponse(res);
+/** Delete every stored note (the whole history). */
+export async function clearAllNotes(): Promise<void> {
+  const { clearAllNotes: clear } = await import("./notes-db");
+  return clear();
 }

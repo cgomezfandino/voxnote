@@ -1,0 +1,10 @@
+/*
+  # Enable crossOriginIsolated so onnxruntime-web (transformers.js) can use
+  # SharedArrayBuffer for multi-threaded WASM inference. WebGPU itself doesn't need
+  # these headers, but the WASM fallback path does, and they don't hurt.
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless
+
+# Allow the large model files fetched from the Hugging Face CDN to be cached for a
+# year by the browser — they are immutable versioned assets.
+  Cross-Origin-Resource-Policy: cross-origin

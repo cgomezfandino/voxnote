@@ -64,18 +64,21 @@ export interface NoteDetail {
 }
 
 // Config types
+//
+// The web app runs entirely in the browser — no backend. LLM providers are called
+// directly with the user's own API key, stored in localStorage (never baked into the
+// bundle). Speaker diarization (pyannote) is a local-only feature and not represented
+// here.
 export interface AppConfig {
-  whisper_model: string;
-  language: string;
-  llm_provider: string;
-  ollama_model: string;
-  ollama_url: string;
-  ollama_api_key?: string;
+  whisper_model: string; // base | small | turbo
+  language: string; // ISO code, e.g. "es"
+  llm_provider: string; // openai | anthropic | google
   openai_model: string;
   google_model: string;
   anthropic_model: string;
-  output_dir: string;
-  diarize: boolean;
+  api_key_openai: string;
+  api_key_anthropic: string;
+  api_key_google: string;
 }
 
 // Processing steps
