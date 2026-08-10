@@ -97,6 +97,34 @@ export async function getNote(filename: string): Promise<NoteDetail> {
 }
 
 /**
+ * Bundle every stored note into a single ZIP download. Each note becomes a `.md` file
+ * named after its stored filename. Includes a manifest with created_at timestamps.
+ */
+export async function exportAllNotes(): Promise<Blob> {
+  // jszip is a transitive dep of @huggingface/transformers; load it dynamically so it
+  // is only pulled into the bundle when the user actually triggers "Download all".
+  const JSZip = (await import("jszip")).default;
+  const zip = new JSZip();
+  const all = await tx<NoteRecord[]>("readonly", (store) => store.getAll());
+  const records = Array.isArray(all) ? all : [];
+  const manifest: { filename: string; created_at: string }[] = [];
+  for (const r of records) {
+    zip.file(r.filename, r.content);
+    manifest.push({ filename: r.filename, created_at: r.created_at });
+  }
+  manifest.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  zip.file("manifest.json", JSON.stringify(manifest, null, 2));
+  return zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+}
+
+/**
+ * Remove every stored note (the whole history). Used by the "Clear history" action.
+ */
+export async function clearAllNotes(): Promise<void> {
+  await tx("readwrite", (store) => store.clear());
+}
+
+/**
  * Replace SPEAKER_xx labels in a stored note with real names. Mirrors the old
  * POST /api/notes/{filename}/speakers endpoint.
  */

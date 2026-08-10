@@ -133,3 +133,15 @@ export async function renameSpeakers(
 ): Promise<NoteDetail> {
   return dbRenameSpeakers(filename, mapping);
 }
+
+/** Bundle every stored note into a single ZIP download (each note = one .md file). */
+export async function exportAllNotes(): Promise<Blob> {
+  const { exportAllNotes: zip } = await import("./notes-db");
+  return zip();
+}
+
+/** Delete every stored note (the whole history). */
+export async function clearAllNotes(): Promise<void> {
+  const { clearAllNotes: clear } = await import("./notes-db");
+  return clear();
+}

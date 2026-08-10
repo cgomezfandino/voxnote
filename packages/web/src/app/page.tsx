@@ -15,6 +15,9 @@ import {
   Sun,
   Moon,
   ChevronDown,
+  Download,
+  Trash2,
+  LoaderCircle,
 } from "lucide-react";
 import ConfigPanel from "@/components/ConfigPanel";
 import AudioRecorder from "@/components/AudioRecorder";
@@ -26,7 +29,7 @@ import NotePreview from "@/components/NotePreview";
 import Logo from "@/components/Logo";
 import { useVoxnote } from "@/hooks/useVoxnote";
 import { useConfig } from "@/hooks/useConfig";
-import { listNotes, getNote } from "@/lib/api";
+import { listNotes, getNote, exportAllNotes, clearAllNotes } from "@/lib/api";
 import type { InsightsResult, NoteListItem } from "@/types";
 
 type Tab = "record" | "process" | "history";
@@ -92,6 +95,8 @@ export default function Home() {
     filename: string;
   } | null>(null);
   const [loadingNotes, setLoadingNotes] = useState(false);
+  const [exportingAll, setExportingAll] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   const handleRecordingComplete = (blob: Blob, duration: number) => {
     const url = URL.createObjectURL(blob);
@@ -192,6 +197,44 @@ export default function Home() {
     },
     [selectedNote]
   );
+
+  // Bundle every stored note into a ZIP and trigger a browser download.
+  const handleExportAll = useCallback(async () => {
+    if (notes.length === 0) return;
+    setExportingAll(true);
+    try {
+      const blob = await exportAllNotes();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `voxnote-notes-${stamp}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      // non-fatal
+    } finally {
+      setExportingAll(false);
+    }
+  }, [notes.length]);
+
+  // Wipe the whole history (IndexedDB). Confirmed via window.confirm to avoid accidents.
+  const handleClearAll = useCallback(async () => {
+    if (notes.length === 0) return;
+    if (!window.confirm(`Delete all ${notes.length} notes? This cannot be undone.`)) return;
+    setClearing(true);
+    try {
+      await clearAllNotes();
+      setNotes([]);
+      setSelectedNote(null);
+    } catch {
+      // non-fatal
+    } finally {
+      setClearing(false);
+    }
+  }, [notes.length]);
 
   const hasAudio = !!(recordedUrl || uploadedFile);
   const canProcess = hasAudio && !isLoading;
@@ -523,6 +566,38 @@ export default function Home() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Bulk actions — only when there are notes */}
+                    {notes.length > 0 && (
+                      <div className="flex items-center justify-end gap-2 mb-4">
+                        <button
+                          onClick={handleExportAll}
+                          disabled={exportingAll}
+                          className="btn-secondary flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-60"
+                          title="Download all notes as a ZIP"
+                        >
+                          {exportingAll ? (
+                            <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5 text-muted-foreground" />
+                          )}
+                          Download all (.zip)
+                        </button>
+                        <button
+                          onClick={handleClearAll}
+                          disabled={clearing}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-muted border border-border hover:bg-[var(--danger-light)] hover:text-[var(--danger)] hover:border-[var(--danger-border)] text-muted-foreground transition-colors disabled:opacity-60"
+                          title="Delete all notes"
+                        >
+                          {clearing ? (
+                            <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
+                          Clear
+                        </button>
+                      </div>
+                    )}
 
                     {/* Notes list */}
                     {loadingNotes ? (
