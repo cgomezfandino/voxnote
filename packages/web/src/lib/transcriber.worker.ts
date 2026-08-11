@@ -76,8 +76,10 @@ const MODEL_DTYPES: Record<string, "fp32" | "fp16" | "q8" | "q4"> = {
   moonshine: "fp32",
 };
 
-/** English-only models that must not receive a `language` option. */
-const ENGLISH_ONLY = new Set(["moonshine"]);
+/** English-only models that must not receive a `language` option. Distil-Whisper's q8
+ *  quantization breaks non-English transcription (returns empty text), so it is treated
+ *  as English-only alongside Moonshine. */
+const ENGLISH_ONLY = new Set(["moonshine", "distil"]);
 
 export interface TranscribeRequest {
   audio: Float32Array;
