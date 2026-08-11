@@ -67,14 +67,30 @@ const INSIGHTS_JSON_SCHEMA = `{
   "next_steps": ["Agreed next steps."]
 }`;
 
-const INSIGHTS_GUIDANCE =
-  "Rules:\n" +
-  "- Respond in English, clearly and professionally.\n" +
-  '- Fill in "participants" and "highlights" ONLY if the transcript lets you identify ' +
-  "speakers or relevant phrases; otherwise leave those lists empty.\n" +
-  "- Do not invent information that is not in the transcript.\n" +
-  "- When there are [SPEAKER_xx] labels, attribute decisions, action items, highlights, " +
-  "and contributions to the corresponding speaker.";
+/** Human-readable language names so the model unambiguously knows which language to use. */
+const LANGUAGE_NAMES: Record<string, string> = {
+  es: "Spanish",
+  en: "English",
+  fr: "French",
+  de: "German",
+  it: "Italian",
+  pt: "Portuguese",
+  zh: "Chinese",
+  ja: "Japanese",
+};
+
+function buildInsightsGuidance(lang: string): string {
+  const language = LANGUAGE_NAMES[lang] ?? "English";
+  return (
+    "Rules:\n" +
+    `- Respond in ${language}, clearly and professionally.\n` +
+    '- Fill in "participants" and "highlights" ONLY if the transcript lets you identify ' +
+    "speakers or relevant phrases; otherwise leave those lists empty.\n" +
+    "- Do not invent information that is not in the transcript.\n" +
+    "- When there are [SPEAKER_xx] labels, attribute decisions, action items, highlights, " +
+    "and contributions to the corresponding speaker."
+  );
+}
 
 function buildTranscriptSection(transcript: string, lang: string): string {
   const hasSpeakers = transcript.includes("[SPEAKER_");
@@ -91,7 +107,7 @@ function buildInsightsPrompt(transcript: string, lang: string): string {
     "Analyze this meeting transcript and respond ONLY with valid JSON " +
     "(no markdown, no backticks) with this exact structure:\n\n" +
     `${INSIGHTS_JSON_SCHEMA}\n\n` +
-    `${INSIGHTS_GUIDANCE}\n\n` +
+    `${buildInsightsGuidance(lang)}\n\n` +
     "TRANSCRIPT:\n" +
     section
   );
