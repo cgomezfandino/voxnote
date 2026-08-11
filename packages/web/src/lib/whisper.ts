@@ -13,14 +13,18 @@ import type { TranscriptionResult } from "@/types";
 
 export type ProgressCb = (progress: number, file?: string) => void;
 
-/** Speech-to-text model catalog surfaced in the UI. Sizes are approximate download sizes. */
+/**
+ * Speech-to-text model catalog surfaced in the UI. Sizes are the actual q8
+ * (8-bit quantized) download totals, verified from the HF CDN content-length headers.
+ * The full fp32 weights are ~3x larger (and the large models' fp32 encoder exceeds
+ * the 2 GB single-file ONNX limit, which onnxruntime-web can't load — hence q8).
+ */
 export const WHISPER_MODELS = [
-  // Distil-Whisper Large v3.5 is the recommended default: same quality family as turbo,
-  // ~1.5x faster and ~49% smaller, multilingual. Loaded quantized (q8/q4) — see worker.
-  { value: "distil", label: "Distil Large v3.5", size: "~500 MB", hint: "Recommended · best speed/quality" },
-  { value: "turbo", label: "Turbo", size: "~800 MB", hint: "Best quality · multilingual" },
-  { value: "small", label: "Small", size: "~480 MB", hint: "Balanced · multilingual" },
-  { value: "base", label: "Base", size: "~150 MB", hint: "Fastest · multilingual" },
+  // Distil-Whisper Large v3.5: same quality family as turbo, faster + smaller.
+  { value: "distil", label: "Distil Large v3.5", size: "~1 GB", hint: "Recommended · best speed/quality" },
+  { value: "turbo", label: "Turbo", size: "~1 GB", hint: "Best quality · multilingual" },
+  { value: "small", label: "Small", size: "~240 MB", hint: "Balanced · multilingual" },
+  { value: "base", label: "Base", size: "~75 MB", hint: "Fastest · multilingual" },
   { value: "moonshine", label: "Moonshine Tiny", size: "~100 MB", hint: "Fastest · English only" },
 ] as const;
 
