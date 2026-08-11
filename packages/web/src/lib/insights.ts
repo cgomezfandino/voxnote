@@ -49,6 +49,7 @@ const UNTRUSTED_NOTICE: Record<string, string> = {
 };
 
 const INSIGHTS_JSON_SCHEMA = `{
+  "title": "Short 3-6 word title capturing the meeting topic (e.g. 'Q3 Budget Review').",
   "summary": "Executive summary in 3-5 sentences.",
   "participants": [
     {"speaker": "Name or [SPEAKER_00]", "contribution": "What they contributed, in one sentence."}
@@ -186,7 +187,16 @@ function coerce(data: Record<string, unknown>): InsightsResult {
         })
         .filter((x): x is Highlight => !!x)
     : [];
+  // Title: prefer the model's, else derive a short one from the summary, else a generic.
+  const rawTitle = typeof data.title === "string" ? data.title.trim() : "";
+  const title =
+    rawTitle ||
+    (typeof data.summary === "string" && data.summary.trim()
+      ? data.summary.trim().split(/[.!?\n]/)[0].slice(0, 60)
+      : "Meeting");
+
   return {
+    title,
     summary: typeof data.summary === "string" ? data.summary : "",
     participants,
     key_points: toStrArr(data.key_points),
@@ -214,6 +224,7 @@ function coerce(data: Record<string, unknown>): InsightsResult {
 const INSIGHTS_RESPONSE_SCHEMA = {
   type: "object",
   properties: {
+    title: { type: "string", description: "Short 3-6 word title capturing the meeting topic." },
     summary: { type: "string" },
     participants: {
       type: "array",
@@ -259,6 +270,7 @@ const INSIGHTS_RESPONSE_SCHEMA = {
     next_steps: { type: "array", items: { type: "string" } },
   },
   required: [
+    "title",
     "summary",
     "participants",
     "key_points",

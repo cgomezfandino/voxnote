@@ -532,7 +532,7 @@ export default function Home() {
                   >
                     <div className="text-center mb-8">
                       <h2 className="text-xl lg:text-2xl font-semibold text-foreground mb-2">
-                        RotateCcwClock
+                        History
                       </h2>
                       <p className="text-muted-foreground">
                         Your generated notes
@@ -643,6 +643,9 @@ export default function Home() {
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <p className="font-semibold text-foreground text-sm truncate transition-colors">
+                                      {note.title}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground font-mono mt-0.5 truncate">
                                       {note.filename}
                                     </p>
                                     <p className="text-xs text-muted-foreground line-clamp-2 mt-1 leading-relaxed">

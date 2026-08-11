@@ -80,6 +80,8 @@ export async function listNotes(): Promise<NoteListItem[]> {
       // Preview: first ~200 chars of the note body (skip frontmatter).
       preview: previewFromContent(r.content),
       size_bytes: new Blob([r.content]).size,
+      // Title: parsed from the "# 📋 Meeting — TITLE" H1, falling back to the filename.
+      title: titleFromContent(r.content) || r.filename.replace(/\.md$/, ""),
     }))
     .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 }
@@ -156,4 +158,12 @@ function previewFromContent(content: string): string {
   }
   body = body.replace(/^# .*/m, "").trim();
   return body.replace(/\s+/g, " ").slice(0, 200);
+}
+
+/** Extract the human title from a note's "# 📋 Meeting — TITLE" H1. */
+function titleFromContent(content: string): string {
+  const m = content.match(/^#\s+.*?Meeting\s+—\s+(.+)$/m);
+  if (m) return m[1].trim();
+  const h1 = content.match(/^#\s+(.+)$/m);
+  return h1 ? h1[1].trim() : "";
 }

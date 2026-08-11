@@ -27,32 +27,32 @@ export interface ExportNoteOptions {
   audioFilename?: string;
 }
 
+/** Convert arbitrary text to a filesystem-safe slug (lowercase, ascii, dash-separated). */
+function slugify(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // strip accents
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase()
+    .slice(0, 60);
+}
+
 export function exportNote(
   transcript: string,
   insights: InsightsResult,
   audioFilename: string = "recording.wav",
 ): ExportResult {
-  const slug = audioFilename.replace(/\.[^.]+$/, "");
-
-  // Match the Python slug format YYYY-MM-DD_HH-MM-SS_title
-  const match = slug.match(/^(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})_(.*)$/);
   const now = new Date();
-  let dateStr: string;
-  let timeStr: string;
-  let titleSlug: string;
-  let noteFilename: string;
-  if (match) {
-    dateStr = match[1];
-    timeStr = `${match[2]}:${match[3]}`;
-    titleSlug = match[5];
-    noteFilename = `${slug}.md`;
-  } else {
-    const pad = (n: number) => String(n).padStart(2, "0");
-    dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-    timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-    titleSlug = slug;
-    noteFilename = `${dateStr}_${slug}.md`;
-  }
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  // Filename encodes both the creation timestamp AND the topic, so notes are easy to
+  // identify at a glance in the history and on disk: "2026-08-11_14-32-05_q3-budget-review.md".
+  const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const timestampSlug = `${dateStr}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+  const titleSlug = slugify(insights.title) || slugify(audioFilename) || "meeting";
+  const noteFilename = `${timestampSlug}_${titleSlug}.md`;
 
   // Action items → task list with owner/deadline
   let tasks = "";
@@ -120,7 +120,7 @@ time: ${timeStr}
 audio: "[[audio/${audioName}]]"
 ---
 
-# 📋 Meeting — ${titleSlug}
+# 📋 Meeting — ${insights.title}
 
 > 🗓️ **Date:** ${dateStr} · ⏰ **Time:** ${timeStr} · 🎧 \`${audioName}\`
 

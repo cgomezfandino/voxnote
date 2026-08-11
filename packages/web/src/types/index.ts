@@ -31,6 +31,10 @@ export interface Highlight {
 }
 
 export interface InsightsResult {
+  // Short, human-readable title (3-6 words) derived from the meeting topic. Used as the
+  // note's display name and filename slug so the history reads "Q3 Budget Review" instead
+  // of "recording".
+  title: string;
   summary: string;
   participants?: Participant[];
   key_points?: string[];
@@ -55,6 +59,8 @@ export interface NoteListItem {
   created_at: string;
   preview: string;
   size_bytes: number;
+  /** Human-readable title parsed from the note's H1, for display in the history list. */
+  title: string;
 }
 
 export interface NoteDetail {
