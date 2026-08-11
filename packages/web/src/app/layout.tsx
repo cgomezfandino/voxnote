@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Voxnote — Meeting Transcription",
   description: "Turn your meetings into structured notes with AI — 100% in your browser",
   manifest: "/manifest.webmanifest",
+  // Next.js App Router auto-generates favicon <link>s from src/app/icon.png.
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
