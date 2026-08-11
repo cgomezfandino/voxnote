@@ -15,9 +15,13 @@ export const DEFAULT_CONFIG: AppConfig = {
   openai_model: "gpt-4o-mini",
   google_model: "gemini-2.0-flash",
   anthropic_model: "claude-opus-4-8",
+  zai_model: "glm-4.6",
+  kimi_model: "kimi-k2.6",
   api_key_openai: "",
   api_key_anthropic: "",
   api_key_google: "",
+  api_key_zai: "",
+  api_key_kimi: "",
 };
 
 /** Read the merged config (stored values override defaults). Safe during SSR. */

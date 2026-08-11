@@ -65,6 +65,17 @@ ofreciendo; la web no.
 - `@cf/openai/whisper` ($0.00045/min audio), Llama-3.2-3B, Gemma. 10k Neurons gratis/día.
 - Trade-off: introduces un Worker (dejas de ser 100% estático) + asumes coste por usuario.
 
+**8b. Ollama Cloud vía proxy** — la API de Ollama Cloud (`https://ollama.com/v1/chat/completions`)
+  es OpenAI-compatible y Bearer-auth, **pero CORS bloqueada** (preflight devuelve 405 sin
+  `Access-Control-Allow-Origin`). Para usarla desde la web hace falta un Cloudflare Worker
+  que actúe de same-origin proxy con la key del usuario. Modelos cloud actuales: glm-5.2,
+  deepseek-v4-pro, kimi-k3, gpt-oss:120b, etc. (lista pública en `ollama.com/api/tags`).
+  Pospuesta hasta que se decida añadir un Worker.
+
+**8c. Proveedores OpenAI-compatible ya integrados** — Z.ai (`api.z.ai/api/paas/v4`, modelos
+  GLM-4.6) y Kimi/Moonshot (`api.moonshot.ai/v1`, kimi-k2.6) funcionan directo del navegador
+  (CORS habilitado, Bearer auth). Añadir más en el futuro es una línea en `OPENAI_COMPATIBLE`.
+
 **9. R2 para sync opcional de notas** — egress $0, $0.015/GB-mes. Multi-dispositivo barato.
 
 ### TIER 4 — Vigilar, no adoptar

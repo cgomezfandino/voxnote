@@ -54,6 +54,35 @@ const llmProviders = [
     keyPlaceholder: "sk-ant-...",
     keyHint: "console.anthropic.com/settings/keys",
   },
+  {
+    value: "zai",
+    label: "Z.ai (GLM)",
+    modelKey: "zai_model" as const,
+    keyField: "api_key_zai" as const,
+    models: [
+      { value: "glm-4.6", label: "GLM-4.6 (200K ctx)" },
+      { value: "glm-4.5", label: "GLM-4.5" },
+      { value: "glm-4.5-air", label: "GLM-4.5 Air" },
+      { value: "glm-4-plus", label: "GLM-4 Plus" },
+      { value: "glm-4-flash", label: "GLM-4 Flash" },
+    ],
+    keyPlaceholder: "<your z.ai key>",
+    keyHint: "z.ai/manage-apikey",
+  },
+  {
+    value: "kimi",
+    label: "Kimi (Moonshot)",
+    modelKey: "kimi_model" as const,
+    keyField: "api_key_kimi" as const,
+    models: [
+      { value: "kimi-k2.6", label: "Kimi K2.6" },
+      { value: "moonshot-v1-128k", label: "Moonshot v1 128K" },
+      { value: "moonshot-v1-32k", label: "Moonshot v1 32K" },
+      { value: "moonshot-v1-8k", label: "Moonshot v1 8K" },
+    ],
+    keyPlaceholder: "sk-...",
+    keyHint: "platform.moonshot.cn/console/api-keys",
+  },
 ];
 
 export default function ConfigPanel({

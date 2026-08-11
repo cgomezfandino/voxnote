@@ -65,17 +65,21 @@ export async function extractInsights(
     openai: cfg.api_key_openai,
     anthropic: cfg.api_key_anthropic,
     google: cfg.api_key_google,
+    zai: cfg.api_key_zai,
+    kimi: cfg.api_key_kimi,
   };
   const modelForProvider: Record<string, string> = {
     openai: cfg.openai_model,
     anthropic: cfg.anthropic_model,
     google: cfg.google_model,
+    zai: cfg.zai_model,
+    kimi: cfg.kimi_model,
   };
   const key = keyForProvider[provider] ?? "";
   const model = modelForProvider[provider] ?? "";
   const { extractInsightsInBrowser } = await import("./insights");
   return extractInsightsInBrowser(text, {
-    provider: provider as "openai" | "anthropic" | "google",
+    provider: provider as "openai" | "anthropic" | "google" | "zai" | "kimi",
     apiKey: key,
     model,
     language: cfg.language,

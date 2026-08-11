@@ -10,7 +10,7 @@
 
 import type { InsightsResult, ActionItem, Participant, Highlight } from "@/types";
 
-export type LlmProvider = "openai" | "anthropic" | "google";
+export type LlmProvider = "openai" | "anthropic" | "google" | "zai" | "kimi";
 
 export interface ExtractInsightsArgs {
   provider: LlmProvider;
@@ -302,10 +302,14 @@ const INSIGHTS_RESPONSE_SCHEMA = {
 
 // --- Provider limits (mirror the Python MAX_TRANSCRIPT_CHARS per provider) ---
 
+// Per-provider transcript caps. The OpenAI-compatible providers share 8000 (mirrored
+// from OPENAI_COMPATIBLE for the ones routed through callOpenAICompatible).
 const MAX_CHARS: Record<LlmProvider, number> = {
   openai: 8000,
   anthropic: 8000,
   google: 10000,
+  zai: 8000,
+  kimi: 8000,
 };
 
 function truncate(transcript: string, max: number): string {
@@ -333,18 +337,32 @@ async function readError(res: Response): Promise<string> {
   return `Error ${res.status}: ${res.statusText}`;
 }
 
-/** OpenAI Chat Completions with native Structured Outputs (strict json_schema). */
-async function callOpenAI(
+/**
+ * OpenAI-compatible Chat Completions with native Structured Outputs.
+ *
+ * Works for any provider whose API mirrors OpenAI's `/chat/completions` (same body,
+ * Bearer auth). This covers OpenAI itself plus Z.ai and Moonshot/Kimi, which are
+ * drop-in compatible and CORS-enabled for direct browser calls. Ollama Cloud shares
+ * the same wire format but is CORS-blocked, so it needs a proxy (see roadmap).
+ *
+ * Tries strict `json_schema` first (token-level constrained decoding); falls back to
+ * `json_object` for models/providers that reject strict mode — the tolerant parser
+ * handles the rest either way.
+ */
+async function callOpenAICompatible(
+  baseUrl: string,
   transcript: string,
   apiKey: string,
   model: string,
   lang: string,
+  maxChars: number,
 ): Promise<string> {
+  const endpoint = `${baseUrl.replace(/\/$/, "")}/chat/completions`;
   const payload = (responseFormat: unknown) => ({
     model,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: buildInsightsPrompt(truncate(transcript, MAX_CHARS.openai), lang) },
+      { role: "user", content: buildInsightsPrompt(truncate(transcript, maxChars), lang) },
     ],
     temperature: 0.1,
     response_format: responseFormat,
@@ -355,10 +373,7 @@ async function callOpenAI(
     Authorization: `Bearer ${apiKey}`,
   };
 
-  // Try strict json_schema first; older models that don't support it return a 400 with
-  // an "unsupported_parameter" / "json_schema" error — fall back to json_object, which
-  // still constrains to valid JSON (the tolerant parser handles the rest).
-  const strictRes = await fetch("https://api.openai.com/v1/chat/completions", {
+  const strictRes = await fetch(endpoint, {
     method: "POST",
     headers,
     body: JSON.stringify(
@@ -378,7 +393,7 @@ async function callOpenAI(
     const code: string = errBody?.error?.code ?? "";
     const msg: string = errBody?.error?.message ?? "";
     if (code.includes("unsupported") || msg.toLowerCase().includes("json_schema") || msg.toLowerCase().includes("response_format")) {
-      res = await fetch("https://api.openai.com/v1/chat/completions", {
+      res = await fetch(endpoint, {
         method: "POST",
         headers,
         body: JSON.stringify(payload({ type: "json_object" })),
@@ -389,6 +404,13 @@ async function callOpenAI(
   const body = await res.json();
   return body?.choices?.[0]?.message?.content ?? "";
 }
+
+// Provider base URLs and per-provider transcript char caps (mirror the Python defaults).
+const OPENAI_COMPATIBLE: Record<string, { baseUrl: string; maxChars: number }> = {
+  openai: { baseUrl: "https://api.openai.com/v1", maxChars: 8000 },
+  zai: { baseUrl: "https://api.z.ai/api/paas/v4", maxChars: 8000 },
+  kimi: { baseUrl: "https://api.moonshot.ai/v1", maxChars: 8000 },
+};
 
 /**
  * Anthropic Messages API with forced tool-use (native structured-output path).
@@ -490,8 +512,9 @@ export async function extractInsightsInBrowser(
   const lang = args.language ?? "es";
   let raw: string;
   try {
-    if (args.provider === "openai") {
-      raw = await callOpenAI(transcript, args.apiKey, args.model, lang);
+    if (args.provider in OPENAI_COMPATIBLE) {
+      const { baseUrl, maxChars } = OPENAI_COMPATIBLE[args.provider];
+      raw = await callOpenAICompatible(baseUrl, transcript, args.apiKey, args.model, lang, maxChars);
     } else if (args.provider === "anthropic") {
       raw = await callAnthropic(transcript, args.apiKey, args.model, lang);
     } else {
