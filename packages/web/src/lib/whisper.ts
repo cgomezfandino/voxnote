@@ -16,9 +16,9 @@ export type ProgressCb = (progress: number, file?: string) => void;
 /** Speech-to-text model catalog surfaced in the UI. Sizes are approximate download sizes. */
 export const WHISPER_MODELS = [
   // Distil-Whisper Large v3.5 is the recommended default: same quality family as turbo,
-  // ~1.5x faster and ~49% smaller, multilingual.
-  { value: "distil", label: "Distil Large v3.5", size: "~0.8 GB", hint: "Recommended · best speed/quality" },
-  { value: "turbo", label: "Turbo", size: "~1.5 GB", hint: "Best quality · multilingual" },
+  // ~1.5x faster and ~49% smaller, multilingual. Loaded quantized (q8/q4) — see worker.
+  { value: "distil", label: "Distil Large v3.5", size: "~500 MB", hint: "Recommended · best speed/quality" },
+  { value: "turbo", label: "Turbo", size: "~800 MB", hint: "Best quality · multilingual" },
   { value: "small", label: "Small", size: "~480 MB", hint: "Balanced · multilingual" },
   { value: "base", label: "Base", size: "~150 MB", hint: "Fastest · multilingual" },
   { value: "moonshine", label: "Moonshine Tiny", size: "~100 MB", hint: "Fastest · English only" },

@@ -52,15 +52,22 @@ const MODEL_IDS: Record<string, string> = {
 };
 
 /**
- * Per-model ONNX dtype. fp16 has a known precision issue on the Whisper encoder under
- * WebGPU (transformers.js #1590), so we stick to fp32 for the encoder/decoder on turbo
- * and let smaller models use q8 to keep the download lean.
+ * Per-model ONNX dtype.
+ *
+ * Large models (turbo, distil) package their fp32 encoder as a split file
+ * (encoder_model.onnx + encoder_model.onnx_data, because the weights exceed the 2 GB
+ * single-file ONNX limit). onnxruntime-web cannot mount external data — it throws
+ * "Module.MountedFiles is not available" (microsoft/onnxruntime#19752, closed unfixed).
+ * fp16 also has a precision bug on WebGPU for the Whisper encoder (#1590). So the only
+ * loadable, WebGPU-safe choice for the large models is a quantized (single-file) dtype.
+ * q8 keeps near-fp32 quality while staying single-file; q4 on the decoder saves weight.
+ * Small models (base, small, moonshine) are single-file at any dtype.
  */
 const MODEL_DTYPES: Record<string, Record<string, "fp32" | "fp16" | "q8" | "q4">> = {
   base: { encoder: "q8", decoder: "q8" },
   small: { encoder: "q8", decoder: "q8" },
-  turbo: { encoder: "fp32", decoder: "q4" },
-  distil: { encoder: "fp32", decoder: "q4" },
+  turbo: { encoder: "q8", decoder: "q4" },
+  distil: { encoder: "q8", decoder: "q4" },
   moonshine: { encoder: "fp32", decoder: "fp32" },
 };
 
