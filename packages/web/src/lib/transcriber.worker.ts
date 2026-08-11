@@ -52,23 +52,28 @@ const MODEL_IDS: Record<string, string> = {
 };
 
 /**
- * Per-model ONNX dtype.
+ * Per-model ONNX dtype, passed as a STRING so it applies to every weight file
+ * (encoder + decoder) uniformly.
  *
- * Large models (turbo, distil) package their fp32 encoder as a split file
- * (encoder_model.onnx + encoder_model.onnx_data, because the weights exceed the 2 GB
- * single-file ONNX limit). onnxruntime-web cannot mount external data — it throws
- * "Module.MountedFiles is not available" (microsoft/onnxruntime#19752, closed unfixed).
- * fp16 also has a precision bug on WebGPU for the Whisper encoder (#1590). So the only
- * loadable, WebGPU-safe choice for the large models is a quantized (single-file) dtype.
- * q8 keeps near-fp32 quality while staying single-file; q4 on the decoder saves weight.
- * Small models (base, small, moonshine) are single-file at any dtype.
+ * Why a string and not an object like { encoder: ..., decoder: ... }: transformers.js
+ * looks up per-file dtypes by the session key, which for Seq2Seq models (Whisper) is
+ * "model" (the encoder) and "decoder_model_merged" — NOT "encoder"/"decoder". Using the
+ * wrong keys silently falls through to the device default, which on WebGPU is fp32.
+ * fp32 encoder weights exceed the 2 GB single-file ONNX limit, so the model is split
+ * into encoder_model.onnx + encoder_model.onnx_data, and onnxruntime-web cannot mount
+ * external data ("Module.MountedFiles is not available", microsoft/onnxruntime#19752,
+ * closed unfixed). A string dtype avoids the key mismatch entirely.
+ *
+ * q8 (8-bit quantized → *_quantized.onnx) keeps near-fp32 quality while staying
+ * single-file and avoiding the fp16-on-WebGPU precision bug (#1590). Moonshine is tiny
+ * (27M) so fp32 single-file is fine.
  */
-const MODEL_DTYPES: Record<string, Record<string, "fp32" | "fp16" | "q8" | "q4">> = {
-  base: { encoder: "q8", decoder: "q8" },
-  small: { encoder: "q8", decoder: "q8" },
-  turbo: { encoder: "q8", decoder: "q4" },
-  distil: { encoder: "q8", decoder: "q4" },
-  moonshine: { encoder: "fp32", decoder: "fp32" },
+const MODEL_DTYPES: Record<string, "fp32" | "fp16" | "q8" | "q4"> = {
+  base: "q8",
+  small: "q8",
+  turbo: "q8",
+  distil: "q8",
+  moonshine: "fp32",
 };
 
 /** English-only models that must not receive a `language` option. */
