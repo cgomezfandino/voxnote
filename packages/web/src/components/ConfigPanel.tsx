@@ -83,6 +83,24 @@ const llmProviders = [
     keyPlaceholder: "sk-...",
     keyHint: "platform.moonshot.cn/console/api-keys",
   },
+  {
+    value: "ollama",
+    label: "Ollama Cloud",
+    modelKey: "ollama_model" as const,
+    keyField: "api_key_ollama" as const,
+    models: [
+      { value: "glm-5.2", label: "GLM-5.2" },
+      { value: "deepseek-v4-pro", label: "DeepSeek V4 Pro" },
+      { value: "deepseek-v4-flash:0731", label: "DeepSeek V4 Flash" },
+      { value: "kimi-k3", label: "Kimi K3" },
+      { value: "gpt-oss:120b", label: "GPT-OSS 120B" },
+      { value: "gpt-oss:20b", label: "GPT-OSS 20B" },
+      { value: "qwen3.5:397b", label: "Qwen 3.5 (397B)" },
+      { value: "mistral-large-3:675b", label: "Mistral Large 3" },
+    ],
+    keyPlaceholder: "<your ollama key>",
+    keyHint: "ollama.com/settings/keys",
+  },
 ];
 
 export default function ConfigPanel({

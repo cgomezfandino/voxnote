@@ -17,11 +17,13 @@ export const DEFAULT_CONFIG: AppConfig = {
   anthropic_model: "claude-opus-4-8",
   zai_model: "glm-4.6",
   kimi_model: "kimi-k2.6",
+  ollama_model: "glm-5.2",
   api_key_openai: "",
   api_key_anthropic: "",
   api_key_google: "",
   api_key_zai: "",
   api_key_kimi: "",
+  api_key_ollama: "",
 };
 
 /** Read the merged config (stored values override defaults). Safe during SSR. */

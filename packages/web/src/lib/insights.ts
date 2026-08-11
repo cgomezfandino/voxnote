@@ -10,7 +10,7 @@
 
 import type { InsightsResult, ActionItem, Participant, Highlight } from "@/types";
 
-export type LlmProvider = "openai" | "anthropic" | "google" | "zai" | "kimi";
+export type LlmProvider = "openai" | "anthropic" | "google" | "zai" | "kimi" | "ollama";
 
 export interface ExtractInsightsArgs {
   provider: LlmProvider;
@@ -310,6 +310,7 @@ const MAX_CHARS: Record<LlmProvider, number> = {
   google: 10000,
   zai: 8000,
   kimi: 8000,
+  ollama: 8000,
 };
 
 function truncate(transcript: string, max: number): string {
@@ -406,10 +407,13 @@ async function callOpenAICompatible(
 }
 
 // Provider base URLs and per-provider transcript char caps (mirror the Python defaults).
+// Ollama Cloud is CORS-blocked, so it routes through the same-origin Pages Function
+// proxy at /api/ollama (functions/api/ollama.ts) instead of calling ollama.com directly.
 const OPENAI_COMPATIBLE: Record<string, { baseUrl: string; maxChars: number }> = {
   openai: { baseUrl: "https://api.openai.com/v1", maxChars: 8000 },
   zai: { baseUrl: "https://api.z.ai/api/paas/v4", maxChars: 8000 },
   kimi: { baseUrl: "https://api.moonshot.ai/v1", maxChars: 8000 },
+  ollama: { baseUrl: "/api/ollama", maxChars: 8000 },
 };
 
 /**

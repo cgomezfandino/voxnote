@@ -67,6 +67,7 @@ export async function extractInsights(
     google: cfg.api_key_google,
     zai: cfg.api_key_zai,
     kimi: cfg.api_key_kimi,
+    ollama: cfg.api_key_ollama,
   };
   const modelForProvider: Record<string, string> = {
     openai: cfg.openai_model,
@@ -74,12 +75,13 @@ export async function extractInsights(
     google: cfg.google_model,
     zai: cfg.zai_model,
     kimi: cfg.kimi_model,
+    ollama: cfg.ollama_model,
   };
   const key = keyForProvider[provider] ?? "";
   const model = modelForProvider[provider] ?? "";
   const { extractInsightsInBrowser } = await import("./insights");
   return extractInsightsInBrowser(text, {
-    provider: provider as "openai" | "anthropic" | "google" | "zai" | "kimi",
+    provider: provider as "openai" | "anthropic" | "google" | "zai" | "kimi" | "ollama",
     apiKey: key,
     model,
     language: cfg.language,

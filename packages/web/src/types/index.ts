@@ -78,17 +78,19 @@ export interface NoteDetail {
 export interface AppConfig {
   whisper_model: string; // base | small | turbo
   language: string; // ISO code, e.g. "es"
-  llm_provider: string; // openai | anthropic | google | zai | kimi
+  llm_provider: string; // openai | anthropic | google | zai | kimi | ollama
   openai_model: string;
   google_model: string;
   anthropic_model: string;
   zai_model: string;
   kimi_model: string;
+  ollama_model: string;
   api_key_openai: string;
   api_key_anthropic: string;
   api_key_google: string;
   api_key_zai: string;
   api_key_kimi: string;
+  api_key_ollama: string;
 }
 
 // Processing steps
