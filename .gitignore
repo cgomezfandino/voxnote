@@ -73,3 +73,4 @@ packages/web/public/sw.js
 packages/web/public/sw.js.map
 packages/web/public/swe-worker-*.js
 packages/web/public/workbox-*.js
+.wrangler/
