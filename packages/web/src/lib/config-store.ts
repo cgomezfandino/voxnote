@@ -17,7 +17,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   anthropic_model: "claude-opus-4-8",
   zai_model: "glm-4.6",
   kimi_model: "kimi-k2.6",
-  ollama_model: "glm-5.2",
+  ollama_model: "gemma4:31b",
   api_key_openai: "",
   api_key_anthropic: "",
   api_key_google: "",
