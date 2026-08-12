@@ -23,14 +23,11 @@ export const WHISPER_MODELS = [
   { value: "turbo", label: "Turbo", size: "~1 GB", hint: "Recommended · best quality · multilingual" },
   { value: "small", label: "Small", size: "~240 MB", hint: "Balanced · multilingual" },
   { value: "base", label: "Base", size: "~75 MB", hint: "Fastest download · multilingual" },
-  { value: "distil", label: "Distil Large v3.5", size: "~1 GB", hint: "Faster inference · English only" },
   { value: "moonshine", label: "Moonshine Tiny", size: "~100 MB", hint: "Fastest · English only" },
 ] as const;
 
-/** English-only models (used by the UI to warn when a non-English language is selected).
- *  Distil-Whisper's q8 quantization returns empty output for non-English, so it is
- *  English-only in practice alongside Moonshine. */
-export const ENGLISH_ONLY_MODELS = new Set(["moonshine", "distil"]);
+/** English-only models (used by the UI to warn when a non-English language is selected). */
+export const ENGLISH_ONLY_MODELS = new Set(["moonshine"]);
 
 /** Decode an arbitrary audio Blob into 16 kHz mono Float32 PCM (whisper input). */
 export async function blobToFloat32(audio: Blob): Promise<Float32Array> {

@@ -44,9 +44,6 @@ const MODEL_IDS: Record<string, string> = {
   base: "onnx-community/whisper-base",
   small: "onnx-community/whisper-small",
   turbo: "onnx-community/whisper-large-v3-turbo",
-  // Distil-Whisper Large v3.5: same architecture family as turbo, ~1.5x faster and
-  // ~49% smaller with parity-or-better WER. Multilingual.
-  distil: "onnx-community/distil-large-v3.5-ONNX",
   // Moonshine Tiny (27M): English-only, real-time-capable on modest hardware.
   moonshine: "onnx-community/moonshine-tiny-ONNX",
 };
@@ -72,14 +69,11 @@ const MODEL_DTYPES: Record<string, "fp32" | "fp16" | "q8" | "q4"> = {
   base: "q8",
   small: "q8",
   turbo: "q8",
-  distil: "q8",
   moonshine: "fp32",
 };
 
-/** English-only models that must not receive a `language` option. Distil-Whisper's q8
- *  quantization breaks non-English transcription (returns empty text), so it is treated
- *  as English-only alongside Moonshine. */
-const ENGLISH_ONLY = new Set(["moonshine", "distil"]);
+/** English-only models that must not receive a `language` option. */
+const ENGLISH_ONLY = new Set(["moonshine"]);
 
 export interface TranscribeRequest {
   audio: Float32Array;
