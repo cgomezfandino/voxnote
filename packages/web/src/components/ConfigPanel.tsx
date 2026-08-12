@@ -274,7 +274,11 @@ export default function ConfigPanel({
               <div className="flex items-start gap-2 p-2 rounded-lg bg-accent/5 border border-accent/15">
                 <ShieldCheck className="w-3.5 h-3.5 text-accent flex-shrink-0 mt-0.5" />
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  Your key is stored locally and sent only to {currentProvider.label} — never to our servers. Insights need an internet connection; transcription is offline.
+                  {config.llm_provider === "ollama" ? (
+                    <>Your key is stored locally and forwarded to {currentProvider.label} via our proxy (Ollama blocks direct browser calls). The proxy never stores your key. Insights need an internet connection; transcription is offline.</>
+                  ) : (
+                    <>Your key is stored locally and sent only to {currentProvider.label} — never to our servers. Insights need an internet connection; transcription is offline.</>
+                  )}
                 </p>
               </div>
             </div>

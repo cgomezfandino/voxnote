@@ -162,3 +162,32 @@ src/types/index.ts:
 5. **Anthropic requiere header** `anthropic-dangerous-direct-browser-access: true` para CORS.
 6. **Serwist `defaultCache`** incluye estrategias para rutas SSR/RSC que no existen en un
    static export — usar runtime caching explícito, no defaultCache.
+
+---
+
+## Auditoría de seguridad (2026-08-12)
+
+### Arreglado
+
+| Hallazgo | Severidad | Fix |
+|----------|-----------|-----|
+| **Content-Security-Policy ausente** | Media | Añadida en `public/_headers`: restringe connect-src a los 6 providers + HuggingFace CDN, bloquea XSS exfiltration de keys en localStorage |
+| **postcss 8.4.31 vulnerable** (3 high: path traversal, file disclosure) | Alta | npm override `"$postcss"` fuerza 8.5.26 en todo el árbol (Next.js incluido) |
+| **Google API key en query string** | Info | Movida a header `x-goog-api-key` (no aparece en logs/proxy) |
+| **Ollama proxy CORS `Allow-Origin: *`** | Media | Restringido al origen de la app (voxnote.pages.dev + previews); sitios terceros no pueden usarlo de relay |
+| **UI "never to our servers" falso para Ollama** | Baja | Texto honesto: aclara que la key pasa por el proxy (sin almacenarse) |
+
+### Riesgo aceptado (sin vector de ataque real)
+
+| Dependencia | Severidad | Por qué es aceptable |
+|-------------|-----------|---------------------|
+| **sharp** <0.35 (libvips CVEs) | Alta | Image optimization deshabilitada (`images: { unoptimized: true }`); sharp no se usa en runtime |
+| **adm-zip** <0.6 (4GB alloc) | Alta | Solo procesa ZIPs de huggingface.co (fuente confiable); requiere attacker-controlled ZIP |
+| **nanoid** (loop en size=0) | Alta | Usado para IDs en build tooling; las libs no usan custom generators con size=0 |
+| **Prompt injection** del transcript | Media (inherente) | Mitigado con delimiter wrapping + JSON schema estricto + render seguro; blast radius limitado a insights garbage |
+
+**Nota:** sharp, adm-zip y nanoid son dependencias transitivas de `@huggingface/transformers` que no se pueden parchear sin que la librería actualice sus deps. Revisar periódicamente si `@huggingface/transformers` publica una versión con deps actualizadas.
+
+### XSS: seguro por defecto
+react-markdown no renderiza HTML crudo (no `rehype-raw`, no `allowDangerousHtml`). El transcript se renderiza como plain text. InsightsDisplay usa React children sin `dangerouslySetInnerHTML`. El único `dangerouslySetInnerHTML` (layout.tsx theme script) es estático y hasheado en el CSP.
+

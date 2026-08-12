@@ -1,10 +1,12 @@
 /*
   # Enable crossOriginIsolated so onnxruntime-web (transformers.js) can use
-  # SharedArrayBuffer for multi-threaded WASM inference. WebGPU itself doesn't need
-  # these headers, but the WASM fallback path does, and they don't hurt.
+  # SharedArrayBuffer for multi-threaded WASM inference.
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: credentialless
-
-# Allow the large model files fetched from the Hugging Face CDN to be cached for a
-# year by the browser — they are immutable versioned assets.
   Cross-Origin-Resource-Policy: cross-origin
+
+  # Content-Security-Policy: defense-in-depth. Blocks XSS exfiltration of localStorage
+  # API keys even if a rendering sink is ever introduced. Limits connect-src to the exact
+  # LLM providers + Hugging Face model CDN. 'wasm-unsafe-eval' is required for
+  # onnxruntime-web; the sha256 allows the inline theme-bootstrap script in layout.tsx.
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-Cc5LB0rlt37DFE67myZ6P1TLs6fNKwyQ4NxNMOIEOeo='; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://api.z.ai https://api.moonshot.ai https://huggingface.co https://*.hf.co https://cdn.jsdelivr.net; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
