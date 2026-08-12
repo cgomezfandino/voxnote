@@ -7,6 +7,26 @@ transformers.js v4.2, Web Worker Whisper turbo/small/base, BYO-key LLM).
 
 ---
 
+## ✅ Completado (sesión 2026-08-10/12)
+
+| Item | Estado | Notas |
+|------|--------|-------|
+| **#1 Distil-Whisper** | ✅ Probado y **descartado** | q8 roto para no-inglés; eliminado del catálogo |
+| **#2 Moonshine** | ✅ Integrado | Opción English-only (~100 MB) |
+| **#3 Structured outputs nativos** | ✅ Hecho | OpenAI json_schema strict + Gemini responseSchema + Anthropic tool-use |
+| **#4 PWA (Serwist)** | ✅ Hecho | Network-first SW, instalable, offline |
+| **#5 WebLLM** | ⏸ Pospuesto | Calidad sub-4B insuficiente para structured output |
+| **#8c Z.ai + Kimi** | ✅ Hecho | Ambos OpenAI-compatible, CORS directo |
+| **#8b Ollama Cloud** | ✅ Hecho | Vía proxy (Pages Function), modelos gratuitos first |
+| Título temático + timestamp | ✅ Hecho | LLM genera título de 3-6 palabras |
+| Export-all ZIP + clear | ✅ Hecho | IndexedDB → ZIP |
+| Insights en idioma config | ✅ Hecho | Ya no siempre en inglés |
+
+---
+
+
+---
+
 ## Diarización de hablantes (¿cómo reemplazar pyannote en el navegador?)
 
 **Estado:** NO hay reemplazo drop-in open-source hoy. El backend Python la sigue
