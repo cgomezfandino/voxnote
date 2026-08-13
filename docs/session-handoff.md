@@ -2,7 +2,7 @@
 
 **Última actualización:** 2026-08-13
 **Estado:** Producción funcional en https://voxnote.pages.dev
-**Auto-deploy:** Cloudflare Pages conectado a GitHub (build automático en cada push a `main`)
+**Auto-deploy:** GitHub Action `.github/workflows/deploy-web.yml` (wrangler, en cada push a `main` que toque `packages/web/` o `functions/`)
 
 Documento para retomar el trabajo en una futura sesión sin rediscover el contexto.
 
@@ -82,17 +82,27 @@ con la promesa "100% privado". Ver `docs/web-roadmap.md` sección persistencia.
 
 ## Cómo deployar
 
+### Automático (recomendado — ya configurado)
+
+Cada `git push` a `main` que toque `packages/web/` o `functions/` dispara el GitHub Action
+`.github/workflows/deploy-web.yml`, que construye y despliega con wrangler. **No hay que
+hacer nada manual.**
+
+El Action usa los secrets `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID` (ya configurados
+en GitHub). La integración Git nativa de Cloudflare está **desactivada** porque no detecta
+las Pages Functions en un monorepo.
+
+### Manual (fallback)
+
 ```bash
-cd packages/web
-npm run build
-npx wrangler pages deploy out/ --project-name voxnote --branch main
+# Desde la RAÍZ del repo (no desde packages/web), para que wrangler encuentre functions/
+npm --prefix packages/web run build
+npx wrangler pages deploy packages/web/out --project-name voxnote --branch main
 ```
 
-El deploy incluye las Pages Functions (`functions/api/`). Wrangler detecta el directorio
-`functions/` automáticamente cuando se deploya desde `packages/web`.
-
-**Importante:** tras deployar, el usuario puede necesitar limpiar el SW UNA vez si tenía
-una versión muy vieja cacheada. El SW network-first previene el problema en deploys futuros.
+**Importante:** `functions/` está en la raíz del repo, NO en `packages/web/functions/`.
+Wrangler la detecta cuando se ejecuta desde la raíz. Si se ejecuta desde `packages/web/`,
+no la encuentra y el proxy de Ollama no se despliega.
 
 ---
 

@@ -177,7 +177,13 @@ for `DEFAULT_CONFIG`. LLM API keys are per-provider (`api_key_openai`, `api_key_
 ## Deployed
 
 - **URL:** https://voxnote.pages.dev (Cloudflare Pages, `main` branch)
-- **Deploy:** `cd packages/web && npm run build && npx wrangler pages deploy out/ --project-name voxnote --branch main`
+- **Auto-deploy:** GitHub Action `.github/workflows/deploy-web.yml` — on push to `main`
+  (when `packages/web/` or `functions/` change), builds and deploys with wrangler (which
+  correctly bundles the Pages Function at repo root). Cloudflare's built-in Git integration
+  is **disabled** (it doesn't detect functions in a monorepo).
+- **Manual deploy (fallback):** `wrangler pages deploy packages/web/out --project-name voxnote --branch main` (from repo root, so wrangler finds `functions/`)
+- **Required GitHub secrets:** `CLOUDFLARE_API_TOKEN` (Cloudflare Pages: Edit),
+  `CLOUDFLARE_ACCOUNT_ID`
 - **CI:** `.github/workflows/ci.yml` — Python (ruff + pytest) and Web (eslint + tsc)
 - **Roadmap:** `docs/web-roadmap.md` — research on diarization, models, and future features
 - **Session handoff:** `docs/session-handoff.md` — state, decisions, and pending work
