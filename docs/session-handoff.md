@@ -1,7 +1,8 @@
 # Session Handoff — Voxnote Web
 
-**Última actualización:** 2026-08-12
+**Última actualización:** 2026-08-13
 **Estado:** Producción funcional en https://voxnote.pages.dev
+**Auto-deploy:** Cloudflare Pages conectado a GitHub (build automático en cada push a `main`)
 
 Documento para retomar el trabajo en una futura sesión sin rediscover el contexto.
 
