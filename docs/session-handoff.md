@@ -1,6 +1,6 @@
 # Session Handoff — Voxnote Web
 
-**Última actualización:** 2026-08-13
+**Última actualización:** 2026-08-14
 **Estado:** Producción funcional en https://voxnote.pages.dev
 **Auto-deploy:** GitHub Action `.github/workflows/deploy-web.yml` (wrangler, en cada push a `main` que toque `packages/web/` o `functions/`)
 
@@ -13,6 +13,13 @@ Documento para retomar el trabajo en una futura sesión sin rediscover el contex
 ### ✅ Funciona (verificado)
 - **Transcripción** Whisper en navegador (turbo q8, multilingüe). Modelo se descarga una
   vez (~1 GB) y se cachea en Cache API. Funciona offline tras la primera descarga.
+  **Verificado 2026-08-14 con audio real en producción** (modelo base, 20s, WebGPU).
+- **Caché del modelo verificado empíricamente**: tras recargar la página, la segunda
+  transcripción hace **0 peticiones a Hugging Face** (0 MB) y produce texto idéntico.
+  El modelo vive en Cache API (`transformers-cache`) — una descarga por modelo y navegador.
+- **Auditoría UI/UX completa 2026-08-14** (Chrome real, producción): tema dark/light,
+  tabs, estados vacíos, sidebar móvil, selectores, campo API key enmascarado — sin
+  errores de consola. Descargas .md/.docx/.zip verificadas con archivos válidos.
 - **6 proveedores de insights**: OpenAI, Google Gemini, Anthropic, Z.ai (GLM), Kimi
   (Moonshot), Ollama Cloud. Todos con BYO API key (localStorage).
 - **Structured outputs nativos**: OpenAI (json_schema strict + fallback), Gemini
@@ -26,16 +33,16 @@ Documento para retomar el trabajo en una futura sesión sin rediscover el contex
 - **Despliegue**: Cloudflare Pages, `main` branch, headers COOP/COEP (crossOriginIsolated).
 
 ### ⚠️ No verificado por el usuario (sí verificado por mí con curl/Node)
-- El usuario aún no ha confirmado el flujo completo en su navegador (transcripción →
-  insights → nota) por problemas recurrentes de caché del Service Worker. El SW fue
-  cambiado a network-first en el último fix, que debería resolverlo.
+- El flujo **insights con API key real** no se ha probado end-to-end (requiere key del
+  usuario). La transcripción, descargas y caché sí están verificados en producción.
 
 ### ❌ Pendiente / no hecho
 - **Diarización de hablantes** en el navegador (Tier 2 del roadmap — 1-2 semanas).
 - **Búsqueda semántica** en el historial (Orama).
 - **WebLLM** para insights 100% offline sin API key.
-- **Conectar Cloudflare ↔ GitHub** para auto-deploy (hoy es manual con wrangler).
 - **8 vulnerabilidades Dependabot** en el branch default (backend Python, no web).
+- **Reintentar hash-CSP** cuando los navegadores arreglen el soporte de hashes para
+  scripts inline (ver decisión 9 abajo — permitiría quitar 'unsafe-inline').
 
 ---
 
@@ -77,6 +84,31 @@ nemotron-3-nano:30b, minimax-m3. Verificado empíricamente con una key real.
 Decisión de producto: **sin sync multi-dispositivo ni backend de datos**. Cada navegador
 es una isla. Las notas viven en IndexedDB y se exportan al SO (ZIP o individual). Coherente
 con la promesa "100% privado". Ver `docs/web-roadmap.md` sección persistencia.
+
+### 8. CSP: blob: obligatorio; hash-CSP roto en navegadores actuales (2026-08-14)
+La CSP de `public/_headers` necesita **`blob:` en `script-src`** porque onnxruntime-web
+(WebGPU) importa dinámicamente su bundle .mjs desde una URL `blob:` — sin ello TODA
+transcripción falla con "no available backend found". También **`blob:` en
+`connect-src`** porque WaveSurfer hace `fetch()` del audio grabado (URL blob:).
+
+El `script-src` usa `'unsafe-inline'` (los scripts inline del Flight payload de Next.js
+App Router deben ejecutarse). Se intentó allowlisting por hash sha256 generado en
+post-build y **no funciona**: verificado en Chrome 151 stable y WebKit 26.5 que un
+script inline con hash CORRECTO sigue bloqueado (los nonces sí funcionan, pero un
+static export no puede generarlos por-request; además algunos hashes se marcan
+"invalid source" sin causa aparente). La protección real anti-exfiltración es el
+`connect-src` estricto (solo proveedores LLM + Hugging Face). Revisar si los
+navegadores arreglan los hashes.
+
+Historia del bug: el commit bdcecbc añadió la CSP con un hash manual que caducó al
+reconstruir → la web servía HTML en blanco (scripts Flight bloqueados) y la
+transcripción fallaba (blob: bloqueado). Arreglado en a63d226 + fcd8d8d.
+
+### 9. Worker: fallback WebGPU → WASM
+El worker de transcripción intenta WebGPU primero y, si el pipeline falla al
+inicializar (sin adapter, driver blocklist, CSP vieja), reintenta con WASM en vez de
+fallar toda la transcripción. La elección de dispositivo es estable por navegador,
+así que el caché en memoria del worker va keyed solo por model id.
 
 ---
 
