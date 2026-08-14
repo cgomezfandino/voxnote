@@ -8,6 +8,9 @@
   # Content-Security-Policy: defense-in-depth. Limits connect-src to the exact
   # LLM providers + Hugging Face model CDN (the real exfiltration guard for
   # localStorage API keys). 'wasm-unsafe-eval' is required for onnxruntime-web.
+  # blob: in script-src is required because onnxruntime-web's WebGPU backend
+  # dynamically import()s its .mjs bundle from a blob: URL; blob: in connect-src
+  # is required because WaveSurfer fetch()es the recorded audio from a blob: URL.
   # NOTE on script-src: Next.js App Router static exports emit inline Flight
   # payload scripts that must run. Hash allowlisting was tried and DOES NOT
   # work in current browsers (verified Chrome 151 stable + WebKit 26.5 block
@@ -15,4 +18,4 @@
   # cannot use nonces). 'unsafe-inline' is therefore required for the app to
   # function; XSS exposure stays mitigated by connect-src above. Revisit if
   # hash support for inline scripts is fixed upstream.
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://api.z.ai https://api.moonshot.ai https://huggingface.co https://*.hf.co https://cdn.jsdelivr.net; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' blob: https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://api.z.ai https://api.moonshot.ai https://huggingface.co https://*.hf.co https://cdn.jsdelivr.net; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'

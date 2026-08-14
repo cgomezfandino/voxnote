@@ -100,14 +100,13 @@ export interface WorkerError {
 
 export type WorkerMessage = WorkerProgress | WorkerResult | WorkerError;
 
-// Reuse the pipeline across calls within the same worker lifetime. Keyed by model id
-// + device, so switching models rebuilds only when actually needed.
+// Reuse the pipeline across calls within the same worker lifetime. Keyed by model
+// id — the device choice (webgpu with wasm fallback) is stable for a given browser.
 let cache: { key: string; transcriber: ASRTranscriber } | null = null;
 
-async function getTranscriber(modelKey: string, useWebGPU: boolean) {
+async function getTranscriber(modelKey: string) {
   const modelId = MODEL_IDS[modelKey] ?? MODEL_IDS.turbo;
-  const device = useWebGPU ? "webgpu" : "wasm";
-  const key = `${modelId}|${device}`;
+  const key = `${modelId}|auto`;
   if (cache?.key === key) return cache.transcriber;
 
   const dtype = MODEL_DTYPES[modelKey] ?? MODEL_DTYPES.turbo;
@@ -123,11 +122,29 @@ async function getTranscriber(modelKey: string, useWebGPU: boolean) {
     }
   };
 
-  const transcriber = (await pipeline("automatic-speech-recognition", modelId, {
-    dtype,
-    device,
-    progress_callback,
-  })) as unknown as ASRTranscriber;
+  const transcriber = (await (async () => {
+    // WebGPU is only available in a secure (cross-origin isolated) context. Try it
+    // first when the API exists, but fall back to WASM (CPU) if the backend fails
+    // to initialize (e.g. no adapter, driver blocklist, blob-import blocked by an
+    // old CSP) — slower, but works everywhere.
+    const useWebGPU = typeof (navigator as Navigator & { gpu?: unknown }).gpu !== "undefined";
+    if (useWebGPU) {
+      try {
+        return await pipeline("automatic-speech-recognition", modelId, {
+          dtype,
+          device: "webgpu",
+          progress_callback,
+        });
+      } catch (err) {
+        console.warn("WebGPU backend unavailable, falling back to WASM:", err);
+      }
+    }
+    return await pipeline("automatic-speech-recognition", modelId, {
+      dtype,
+      device: "wasm",
+      progress_callback,
+    });
+  })()) as unknown as ASRTranscriber;
 
   cache = { key, transcriber };
   return transcriber;
@@ -136,10 +153,7 @@ async function getTranscriber(modelKey: string, useWebGPU: boolean) {
 self.onmessage = async (e: MessageEvent<TranscribeRequest>) => {
   const { audio, model, language } = e.data;
   try {
-    // WebGPU is only available in a secure (cross-origin isolated) context. Fall back to
-    // WASM (CPU) otherwise — slower, but works everywhere.
-    const useWebGPU = typeof (navigator as Navigator & { gpu?: unknown }).gpu !== "undefined";
-    const transcriber = await getTranscriber(model, useWebGPU);
+    const transcriber = await getTranscriber(model);
 
     // return_timestamps gives segment-level chunk boundaries, which we map to the
     // Segment shape the rest of the app expects. We run the full audio at once since the
