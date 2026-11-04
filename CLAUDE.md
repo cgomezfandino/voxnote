@@ -13,7 +13,7 @@ There are **two independent run modes**:
 1. **Web (browser-only, deployed)** — `packages/web`. A static SPA (Next.js 15 export) that
    runs **entirely in the browser**: Whisper via transformers.js (WebGPU/WASM), insights via
    direct calls to the user's own LLM API key, notes in IndexedDB. No backend. Deployed to
-   Cloudflare Pages at https://voxnote.pages.dev. See `packages/web/README.md`.
+   a Cloudflare Worker at https://voxnote.cgomezfandino.workers.dev. See `packages/web/README.md`.
 
 2. **Python CLI / local API** — `packages/core` + `packages/api`. The original local-first
    pipeline: whisperX (with speaker diarization via pyannote) + Ollama/cloud LLMs, served
@@ -35,7 +35,7 @@ npm run dev          # dev server on :3001 (browser-only, no backend needed)
 npm run build        # static export → out/
 npm run lint         # eslint
 
-# Deploy to Cloudflare Pages
+# Deploy to Cloudflare Workers
 npm run build && npx wrangler pages deploy out/ --project-name voxnote --branch main
 
 # Test transcription offline (Node script, mirrors the worker pipeline)
@@ -96,7 +96,7 @@ packages/web/
 │   │   ├── notes-db.ts             # IndexedDB persistence + export-all ZIP
 │   │   └── config-store.ts         # localStorage read/patch helpers
 │   └── types/index.ts              # Shared TypeScript types
-├── functions/api/ollama/chat/completions.ts  # Cloudflare Pages Function (Ollama CORS proxy)
+├── routes/api/ollama/chat/completions.ts   # TanStack server route (Ollama CORS proxy)
 ├── public/
 │   ├── _headers                    # COOP/COEP for crossOriginIsolated
 │   └── manifest.webmanifest        # PWA manifest
@@ -137,7 +137,7 @@ packages/api/voxnote_api/
   download size as Turbo which works for all languages.
 - **Service worker is network-first** for JS/HTML — prevents stale JS after deploys (was a
   recurring problem with precache-only strategy).
-- **Ollama Cloud needs a proxy** — CORS-blocked; routed through a Cloudflare Pages Function
+- **Ollama Cloud needs a proxy** — CORS-blocked; routed through a TanStack server route
   at `/api/ollama/chat/completions` that forwards with the user's Bearer key (never stored).
 - **OpenAI-compatible providers** (OpenAI, Z.ai, Kimi, Ollama) share `callOpenAICompatible`
   with a baseUrl map. Adding a new one is one line in `OPENAI_COMPATIBLE`.
@@ -176,13 +176,13 @@ for `DEFAULT_CONFIG`. LLM API keys are per-provider (`api_key_openai`, `api_key_
 
 ## Deployed
 
-- **URL:** https://voxnote.pages.dev (Cloudflare Pages, `main` branch)
+- **URL:** https://voxnote.cgomezfandino.workers.dev (Cloudflare Worker)
 - **Auto-deploy:** GitHub Action `.github/workflows/deploy-web.yml` — on push to `main`
   (when `packages/web/` or `functions/` change), builds and deploys with wrangler (which
   correctly bundles the Pages Function at repo root). Cloudflare's built-in Git integration
   is **disabled** (it doesn't detect functions in a monorepo).
 - **Manual deploy (fallback):** `wrangler pages deploy packages/web/out --project-name voxnote --branch main` (from repo root, so wrangler finds `functions/`)
-- **Required GitHub secrets:** `CLOUDFLARE_API_TOKEN` (Cloudflare Pages: Edit),
+- **Required GitHub secrets:** `CLOUDFLARE_API_TOKEN` (Cloudflare Workers: Edit),
   `CLOUDFLARE_ACCOUNT_ID`
 - **CI:** `.github/workflows/ci.yml` — Python (ruff + pytest) and Web (eslint + tsc)
 - **Roadmap:** `docs/web-roadmap.md` — research on diarization, models, and future features
