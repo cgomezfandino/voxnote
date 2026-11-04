@@ -1,22 +1,28 @@
 {
-  "name": "Voxnote — Meeting Transcription",
-  "short_name": "Voxnote",
+  "name": "voxnote — Meeting Transcription",
+  "short_name": "voxnote",
   "description": "Turn your meetings into structured notes with AI — 100% in your browser",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0f",
-  "theme_color": "#0a0a0f",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "orientation": "any",
   "icons": [
     {
-      "src": "/logo.png",
-      "sizes": "1024x1024",
+      "src": "/icon-192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/logo.png",
-      "sizes": "1024x1024",
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }

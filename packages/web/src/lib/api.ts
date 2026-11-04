@@ -40,7 +40,7 @@ export interface TranscribeOptions {
   model?: string;
   language?: string;
   diarize?: boolean; // accepted for API compatibility; diarization is not supported in-browser
-  onProgress?: (progress: number, file?: string) => void;
+  onProgress?: (progress: number, file?: string, cached?: boolean) => void;
 }
 
 export async function transcribeAudio(
@@ -81,7 +81,14 @@ export async function extractInsights(
   const model = modelForProvider[provider] ?? "";
   const { extractInsightsInBrowser } = await import("./insights");
   return extractInsightsInBrowser(text, {
-    provider: provider as "openai" | "anthropic" | "google" | "zai" | "kimi" | "ollama",
+    provider: provider as
+      | "openai"
+      | "anthropic"
+      | "google"
+      | "zai"
+      | "kimi"
+      | "ollama"
+      | "chrome",
     apiKey: key,
     model,
     language: cfg.language,
@@ -144,6 +151,12 @@ export async function renameSpeakers(
 export async function exportAllNotes(): Promise<Blob> {
   const { exportAllNotes: zip } = await import("./notes-db");
   return zip();
+}
+
+/** Delete a single stored note. */
+export async function deleteNote(filename: string): Promise<void> {
+  const { deleteNote: del } = await import("./notes-db");
+  return del(filename);
 }
 
 /** Delete every stored note (the whole history). */

@@ -1,5 +1,3 @@
-"use client";
-
 import { motion } from "framer-motion";
 import { Check, LoaderCircle, TriangleAlert, RotateCcw } from "lucide-react";
 import type { ProcessingStep, StepStatus } from "@/types";

@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useCallback } from "react";
 import type {
   TranscriptionResult,
@@ -54,11 +52,13 @@ export function useVoxnote() {
           diarize: options.diarize,
           // Surface the (slow) first-time model download to the user via the step's
           // description field, so ProcessingSteps shows e.g. "Downloading 42%".
-          onProgress: (progress, file) => {
+          onProgress: (progress, file, cached) => {
             if (file && progress > 0 && progress < 100) {
               const name = file.split("/").pop() ?? file;
               updateStep(1, {
-                description: `Downloading model… ${progress}% · ${name}`,
+                description: cached
+                  ? `Loading model from this device… ${progress}% · ${name}`
+                  : `Downloading model… ${progress}% · ${name}`,
               });
             } else if (progress === 0) {
               updateStep(1, { description: "Preparing audio…" });

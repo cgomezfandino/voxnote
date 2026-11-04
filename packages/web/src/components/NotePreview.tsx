@@ -1,5 +1,3 @@
-"use client";
-
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText,
@@ -134,16 +132,24 @@ const markdownComponents: Components = {
     <strong className="font-semibold text-foreground">{children}</strong>
   ),
   em: ({ children }) => <em className="italic">{children}</em>,
-  a: ({ children, href }) => (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className="text-primary underline decoration-primary/40 hover:decoration-primary"
-    >
-      {children}
-    </a>
-  ),
+  a: ({ children, href }) => {
+    // Note content is LLM output over an untrusted transcript: only allow
+    // web-safe link schemes, never javascript:/data:/file: from a model.
+    const safe =
+      href && /^(https?:|mailto:)/i.test(href.trim()) ? href : undefined;
+    return safe ? (
+      <a
+        href={safe}
+        target="_blank"
+        rel="noreferrer noopener"
+        className="text-primary underline decoration-primary/40 hover:decoration-primary"
+      >
+        {children}
+      </a>
+    ) : (
+      <span className="text-primary underline decoration-primary/40">{children}</span>
+    );
+  },
   code: ({ children }) => (
     <code className="px-1.5 py-0.5 rounded bg-muted text-foreground text-[0.8em] font-mono">
       {children}

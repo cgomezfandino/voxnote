@@ -1,7 +1,7 @@
 #!/bin/bash
 
-echo "🎙️ Starting Voxnote Next.js"
-echo "=============================="
+echo "🎙️ Starting Voxnote (TanStack Start)"
+echo "====================================="
 echo ""
 
 # Check whether node_modules exists

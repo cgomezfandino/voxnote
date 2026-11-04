@@ -68,9 +68,5 @@ htmlcov/
 # Playwright MCP — screenshots/snapshots from browser testing
 .playwright-mcp/
 
-# Serwist service worker — generated at build time from src/app/sw.ts
-packages/web/public/sw.js
-packages/web/public/sw.js.map
-packages/web/public/swe-worker-*.js
-packages/web/public/workbox-*.js
+# (packages/web/public/sw.js is now a hand-written source file, not generated)
 .wrangler/

@@ -49,6 +49,19 @@ const MODEL_IDS: Record<string, string> = {
 };
 
 /**
+ * Pinned Hub revisions (commit SHAs, verified against the HF API). Without a
+ * pin, transformers.js would silently download whatever `main` points to on
+ * first run — a supply-chain risk for a model that processes private audio.
+ * Bump deliberately, after re-validating quality in Spanish.
+ */
+const MODEL_REVISIONS: Record<string, string> = {
+  base: "27a07b4b52b3a4c5886134bb4320e93e1a4bbc7c",
+  small: "36050c46d777d46dc4b5f43f6d90574fc38f8732",
+  turbo: "360ebcde2559d60bb474678be3c1de9ef347d01a",
+  moonshine: "a6da1241cd305dcd64eab1edbd615f2bb9aabb95",
+};
+
+/**
  * Per-model ONNX dtype, passed as a STRING so it applies to every weight file
  * (encoder + decoder) uniformly.
  *
@@ -85,6 +98,30 @@ export interface WorkerProgress {
   type: "progress";
   file: string;
   progress: number; // 0..100
+  /** True when this file is being read from the on-device cache, not the network. */
+  cached?: boolean;
+}
+
+/**
+ * Filenames of this model's revision already stored in the transformers
+ * cache. transformers.js emits byte-level "progress" events even when it is
+ * only reading from the Cache API, which looks exactly like a download; the
+ * UI uses this flag to label it honestly ("Loading from this device").
+ */
+async function cachedFileSet(revision: string): Promise<Set<string>> {
+  const found = new Set<string>();
+  try {
+    if (typeof caches === "undefined") return found;
+    const cache = await caches.open("transformers-cache");
+    for (const req of await cache.keys()) {
+      const marker = `/${revision}/`;
+      const i = req.url.indexOf(marker);
+      if (i !== -1) found.add(req.url.slice(i + marker.length));
+    }
+  } catch {
+    // cache unavailable — everything will be labelled as a download
+  }
+  return found;
 }
 
 export interface WorkerResult {
@@ -102,14 +139,72 @@ export type WorkerMessage = WorkerProgress | WorkerResult | WorkerError;
 
 // Reuse the pipeline across calls within the same worker lifetime. Keyed by model
 // id — the device choice (webgpu with wasm fallback) is stable for a given browser.
-let cache: { key: string; transcriber: ASRTranscriber } | null = null;
+type Device = "webgpu" | "wasm";
+let cache: { key: string; transcriber: ASRTranscriber; device: Device } | null =
+  null;
+// Set once WebGPU proves unusable in this browser, so later calls go straight
+// to WASM instead of failing the same way every time.
+let webgpuBroken = false;
 
-async function getTranscriber(modelKey: string) {
-  const modelId = MODEL_IDS[modelKey] ?? MODEL_IDS.turbo;
-  const key = `${modelId}|auto`;
-  if (cache?.key === key) return cache.transcriber;
+function isGpuError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /gpu|adapter|webgpu|device lost|requestAdapter/i.test(msg);
+}
 
-  const dtype = MODEL_DTYPES[modelKey] ?? MODEL_DTYPES.turbo;
+let webgpuUsableCache: boolean | null = null;
+
+/**
+ * Preflight the GPU adapter itself. `navigator.gpu` existing is NOT enough:
+ * on blocked drivers / headless / VMs, requestAdapter() returns null and
+ * onnxruntime-web then fails session creation with "Failed to get GPU
+ * adapter" — for the WebGPU session and, in practice, poisons the attempt.
+ * Only choose WebGPU when an adapter was actually obtained.
+ */
+async function webgpuUsable(): Promise<boolean> {
+  if (webgpuUsableCache !== null) return webgpuUsableCache;
+  try {
+    const gpu = (
+      navigator as Navigator & {
+        gpu?: { requestAdapter: () => Promise<unknown> };
+      }
+    ).gpu;
+    if (!gpu) {
+      webgpuUsableCache = false;
+      return false;
+    }
+    webgpuUsableCache = !!(await gpu.requestAdapter());
+  } catch {
+    webgpuUsableCache = false;
+  }
+  return webgpuUsableCache;
+}
+
+async function getTranscriber(modelKey: string, forceWasm = false) {
+  // Strict allowlist: an unknown key is a programming error, not a reason to
+  // silently download a different (~1 GB) model than the user picked.
+  const modelId = MODEL_IDS[modelKey];
+  if (!modelId) throw new Error(`Unknown Whisper model: ${modelKey}`);
+  const revision = MODEL_REVISIONS[modelKey];
+
+  // WebGPU is only available in a secure (cross-origin isolated) context. Try
+  // it first when a real adapter is obtainable, but fall back to WASM (CPU)
+  // if the backend fails — slower, but works everywhere.
+  const device: Device =
+    !forceWasm && !webgpuBroken && (await webgpuUsable()) ? "webgpu" : "wasm";
+  const key = `${modelId}@${revision}|${device}`;
+  if (cache?.key === key) return cache;
+
+  // q8 (MatMulNBits-quantized weights) is rejected by the WASM/CPU backend in
+  // current onnxruntime-web ("TransposeDQWeightsForMatMulNBits Missing
+  // required scale" at session creation, reproduced in headless Chrome).
+  // Small models use fp32 on WASM (single-file, fine at this size); Turbo
+  // keeps q8 because its fp32 encoder exceeds the 2 GB single-file limit —
+  // meaning Turbo effectively requires WebGPU, which the UI should surface.
+  const dtype =
+    device === "wasm" && modelKey !== "turbo"
+      ? "fp32"
+      : (MODEL_DTYPES[modelKey] ?? MODEL_DTYPES.turbo);
+  const cachedFiles = await cachedFileSet(revision);
   const progress_callback = (info: ProgressInfo) => {
     if (info.status === "progress") {
       const msg: WorkerProgress = {
@@ -117,44 +212,36 @@ async function getTranscriber(modelKey: string) {
         file: info.file,
         // transformers.js already reports progress in the 0..100 range.
         progress: Math.round(info.progress ?? 0),
+        cached: cachedFiles.has(info.file),
       };
       postMessage(msg);
     }
   };
 
-  const transcriber = (await (async () => {
-    // WebGPU is only available in a secure (cross-origin isolated) context. Try it
-    // first when the API exists, but fall back to WASM (CPU) if the backend fails
-    // to initialize (e.g. no adapter, driver blocklist, blob-import blocked by an
-    // old CSP) — slower, but works everywhere.
-    const useWebGPU = typeof (navigator as Navigator & { gpu?: unknown }).gpu !== "undefined";
-    if (useWebGPU) {
-      try {
-        return await pipeline("automatic-speech-recognition", modelId, {
-          dtype,
-          device: "webgpu",
-          progress_callback,
-        });
-      } catch (err) {
-        console.warn("WebGPU backend unavailable, falling back to WASM:", err);
-      }
-    }
-    return await pipeline("automatic-speech-recognition", modelId, {
+  try {
+    const transcriber = (await pipeline("automatic-speech-recognition", modelId, {
       dtype,
-      device: "wasm",
+      revision,
+      device,
       progress_callback,
-    });
-  })()) as unknown as ASRTranscriber;
-
-  cache = { key, transcriber };
-  return transcriber;
+    })) as unknown as ASRTranscriber;
+    cache = { key, transcriber, device };
+    return cache;
+  } catch (err) {
+    if (device === "webgpu" && isGpuError(err)) {
+      // Adapter creation can succeed while session creation fails (driver
+      // blocklist, headless, …). Retry once on WASM, per the code below.
+      console.warn("WebGPU backend unavailable, falling back to WASM:", err);
+      webgpuBroken = true;
+      return getTranscriber(modelKey, true);
+    }
+    throw err;
+  }
 }
 
 self.onmessage = async (e: MessageEvent<TranscribeRequest>) => {
   const { audio, model, language } = e.data;
   try {
-    const transcriber = await getTranscriber(model);
-
     // return_timestamps gives segment-level chunk boundaries, which we map to the
     // Segment shape the rest of the app expects. We run the full audio at once since the
     // worker is already off the main thread (no streaming needed). English-only models
@@ -168,7 +255,36 @@ self.onmessage = async (e: MessageEvent<TranscribeRequest>) => {
     if (!ENGLISH_ONLY.has(model)) {
       opts.language = language;
     }
-    const output = await transcriber(audio, opts as Parameters<ASRTranscriber>[1]);
+    const runOpts = opts as Parameters<ASRTranscriber>[1];
+
+    // The WebGPU failure can surface at inference time, not at pipeline
+    // creation (observed in headless/blocked-driver Chrome: "Failed to get
+    // GPU adapter" thrown by the first run). Retry once on WASM in that case.
+    let output: Awaited<ReturnType<ASRTranscriber>>;
+    const first = await getTranscriber(model);
+    try {
+      output = await first.transcriber(audio, runOpts);
+    } catch (err) {
+      if (first.device !== "webgpu" || !isGpuError(err)) throw err;
+      console.warn("WebGPU inference failed, retrying on WASM:", err);
+      webgpuBroken = true;
+      cache = null;
+      postMessage({
+        type: "progress",
+        file: "WebGPU unavailable — switching to CPU",
+        progress: 0,
+      } satisfies WorkerProgress);
+      try {
+        const fallback = await getTranscriber(model, true);
+        output = await fallback.transcriber(audio, runOpts);
+      } catch (fallbackErr) {
+        const msg =
+          fallbackErr instanceof Error
+            ? fallbackErr.message
+            : String(fallbackErr);
+        throw new Error(`WASM fallback failed: ${msg}`);
+      }
+    }
 
     // transformers.js returns either a string or { text, chunks } depending on options.
     const text = typeof output === "string" ? output : (output.text ?? "");

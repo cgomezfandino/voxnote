@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, Square, RefreshCw, Play, Pause, FileMusic } from "lucide-react";
@@ -26,7 +24,7 @@ export default function AudioRecorder({
   const { showToast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(initialDuration);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(initialBlob);
+  const [, setAudioBlob] = useState<Blob | null>(initialBlob);
   const [audioUrl, setAudioUrl] = useState<string | null>(initialUrl);
   const [isPlaying, setIsPlaying] = useState(false);
   const [visualizerData, setVisualizerData] = useState<number[]>(Array(36).fill(8));

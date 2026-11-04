@@ -1,0 +1,264 @@
+@import "tailwindcss";
+
+/* Light is the default theme. Dark is opt-in via .dark-theme on <html> and is
+   deliberately soft (never near-black) for late-night use. */
+@custom-variant dark (&:where(html.dark-theme, html.dark-theme *));
+
+/* Tailwind v4 theme config (formerly tailwind.config.ts). Literal values here. */
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-card-hover: 0 6px 16px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.05);
+  --shadow-button: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+/* Wire Tailwind's color namespaces to the theme-token CSS variables defined
+   below in :root / .dark-theme. `inline` is required because the values are
+   var() references, not literal colors. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-light: var(--primary-light);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-light: var(--accent-light);
+  --color-success: var(--success);
+  --color-success-light: var(--success-light);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-danger-light: var(--danger-light);
+  --color-danger-border: var(--danger-border);
+}
+
+:root {
+  /* Light theme (default): white page, soft gray surfaces, AA-safe accents */
+  --background: #ffffff;
+  --foreground: #16202e;
+  --muted: #eef2f6;
+  --muted-foreground: #526276;
+  --border: #dbe2ea;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --primary-hover: #4338ca;
+  --primary-light: #eef2ff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #243447;
+  --accent: #047857;
+  --accent-foreground: #ffffff;
+  --accent-light: #d7f2e7;
+  --success: #047857;
+  --success-light: #ecfdf5;
+  --danger: #c62828;
+  --danger-foreground: #ffffff;
+  --danger-light: #fef2f2;
+  --danger-border: #fecaca;
+
+  /* Layout custom variables */
+  --card-bg: #ffffff;
+  --card-border: #e0e6ee;
+  --input-bg: #f6f8fb;
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e2e8f0;
+  --accordion-bg: #f6f8fb;
+  --accordion-content-bg: #ffffff;
+  --accordion-border: #e2e8f0;
+
+  /* Brand and header */
+  --header-bg: #ffffff;
+  --header-border: #e2e8f0;
+  --header-shadow: 0 6px 18px rgba(15, 23, 42, 0.07);
+
+  /* Navbar pills */
+  --tabs-bg: #eef2f6;
+  --tabs-border: #e2e8f0;
+  --tab-active-bg: #4f46e5;
+  --tab-active-text: #ffffff;
+  --tab-active-border: #4f46e5;
+
+  /* Record button */
+  --record-btn-bg: #4f46e5;
+  --record-mic-color: #ffffff;
+  --record-shadow: 0 10px 24px rgba(79, 70, 229, 0.28);
+}
+
+html.dark-theme {
+  /* Soft dark theme (opt-in): slate surfaces, never near-black */
+  --background: #272f3c;
+  --foreground: #edf1f6;
+  --muted: #333e4e;
+  --muted-foreground: #a8b4c2;
+  --border: #46536a;
+  --primary: #6d64f0;
+  --primary-foreground: #ffffff;
+  --primary-hover: #7d75f5;
+  --primary-light: rgba(109, 100, 240, 0.18);
+  --secondary: #303a49;
+  --secondary-foreground: #edf1f6;
+  --accent: #34d399;
+  --accent-foreground: #0b2e21;
+  --accent-light: rgba(52, 211, 153, 0.16);
+  --success: #34d399;
+  --success-light: rgba(52, 211, 153, 0.12);
+  --danger: #ff7a86;
+  --danger-foreground: #2b0a0e;
+  --danger-light: rgba(255, 122, 134, 0.14);
+  --danger-border: rgba(255, 122, 134, 0.4);
+
+  --card-bg: #2e3746;
+  --card-border: #46536a;
+  --input-bg: #232b37;
+  --sidebar-bg: #2e3746;
+  --sidebar-border: #46536a;
+  --accordion-bg: #232b37;
+  --accordion-content-bg: #2e3746;
+  --accordion-border: #46536a;
+
+  --header-bg: #232b37;
+  --header-border: #46536a;
+  --header-shadow: 0 6px 18px rgba(10, 15, 25, 0.28);
+
+  --tabs-bg: #232b37;
+  --tabs-border: #46536a;
+  --tab-active-bg: #6d64f0;
+  --tab-active-text: #ffffff;
+  --tab-active-border: #6d64f0;
+
+  --record-btn-bg: #6d64f0;
+  --record-mic-color: #ffffff;
+  --record-shadow: 0 10px 24px rgba(20, 25, 40, 0.45);
+}
+
+/* Page canvas follows the theme so overscroll never shows the wrong color. */
+html {
+  background-color: #ffffff;
+}
+html.dark-theme {
+  background-color: #272f3c;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased transition-colors duration-300;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+}
+
+/* `card` is @apply-ed by other classes (card-glow-*), so register it as a
+   custom utility to keep it @apply-able in Tailwind v4. */
+@utility card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  @apply rounded-xl p-4 sm:p-6 shadow-card transition-all duration-300;
+}
+
+@utility badge {
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold tracking-wide;
+}
+
+@layer components {
+  .card:hover {
+    @apply shadow-card-hover;
+  }
+  .card-glow-green {
+    @apply card;
+  }
+  .card-glow-indigo {
+    @apply card;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-primary text-white font-medium text-sm shadow-button transition-all active:scale-[0.98] hover:bg-primary-hover min-h-11;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-secondary text-foreground font-medium text-sm border border-border transition-all hover:bg-muted active:scale-[0.98] min-h-11;
+  }
+
+  .btn-accent {
+    @apply inline-flex items-center justify-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-accent text-accent-foreground font-semibold text-sm shadow-button transition-all active:scale-[0.98] hover:opacity-90 min-h-11;
+  }
+
+  .input {
+    background: var(--input-bg);
+    @apply w-full px-3 sm:px-4 py-2.5 rounded-lg border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all min-h-11;
+  }
+
+  .select {
+    background-color: var(--input-bg);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23526276' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    @apply w-full px-3 sm:px-4 py-2.5 rounded-lg border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all appearance-none cursor-pointer min-h-11;
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 36px;
+  }
+  html.dark-theme .select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23A8B4C2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  }
+
+  .label {
+    @apply block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-light text-primary border border-primary/25;
+  }
+  html.dark-theme .badge-primary {
+    color: #c3c0ff;
+  }
+
+  .badge-success {
+    @apply badge bg-success-light text-success border border-success/25;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background: var(--border);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+@media (max-width: 640px) {
+  .card {
+    @apply p-4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

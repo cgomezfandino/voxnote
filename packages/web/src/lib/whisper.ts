@@ -11,7 +11,7 @@
 
 import type { TranscriptionResult } from "@/types";
 
-export type ProgressCb = (progress: number, file?: string) => void;
+export type ProgressCb = (progress: number, file?: string, cached?: boolean) => void;
 
 /**
  * Speech-to-text model catalog surfaced in the UI. Sizes are the actual q8
@@ -20,7 +20,7 @@ export type ProgressCb = (progress: number, file?: string) => void;
  * the 2 GB single-file ONNX limit, which onnxruntime-web can't load — hence q8).
  */
 export const WHISPER_MODELS = [
-  { value: "turbo", label: "Turbo", size: "~1 GB", hint: "Recommended · best quality · multilingual" },
+  { value: "turbo", label: "Turbo", size: "~1 GB", hint: "Recommended · best quality · multilingual · needs WebGPU (others fall back to CPU)" },
   { value: "small", label: "Small", size: "~240 MB", hint: "Balanced · multilingual" },
   { value: "base", label: "Base", size: "~75 MB", hint: "Fastest download · multilingual" },
   { value: "moonshine", label: "Moonshine Tiny", size: "~100 MB", hint: "Fastest · English only" },
@@ -112,7 +112,11 @@ export async function transcribeInBrowser(
       const data = event.data;
       if (!data || typeof data !== "object") return;
       if (data.type === "progress") {
-        options.onProgress?.(data.progress as number, data.file as string);
+        options.onProgress?.(
+          data.progress as number,
+          data.file as string,
+          data.cached as boolean | undefined,
+        );
         return;
       }
       if (data.type === "result") {
@@ -120,7 +124,7 @@ export async function transcribeInBrowser(
         const chunks = data.chunks as { start: number; end: number; text: string }[];
         resolve({
           text: data.text,
-          segments: chunks.map((c, i) => ({
+          segments: chunks.map((c) => ({
             start: c.start,
             end: c.end,
             text: c.text,

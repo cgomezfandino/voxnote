@@ -7,11 +7,17 @@
  * keeps the same shapes.
  */
 
-import type { NoteListItem, NoteDetail } from "@/types";
+import type {
+  InsightsResult,
+  NoteListItem,
+  NoteDetail,
+  TranscriptionResult,
+} from "@/types";
 
 const DB_NAME = "voxnote";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE = "notes";
+const DRAFT_STORE = "drafts";
 
 interface NoteRecord {
   filename: string;
@@ -35,6 +41,9 @@ function openDb(): Promise<IDBDatabase> {
         const store = db.createObjectStore(STORE, { keyPath: "filename" });
         store.createIndex("created_at", "created_at", { unique: false });
       }
+      if (!db.objectStoreNames.contains(DRAFT_STORE)) {
+        db.createObjectStore(DRAFT_STORE, { keyPath: "id" });
+      }
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -45,12 +54,13 @@ function openDb(): Promise<IDBDatabase> {
 function tx<T>(
   mode: IDBTransactionMode,
   fn: (store: IDBObjectStore) => IDBRequest<T> | Promise<T>,
+  storeName: string = STORE,
 ): Promise<T> {
   return openDb().then(
     (db) =>
       new Promise<T>((resolve, reject) => {
-        const transaction = db.transaction(STORE, mode);
-        const store = transaction.objectStore(STORE);
+        const transaction = db.transaction(storeName, mode);
+        const store = transaction.objectStore(storeName);
         const result = fn(store);
         if (result instanceof Promise) {
           result.then(resolve, reject);
@@ -119,6 +129,11 @@ export async function exportAllNotes(): Promise<Blob> {
   return zip.generateAsync({ type: "blob", compression: "DEFLATE" });
 }
 
+/** Remove a single stored note by filename. */
+export async function deleteNote(filename: string): Promise<void> {
+  await tx("readwrite", (store) => store.delete(filename));
+}
+
 /**
  * Remove every stored note (the whole history). Used by the "Clear history" action.
  */
@@ -147,6 +162,53 @@ export async function renameSpeakers(
     store.put({ ...record, content } as NoteRecord),
   );
   return { filename, content, created_at: record.created_at };
+}
+
+// --- Work-in-progress draft -------------------------------------------------
+//
+// The current recording/upload and everything derived from it (transcript,
+// edits, insights, note) is kept as a single draft record so navigating to
+// Settings/Notes — or even reloading or closing the tab — never loses work.
+// Blobs are stored natively by IndexedDB. Nothing here leaves the device.
+
+export interface DraftRecord {
+  id: "current";
+  blob: Blob;
+  filename: string;
+  source: "recorded" | "uploaded";
+  transcription: TranscriptionResult | null;
+  editedText: string;
+  insights: InsightsResult | null;
+  note: { content: string; filename: string } | null;
+  updatedAt: string;
+}
+
+export async function saveDraft(
+  draft: Omit<DraftRecord, "id" | "updatedAt">,
+): Promise<void> {
+  await tx(
+    "readwrite",
+    (store) =>
+      store.put({
+        ...draft,
+        id: "current",
+        updatedAt: new Date().toISOString(),
+      } as DraftRecord),
+    DRAFT_STORE,
+  );
+}
+
+export async function loadDraft(): Promise<DraftRecord | null> {
+  const record = await tx<DraftRecord | undefined>(
+    "readonly",
+    (store) => store.get("current"),
+    DRAFT_STORE,
+  );
+  return record ?? null;
+}
+
+export async function clearDraft(): Promise<void> {
+  await tx("readwrite", (store) => store.delete("current"), DRAFT_STORE);
 }
 
 function previewFromContent(content: string): string {

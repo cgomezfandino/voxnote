@@ -1,10 +1,15 @@
-"use client";
-
-import { useState } from "react";
-import { Mic, Brain, ChevronDown, ChevronRight, Settings, Cpu, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Mic, Brain, ChevronDown, ChevronRight, Settings, Cpu, ShieldCheck, CheckCircle2, Download } from "lucide-react";
 
 import type { AppConfig } from "@/types";
 import { WHISPER_MODELS, ENGLISH_ONLY_MODELS } from "@/lib/whisper";
+import { getDownloadedModels } from "@/lib/capabilities";
+import {
+  clearApiKeys,
+  getKeyStorageMode,
+  setKeyStorageMode,
+  type KeyStorageMode,
+} from "@/lib/config-store";
 
 interface ConfigPanelProps {
   config: AppConfig;
@@ -34,6 +39,7 @@ const llmProviders = [
     modelKey: "google_model" as const,
     keyField: "api_key_google" as const,
     models: [
+      { value: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash-Lite" },
       { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
       { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
       { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
@@ -60,6 +66,7 @@ const llmProviders = [
     modelKey: "zai_model" as const,
     keyField: "api_key_zai" as const,
     models: [
+      { value: "glm-4.7-flash", label: "GLM-4.7 Flash" },
       { value: "glm-4.6", label: "GLM-4.6 (200K ctx)" },
       { value: "glm-4.5", label: "GLM-4.5" },
       { value: "glm-4.5-air", label: "GLM-4.5 Air" },
@@ -103,6 +110,15 @@ const llmProviders = [
     keyPlaceholder: "<your ollama key>",
     keyHint: "ollama.com/settings/keys",
   },
+  {
+    value: "chrome",
+    label: "Chrome built-in AI (local, no key)",
+    modelKey: "openai_model" as const,
+    keyField: "api_key_openai" as const,
+    models: [{ value: "gemini-nano", label: "Gemini Nano (on-device)" }],
+    keyPlaceholder: "",
+    keyHint: "",
+  },
 ];
 
 export default function ConfigPanel({
@@ -113,9 +129,34 @@ export default function ConfigPanel({
   const [whisperOpen, setWhisperOpen] = useState(true);
   const [llmOpen, setLlmOpen] = useState(true);
   const [showKey, setShowKey] = useState(false);
+  const [keyMode, setKeyMode] = useState<KeyStorageMode>(() => getKeyStorageMode());
+  const [modelDownloaded, setModelDownloaded] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getDownloadedModels().then((set) => {
+      if (!cancelled) setModelDownloaded(set.has(config.whisper_model));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [config.whisper_model]);
+  const isChrome = config.llm_provider === "chrome";
+
+  const handleKeyMode = (mode: KeyStorageMode) => {
+    setKeyMode(mode);
+    setKeyStorageMode(mode);
+  };
+
+  const handleClearKeys = () => {
+    clearApiKeys();
+    (Object.keys(config) as (keyof AppConfig)[])
+      .filter((k) => k.startsWith("api_key_"))
+      .forEach((k) => onUpdate(k, "" as never));
+  };
 
   const currentProvider = llmProviders.find((p) => p.value === config.llm_provider) ?? llmProviders[0];
-  const selectedModel = (config[currentProvider.modelKey] as string) || currentProvider.models[0]?.value || "";
+  const selectedModel = (config[currentProvider.modelKey] as string) ?? "";
 
   return (
     <div className="flex flex-col h-full text-foreground">
@@ -171,6 +212,18 @@ export default function ConfigPanel({
                     return m ? `${m.hint} · downloads once, then works offline` : "";
                   })()}
                 </p>
+                {modelDownloaded !== null &&
+                  (modelDownloaded ? (
+                    <p className="flex items-center gap-1.5 text-[10px] font-semibold text-accent mt-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Already downloaded on this device — it will not download again.
+                    </p>
+                  ) : (
+                    <p className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-1.5">
+                      <Download className="w-3.5 h-3.5" />
+                      First use downloads it once on this device; after that it works offline.
+                    </p>
+                  ))}
               </div>
 
               <div>
@@ -234,17 +287,34 @@ export default function ConfigPanel({
                 </select>
               </div>
 
+              {isChrome ? (
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  Gemini Nano is downloaded and managed by Chrome itself
+                  (desktop Chrome only, no API key, nothing leaves this
+                  device). If it is unavailable, pick another provider.
+                </p>
+              ) : (
+              <>
               <div>
                 <label className="label text-[10px] mb-1">Model</label>
-                <select
+                <input
                   value={selectedModel}
                   onChange={(e) => onUpdate(currentProvider.modelKey, e.target.value as never)}
-                  className="select text-xs py-2"
-                >
+                  list={`models-${currentProvider.value}`}
+                  className="input text-xs py-2"
+                  placeholder="Pick a suggestion or type any model id"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+                <datalist id={`models-${currentProvider.value}`}>
                   {currentProvider.models.map((m) => (
                     <option key={m.value} value={m.value}>{m.label}</option>
                   ))}
-                </select>
+                </datalist>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Suggestions are listed, but you can type any model id this
+                  provider offers (it is sent exactly as written).
+                </p>
               </div>
 
               <div>
@@ -270,17 +340,55 @@ export default function ConfigPanel({
                   Get yours at {currentProvider.keyHint}. Stored only in this browser.
                 </p>
               </div>
+              </>
+              )}
 
               <div className="flex items-start gap-2 p-2 rounded-lg bg-accent/5 border border-accent/15">
                 <ShieldCheck className="w-3.5 h-3.5 text-accent flex-shrink-0 mt-0.5" />
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  {config.llm_provider === "ollama" ? (
+                  {isChrome ? (
+                    <>Fully local: Chrome runs Gemini Nano on this device. No key, no network, no transcript leaves the machine. Transcription (Whisper) is always local too.</>
+                  ) : config.llm_provider === "ollama" ? (
                     <>Your key is stored locally and forwarded to {currentProvider.label} via our proxy (Ollama blocks direct browser calls). The proxy never stores your key. Insights need an internet connection; transcription is offline.</>
                   ) : (
                     <>Your key is stored locally and sent only to {currentProvider.label} — never to our servers. Insights need an internet connection; transcription is offline.</>
                   )}
                 </p>
               </div>
+
+              {!isChrome && (
+                <div className="space-y-2 pt-1">
+                  <label className="label text-[10px] mb-1">API key storage</label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleKeyMode("local")}
+                      className={`flex-1 px-2 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${keyMode === "local" ? "bg-primary/10 border-primary/40 text-foreground" : "border-border text-muted-foreground"}`}
+                    >
+                      Remember
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleKeyMode("session")}
+                      className={`flex-1 px-2 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${keyMode === "session" ? "bg-primary/10 border-primary/40 text-foreground" : "border-border text-muted-foreground"}`}
+                    >
+                      This session only
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    {keyMode === "session"
+                      ? "Keys are kept only until this tab closes and are never written to persistent storage."
+                      : "Keys persist in this browser. Anyone with access to this browser profile can read them, so prefer session-only on shared machines."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleClearKeys}
+                    className="text-[10px] font-bold uppercase tracking-wider text-[var(--danger)] hover:underline"
+                  >
+                    Forget all API keys
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

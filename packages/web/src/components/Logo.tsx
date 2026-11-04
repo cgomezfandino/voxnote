@@ -1,61 +1,32 @@
-"use client";
-
-import { motion } from "framer-motion";
-
 interface LogoProps {
-  size?: "sm" | "md" | "lg" | "xl";
-  animated?: boolean;
+  size?: number;
+  withWordmark?: boolean;
 }
 
-export default function Logo({ size = "md", animated = true }: LogoProps) {
-  const sizes = {
-    sm: 52,
-    md: 72,
-    lg: 96,
-    xl: 128,
-  };
-
-  const containerSize = sizes[size];
-
+/** Brand lockup: voice-wave mark + lowercase `voxnote` wordmark. */
+export default function Logo({ size = 36, withWordmark = true }: LogoProps) {
   return (
-    <motion.div
-      className="relative flex items-center justify-center overflow-hidden rounded-2xl border border-white/10 shadow-[0_0_20px_rgba(99,102,241,0.25)]"
-      style={{ width: containerSize, height: containerSize }}
-      whileHover={animated ? { scale: 1.05, boxShadow: "0 0 25px rgba(52, 211, 153, 0.35)" } : undefined}
-      whileTap={animated ? { scale: 0.95 } : undefined}
-    >
+    <span className="inline-flex items-center gap-2.5 select-none">
       <img
-        src="/logo.png"
-        alt="Voxnote Logo"
-        className="w-full h-full object-cover"
+        src="/logo.svg"
+        alt=""
+        width={size}
+        height={size}
+        className="rounded-[26%] shrink-0"
       />
-      
-      {/* Pulsing Outer Neon Ring */}
-      {animated && (
-        <motion.div
-          className="absolute inset-0 rounded-2xl border-2 border-accent/20 pointer-events-none"
-          animate={{ 
-            scale: [1, 1.08, 1],
-            opacity: [0.4, 0.1, 0.4]
-          }}
-          transition={{
-            duration: 2.5,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
+      {withWordmark && (
+        <span
+          className="font-bold tracking-tight text-foreground lowercase"
+          style={{ fontSize: Math.round(size * 0.52) }}
+        >
+          voxnote
+        </span>
       )}
-    </motion.div>
+    </span>
   );
 }
 
-// Icon-only version for small spaces
+/** Icon-only version for small spaces. */
 export function LogoIcon({ className = "w-6 h-6" }: { className?: string }) {
-  return (
-    <img 
-      src="/logo.png"
-      alt="Voxnote Icon"
-      className={`rounded-lg object-cover ${className}`}
-    />
-  );
+  return <img src="/logo.svg" alt="" className={`rounded-[26%] ${className}`} />;
 }

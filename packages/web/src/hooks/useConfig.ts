@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useCallback } from "react";
 import type { AppConfig } from "@/types";
 import { getStoredConfig, patchStoredConfig } from "@/lib/config-store";

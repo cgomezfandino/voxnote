@@ -10,7 +10,14 @@
 
 import type { InsightsResult, ActionItem, Participant, Highlight } from "@/types";
 
-export type LlmProvider = "openai" | "anthropic" | "google" | "zai" | "kimi" | "ollama";
+export type LlmProvider =
+  | "openai"
+  | "anthropic"
+  | "google"
+  | "zai"
+  | "kimi"
+  | "ollama"
+  | "chrome";
 
 export interface ExtractInsightsArgs {
   provider: LlmProvider;
@@ -123,7 +130,7 @@ function cleanJson(raw: string): string {
 }
 
 function repairTruncatedJson(raw: string): string {
-  let opens = { "[": 0, "{": 0 };
+  const opens = { "[": 0, "{": 0 };
   let inString = false;
   let escape = false;
   for (const ch of raw) {
@@ -311,6 +318,7 @@ const MAX_CHARS: Record<LlmProvider, number> = {
   zai: 8000,
   kimi: 8000,
   ollama: 8000,
+  chrome: 8000,
 };
 
 function truncate(transcript: string, max: number): string {
@@ -469,6 +477,48 @@ async function callAnthropic(
     : "";
 }
 
+/**
+ * Convert our JSON Schema to Gemini's responseSchema dialect. Gemini accepts
+ * an OpenAPI-3.0 subset and rejects standard JSON Schema fields it does not
+ * know — notably `additionalProperties`, which it answers with
+ * "Unknown name \"additionalProperties\" at 'generation_config.response_schema…'".
+ * Strip every field outside its supported set, recursively. (OpenAI and
+ * Anthropic keep the original schema: strict mode REQUIRES additionalProperties
+ * there.)
+ */
+const GOOGLE_SCHEMA_FIELDS = new Set([
+  "type",
+  "format",
+  "title",
+  "description",
+  "nullable",
+  "enum",
+  "properties",
+  "required",
+  "items",
+  "prefixItems",
+  "minItems",
+  "maxItems",
+  "minimum",
+  "maximum",
+  "minLength",
+  "maxLength",
+  "anyOf",
+  "oneOf",
+  "allOf",
+  "propertyOrdering",
+]);
+
+function toGoogleSchema(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(toGoogleSchema);
+  if (typeof node !== "object" || node === null) return node;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+    if (GOOGLE_SCHEMA_FIELDS.has(k)) out[k] = toGoogleSchema(v);
+  }
+  return out;
+}
+
 /** Google Gemini (Generative Language API; key passed in the query string). */
 async function callGoogle(
   transcript: string,
@@ -494,9 +544,10 @@ async function callGoogle(
       generationConfig: {
         temperature: 0.1,
         responseMimeType: "application/json",
-        // Native structured output: constrains decoding to the schema. Gemini supports
-        // this alongside responseMimeType: application/json on 1.5/2.0/2.5 models.
-        responseSchema: INSIGHTS_RESPONSE_SCHEMA,
+        // Native structured output: constrains decoding to the schema, in
+        // Gemini's own dialect (see toGoogleSchema — it rejects
+        // `additionalProperties` and other JSON Schema fields).
+        responseSchema: toGoogleSchema(INSIGHTS_RESPONSE_SCHEMA),
       },
     }),
   });
@@ -506,19 +557,95 @@ async function callGoogle(
   return parts.map((p: { text?: string }) => p.text ?? "").join("");
 }
 
+// --- Chrome built-in AI (Gemini Nano, on-device) ---------------------------
+//
+// Chrome downloads and manages this model itself (it is NOT downloaded from
+// the Chrome Web Store, and it is a language model — it cannot transcribe).
+// Everything stays on-device: no API key, no network. Desktop Chrome only;
+// availability depends on hardware and free disk, so callers must feature-
+// detect with chromeAiAvailability() and fall back to a BYO-key provider.
+
+interface ChromeLanguageModelSession {
+  prompt(input: string): Promise<string>;
+  destroy?: () => void;
+}
+interface ChromeLanguageModel {
+  availability(): Promise<string>;
+  create(options?: Record<string, unknown>): Promise<ChromeLanguageModelSession>;
+}
+
+function chromeLanguageModel(): ChromeLanguageModel | null {
+  if (typeof window === "undefined") return null;
+  const lm = (window as unknown as { LanguageModel?: ChromeLanguageModel })
+    .LanguageModel;
+  return lm ?? null;
+}
+
+export async function chromeAiAvailability(): Promise<
+  "available" | "downloadable" | "downloading" | "unavailable"
+> {
+  const lm = chromeLanguageModel();
+  if (!lm) return "unavailable";
+  try {
+    const a = await lm.availability();
+    if (a === "available" || a === "downloadable" || a === "downloading") {
+      return a;
+    }
+    return "unavailable";
+  } catch {
+    return "unavailable";
+  }
+}
+
+async function callChrome(
+  transcript: string,
+  lang: string,
+  onDownloadProgress?: (pct: number) => void,
+): Promise<string> {
+  const lm = chromeLanguageModel();
+  if (!lm) {
+    throw new Error(
+      "Chrome built-in AI is not available in this browser. Use a provider with an API key.",
+    );
+  }
+  const availability = await lm.availability();
+  if (availability === "unavailable") {
+    throw new Error(
+      "Chrome built-in AI is unavailable on this device (desktop Chrome with enough free disk is required).",
+    );
+  }
+  const session = await lm.create({
+    initialPrompts: [{ role: "system", content: SYSTEM_PROMPT }],
+    monitor(m: { addEventListener: (ev: string, cb: (e: { loaded: number; total: number }) => void) => void }) {
+      m.addEventListener("downloadprogress", (e) => {
+        if (e.total > 0) onDownloadProgress?.(Math.round((e.loaded / e.total) * 100));
+      });
+    },
+  });
+  try {
+    return await session.prompt(
+      buildInsightsPrompt(truncate(transcript, MAX_CHARS.chrome), lang),
+    );
+  } finally {
+    session.destroy?.();
+  }
+}
+
 // --- Public entry point -----------------------------------------------------
 
 export async function extractInsightsInBrowser(
   transcript: string,
-  args: ExtractInsightsArgs,
+  args: ExtractInsightsArgs & { onChromeDownloadProgress?: (pct: number) => void },
 ): Promise<InsightsResult> {
-  if (!args.apiKey) {
+  if (args.provider !== "chrome" && !args.apiKey) {
     throw new Error("No API key configured for the selected provider.");
   }
   const lang = args.language ?? "es";
   let raw: string;
   try {
-    if (args.provider in OPENAI_COMPATIBLE) {
+    if (args.provider === "chrome") {
+      raw = await callChrome(transcript, lang, args.onChromeDownloadProgress);
+    } else if (args.provider in OPENAI_COMPATIBLE) {
       const { baseUrl, maxChars } = OPENAI_COMPATIBLE[args.provider];
       raw = await callOpenAICompatible(baseUrl, transcript, args.apiKey, args.model, lang, maxChars);
     } else if (args.provider === "anthropic") {

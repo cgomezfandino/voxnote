@@ -1,130 +1,103 @@
 # Voxnote Web
 
-The Voxnote frontend, built with Next.js 15 + React 19. Runs as a fully static SPA
-(`next.config.js` → `output: "export"`).
+The Voxnote frontend, built with **TanStack Start** (React 19 + Vite) and deployed
+as a **Cloudflare Worker**. All ML still runs in the visitor's browser — the Worker
+only serves the app shell and the Ollama CORS proxy; it never receives audio,
+transcripts, or API keys.
 
-## Two run modes
-
-This package can work in **two independent ways**:
-
-### 1. Browser-only mode (default, deployable to Cloudflare Pages/Vercel/Netlify)
-
-All processing happens in the visitor's browser — **no backend required**:
+## How privacy works here
 
 - **Transcription**: Whisper runs in a Web Worker via
-  [`@huggingface/transformers`](https://github.com/huggingface/transformers.js) (ONNX
-  Runtime Web). The model is downloaded once from the Hugging Face Hub and cached, then
-  works offline. WebGPU is used when available, with a WASM (CPU) fallback.
-- **Insights**: the browser calls the user's chosen LLM provider (OpenAI / Google Gemini
-  / Anthropic) **directly**, using an API key the user pastes into Settings (stored in
-  `localStorage`, never sent to any server of ours).
-- **Notes & history**: generated client-side and persisted in IndexedDB.
+  [`@huggingface/transformers`](https://github.com/huggingface/transformers.js)
+  (ONNX Runtime Web, WebGPU with WASM fallback). The model is downloaded once
+  from the Hugging Face Hub — **not** from Chrome or the Chrome Web Store — at a
+  pinned revision (see `MODEL_REVISIONS` in `src/lib/transcriber.worker.ts`),
+  cached in the browser, then works offline. Audio never leaves the device.
+- **Insights**: the browser calls the user's chosen LLM provider directly with
+  the user's own API key (OpenAI / Anthropic / Google / Z.ai / Kimi, Ollama
+  Cloud via the same-origin proxy in `src/routes/api/ollama/chat/completions.ts`).
+  Only the transcript **text** is sent, and the UI shows an editable transcript
+  review step before sending. The **Chrome built-in AI** provider (Gemini Nano)
+  is fully local: Chrome downloads/manages that model itself, no key, no
+  network (desktop Chrome only).
+- **Notes & history**: generated client-side, persisted in IndexedDB.
+- **API keys**: stored in this browser only. Settings → "API key storage" can
+  switch to session-only (keys vanish when the tab closes) or forget all keys.
 
-This is the same pattern used by sites like
-[translator.utopiaia.com](https://translator.utopiaia.com/): load the page, download the
-model once, then run offline. Deploy the static build anywhere.
+Security headers (strict CSP with a per-request nonce, COOP/COEP for
+cross-origin isolation) are set by the request middleware in `src/start.ts`;
+the same policy is mirrored for static assets in `public/_headers`.
 
-> **Limitations of browser-only mode** (the local Python backend still offers these):
-> - No speaker diarization (pyannote is not practical in the browser).
-> - Insights require an internet connection (the LLM call). Transcription is offline.
+> Limitations: no speaker diarization in the browser (the local Python backend
+> offers pyannote). Hosted insights need internet; transcription is offline.
 
-### 2. Local backend mode (Python CLI / packaged desktop)
+## Run modes
 
-The Python packages (`packages/core`, `packages/api`) provide whisperX + diarization +
-Ollama running on your machine. See the root [`README.md`](../../README.md). The web UI
-is not coupled to it anymore — the static build does not call `/api`.
+This package is the deployed web product. The Python packages (`packages/core`,
+`packages/api`) are an independent local CLI/API and are not called by this
+build.
 
-## Getting started (development)
+## Development
 
 ```bash
 npm install
-npm run dev        # http://localhost:3001
+npm run dev        # http://localhost:3001 (Vite + Cloudflare Workers runtime)
+npm run build      # vite build + tsc --noEmit → dist/ (client + server)
+npm run lint       # eslint
 ```
 
-The dev server serves the browser-only build — the first transcription will download the
-Whisper model (size depends on the model selected in Settings).
-
-## Build
+## Deploy to Cloudflare Workers
 
 ```bash
-npm run build      # produces ./out (static export)
+npm run deploy     # vite build && wrangler deploy -c dist/server/wrangler.json
 ```
 
-`out/` is a self-contained static site (HTML + JS + the `_headers` file).
+GitHub Actions (`.github/workflows/deploy-web.yml`) does the same on pushes to
+`main` that touch `packages/web/`. Required secrets: `CLOUDFLARE_API_TOKEN`
+(Workers edit) and `CLOUDFLARE_ACCOUNT_ID`.
 
-## Deploy to Cloudflare Pages
+Note: this replaces the old Next.js static export on Cloudflare Pages. The
+Worker name is `voxnote` (see `wrangler.jsonc`); point the production domain /
+route at the Worker when cutting over, and keep the Pages deployment as
+rollback until parity is verified.
 
-The app is already configured for static hosting (`output: "export"`,
-`images: { unoptimized: true }`) and ships a `public/_headers` that sets the
-cross-origin isolation headers onnxruntime-web needs for multi-threaded WASM:
-
-```
-Cross-Origin-Opener-Policy: same-origin
-Cross-Origin-Embedder-Policy: credentialless
-```
-
-### Option A — Connect the repo (recommended, automatic deploys on push)
-
-1. Push the repo to GitHub.
-2. Cloudflare dashboard → **Workers & Pages → Create → Pages → Connect to Git**.
-3. Pick the repo, then under **Build settings**:
-   - **Framework preset**: Next.js (Static HTML Export)
-   - **Build command**: `npm --prefix packages/web run build`
-   - **Build output directory**: `packages/web/out`
-4. **Save and Deploy**. The `_headers` file is picked up automatically.
-
-### Option B — Wrangler CLI (one-off / manual)
-
-```bash
-cd packages/web
-npm run build
-npx wrangler pages deploy out/ --project-name voxnote
-```
-
-## How it fits together (browser-only mode)
+## How it fits together
 
 ```
-AudioRecorder (MediaRecorder)
-        │  Blob (webm/wav)
+AudioRecorder / FileUpload
+        │  Blob
         ▼
 whisper.ts ── blobToFloat32() ── 16 kHz mono PCM
         │  postMessage (transferable)
         ▼
 transcriber.worker.ts ── transformers.js ── onnxruntime-web (WebGPU/WASM)
-        │  Whisper model from HF Hub (cached in IndexedDB/Cache API)
+        │  Whisper model from HF Hub @ pinned revision (cached)
         ▼
-TranscriptionResult
+Editable transcript review (user can redact before anything is sent)
         │
         ▼
-insights.ts ── fetch() ──► OpenAI / Gemini / Anthropic (user's API key)
+insights.ts ── fetch() ──► chosen provider with user's key (or Chrome local AI)
         │
         ▼
-InsightsResult
-        │
-        ▼
-exporter.ts ── Markdown note (Obsidian-compatible)
-        │
-        ▼
-notes-db.ts ── IndexedDB (history)
+exporter.ts ── Markdown note (Obsidian-compatible) ──► notes-db.ts (IndexedDB)
 ```
 
 ## Project structure
 
 ```
 src/
-├── app/                      # Next.js App Router (single page, client-rendered)
-├── components/               # AudioRecorder, ConfigPanel, NotePreview, …
-├── hooks/
-│   ├── useVoxnote.ts         # pipeline orchestration + model-download progress
-│   └── useConfig.ts          # localStorage-backed settings
-├── lib/
-│   ├── api.ts                # public client surface (used by hooks/components)
-│   ├── whisper.ts            # worker wrapper + audio resampling to 16 kHz
-│   ├── transcriber.worker.ts # Whisper inference via transformers.js
-│   ├── insights.ts           # "bring your own key" LLM calls (prompt = port of providers/base.py)
-│   ├── exporter.ts           # Markdown note generator (port of pipeline/exporter.py)
-│   ├── docx.ts               # Markdown → .docx in the browser (port of pipeline/docx_exporter.py)
-│   ├── notes-db.ts           # IndexedDB persistence for the history tab
-│   └── config-store.ts       # localStorage read/patch helpers
-└── types/                    # shared TypeScript types
+├── routes/                   # TanStack file routes (ssr: false for app pages)
+│   ├── __root.tsx            # shell, nav, theme, service-worker registration
+│   ├── index.tsx             # record/upload → transcribe → review → insights → note
+│   ├── notes.tsx             # history list + search
+│   ├── notes.$filename.tsx   # note detail
+│   ├── settings.tsx          # config + on-device model manager
+│   └── api/ollama/chat/completions.ts  # hardened Ollama CORS proxy (server)
+├── start.ts                  # request middleware: security headers + CSP nonce
+├── router.tsx
+├── components/               # AudioRecorder, ConfigPanel, ModelManager, …
+├── hooks/                    # useVoxnote (pipeline), useConfig, useToast
+├── lib/                      # api, whisper, transcriber.worker, insights,
+│                             # exporter, docx, notes-db, config-store, capabilities
+└── types/
 ```
