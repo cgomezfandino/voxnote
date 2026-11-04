@@ -1,10 +1,49 @@
 # Session Handoff — Voxnote Web
 
-**Última actualización:** 2026-08-14
+**Última actualización:** 2026-08-16
 **Estado:** Producción funcional en https://voxnote.pages.dev
+**HEAD:** `7f307ee` en `main` (limpio, sync con `origin/main`)
 **Auto-deploy:** GitHub Action `.github/workflows/deploy-web.yml` (wrangler, en cada push a `main` que toque `packages/web/` o `functions/`)
 
 Documento para retomar el trabajo en una futura sesión sin rediscover el contexto.
+
+## Entorno local (máquina de Carlos, 2026-08-16)
+
+| Pieza | Valor |
+|-------|--------|
+| Repo (hoy) | `/Users/cgomezfandino/repos/voxnote` |
+| Remote | `https://github.com/cgomezfandino/voxnote.git` |
+| Python del venv | 3.11.14 (`/opt/homebrew/bin/python3.11`) — **no usar 3.14** |
+| Node / npm | v25.5.0 / 11.8.0 |
+| FFmpeg | `~/.local/bin/ffmpeg` 8.0 |
+| Ollama | `/usr/local/bin/ollama` |
+| Dev API / Web | `:8003` / `:3003` (`make dev`) |
+| Web browser-only | `:3001` (`cd packages/web && npm run dev`) |
+| Output CLI | `VOXNOTE_OUTPUT_DIR=/Volumes/SSDCX9/data/Voxnote` (en `.env`, no en git) |
+| Logs | `/Volumes/SSDCX9/data/Voxnote/logs/{api,dev,test,errors}` |
+| Versión web | `0.4.0` (`packages/web/package.json`) |
+
+`.env` local (claves, no valores): `VOXNOTE_LLM_PROVIDER`, `VOXNOTE_WHISPER_MODEL`, `VOXNOTE_LANGUAGE`, `VOXNOTE_OLLAMA_*`, `VOXNOTE_DIARIZE`, `VOXNOTE_HF_TOKEN`, `VOXNOTE_DIARIZE_{MIN,MAX}_SPEAKERS`, `VOXNOTE_COMPUTE_TYPE`, `VOXNOTE_SAMPLE_RATE`, `VOXNOTE_OUTPUT_DIR`. `VOXNOTE_LOG_DIR` no está en `.env` — usa el default del código (SSD).
+
+---
+
+## 2026-08-16 — Mover el repo a la SSD (mañana)
+
+El código está hoy en `/Users/cgomezfandino/repos/voxnote`. El disco interno Data está al **97%** (~13 GB libres); el repo pesa **~5 GB** (casi todo `.venv` + `node_modules`).
+
+**Runbook completo:** [`docs/migrate-to-ssd.md`](migrate-to-ssd.md)
+
+Resumen:
+
+| Ahora | Destino recomendado |
+|-------|---------------------|
+| Código `~/repos/voxnote` | `/Volumes/SSDCX9/repos/voxnote` |
+| Datos (ya en SSD) | `/Volumes/SSDCX9/data/Voxnote` — no tocar |
+| Logs (ya en SSD) | `/Volumes/SSDCX9/data/Voxnote/logs` — no tocar |
+
+Clonar de GitHub + copiar `.env` + `make install`. **No** rsync `.venv` ni `node_modules` (shebangs/paths absolutos). GitHub, Cloudflare, IndexedDB y `localStorage` no se enteran del move.
+
+Después de mover: abrir el editor en la ruta nueva y borrar o symlink-ear la copia vieja.
 
 ---
 

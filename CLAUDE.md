@@ -187,3 +187,4 @@ for `DEFAULT_CONFIG`. LLM API keys are per-provider (`api_key_openai`, `api_key_
 - **CI:** `.github/workflows/ci.yml` — Python (ruff + pytest) and Web (eslint + tsc)
 - **Roadmap:** `docs/web-roadmap.md` — research on diarization, models, and future features
 - **Session handoff:** `docs/session-handoff.md` — state, decisions, and pending work
+- **Repo → SSD move:** `docs/migrate-to-ssd.md` — runbook to relocate the checkout onto `/Volumes/SSDCX9`
