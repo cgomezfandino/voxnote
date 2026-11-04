@@ -76,6 +76,31 @@ Todo el ML sigue en el navegador; el Worker nunca recibe audio, transcripciones 
 7. **Thr phases de publish se mantienen** (plan original cumplido en 1 solo día de
    trabajo; ver COMMITS abajo).
 
+## Decisiones heredadas (siguen vigentes)
+
+- **Whisper dtype string `"q8"`** (no objeto): transformers.js busca dtypes por session
+  key (`"model"`, `"decoder_model_merged"`); un objeto cae a fp32 → carga
+  `encoder_model.onnx_data` (>2 GB) → `Module.MountedFiles is not available`
+  (onnxruntime#19752, sin fix).
+- **Distil-Whisper eliminado**: q8 vacío en no-inglés; Turbo cubre multilingüe y
+  Moonshine el inglés pequeño/rápido. **fp16 descartado** (bug precisión WebGPU #1590).
+- **Service worker network-first** (el precache dejaba JS viejo tras deploys).
+- **Ollama Cloud requiere proxy** (sin CORS): hoy ruta TanStack, misma idea.
+- **Modelos gratuitos Ollama Cloud**: gemma4:31b, gpt-oss:120b/20b,
+  nemotron-3-nano:30b, minimax-m3 (verificado con key real; otros piden suscripción).
+- **Sin sync multi-dispositivo** (decisión de producto, coherente con “100% privado”).
+- **`blob:` obligatorio** en `script-src` (onnxruntime importa su bundle desde blob:)
+  y en `connect-src` (WaveSurfer hace fetch del audio en blob:).
+- **Worker con fallback WebGPU → WASM** (origen decisión 2026-08; ampliado 2026-11-04
+  con preflight de adapter y fp32 en WASM para modelos pequeños).
+- **Anthropic exige** `anthropic-dangerous-direct-browser-access: true` para CORS.
+- **AudioRecorder produce WebM** aunque el Blob diga `audio/wav`; `decodeAudioData`
+  lo maneja.
+- Auditoría 2026-08-12: CSP con connect-src estricto, key de Google movida a header
+  `x-goog-api-key` (no en query), proxy Ollama con origen restringido. sharp/adm-zip
+  transitivos de transformers: parcheados con overrides 2026-11-04 (ver commit
+  `9f7ca77`).
+
 ## COMMITS (todos en main)
 
 - `bdba3b4` feat(web): migrate to TanStack Start on Cloudflare Workers
