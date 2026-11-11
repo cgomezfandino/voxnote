@@ -3,165 +3,100 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mic, Square, RefreshCw, Play, Pause, FileMusic } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
 import { useToast } from "@/hooks/useToast";
+import { useRecordingDraft } from "@/components/RecordingDraftProvider";
 
 interface AudioRecorderProps {
-  onRecordingComplete: (blob: Blob, duration: number) => void;
-  initialBlob?: Blob | null;
-  initialUrl?: string | null;
-  initialDuration?: number;
+  /** Playback URL of the finished recording held in the draft (null when none). */
+  recordingUrl?: string | null;
+  /** Length of that recording in seconds, when known. */
+  recordingDuration?: number | null;
+  /** Asked before starting; return false to cancel (e.g. user kept the old draft). */
+  onBeforeStart?: () => boolean;
   onReset?: () => void;
   onProcess?: () => void;
+  /** Disable Re-record / Process while the app is busy transcribing. */
+  busy?: boolean;
 }
 
+/**
+ * View over the global microphone session (RecordingDraftProvider). The
+ * recorder itself lives above the routes, so leaving this page does not stop
+ * or lose the recording.
+ */
 export default function AudioRecorder({
-  onRecordingComplete,
-  initialBlob = null,
-  initialUrl = null,
-  initialDuration = 0,
+  recordingUrl = null,
+  recordingDuration = null,
+  onBeforeStart,
   onReset,
   onProcess,
+  busy = false,
 }: AudioRecorderProps) {
   const { showToast } = useToast();
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(initialDuration);
-  const [, setAudioBlob] = useState<Blob | null>(initialBlob);
-  const [audioUrl, setAudioUrl] = useState<string | null>(initialUrl);
+  const { isRecording, elapsed, analyser, startRecording, stopRecording } = useRecordingDraft();
   const [isPlaying, setIsPlaying] = useState(false);
   const [visualizerData, setVisualizerData] = useState<number[]>(Array(36).fill(8));
-
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const recordingTimeRef = useRef(initialDuration);
 
+  // Waveform: animate from the live analyser while this page is visible.
   useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      if (audioContextRef.current) audioContextRef.current.close();
-      mediaRecorderRef.current?.stream?.getTracks().forEach(t => t.stop());
-    };
-  }, []);
-
-  const startRecording = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      const audioContext = new AudioContext();
-      await audioContext.resume();
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-      source.connect(analyser);
-      
-      audioContextRef.current = audioContext;
-      analyserRef.current = analyser;
-      sourceRef.current = source;
-      
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
-      
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-      
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/wav" });
-        const url = URL.createObjectURL(blob);
-        setAudioBlob(blob);
-        setAudioUrl(url);
-        onRecordingComplete(blob, recordingTimeRef.current);
-      };
-      
-      mediaRecorder.start();
-      setIsRecording(true);
-      
-      timerRef.current = setInterval(() => {
-        setRecordingTime((prev) => {
-          recordingTimeRef.current = prev + 1;
-          return prev + 1;
-        });
-      }, 1000);
-      
-      // Configure analyser for waveform visualization
-      analyser.fftSize = 2048;
-      const bufferLength = analyser.fftSize;
-      const dataArray = new Uint8Array(bufferLength);
-      const smoothBars = new Array(36).fill(8);
-
-      const updateVisualizer = () => {
-        if (!analyserRef.current) return;
-        analyserRef.current.getByteTimeDomainData(dataArray);
-
-        const numBars = 36;
-        const step = Math.floor(bufferLength / numBars);
-
-        for (let i = 0; i < numBars; i++) {
-          let peak = 0;
-          for (let j = 0; j < step; j++) {
-            const amp = Math.abs(dataArray[i * step + j] - 128);
-            if (amp > peak) peak = amp;
-          }
-
-          const normalized = peak / 128;
-          const boosted = Math.pow(normalized, 0.45);
-          const target = boosted * 72 + 8; // Responsive bounds
-
-          if (target > smoothBars[i]) {
-            smoothBars[i] += (target - smoothBars[i]) * 0.72; // Fast response
-          } else {
-            smoothBars[i] += (target - smoothBars[i]) * 0.15; // Smooth decay
-          }
+    if (!analyser) {
+      setVisualizerData(Array(36).fill(8));
+      return;
+    }
+    const bufferLength = analyser.fftSize;
+    const dataArray = new Uint8Array(bufferLength);
+    const smoothBars = new Array(36).fill(8);
+    let frame = 0;
+    const update = () => {
+      analyser.getByteTimeDomainData(dataArray);
+      const numBars = 36;
+      const step = Math.floor(bufferLength / numBars);
+      for (let i = 0; i < numBars; i++) {
+        let peak = 0;
+        for (let j = 0; j < step; j++) {
+          const amp = Math.abs(dataArray[i * step + j] - 128);
+          if (amp > peak) peak = amp;
         }
+        const target = Math.pow(peak / 128, 0.45) * 72 + 8;
+        // Fast attack, smooth decay.
+        smoothBars[i] += (target - smoothBars[i]) * (target > smoothBars[i] ? 0.72 : 0.15);
+      }
+      setVisualizerData([...smoothBars]);
+      frame = requestAnimationFrame(update);
+    };
+    update();
+    return () => cancelAnimationFrame(frame);
+  }, [analyser]);
 
-        setVisualizerData([...smoothBars]);
-        animationFrameRef.current = requestAnimationFrame(updateVisualizer);
-      };
-      updateVisualizer();
+  const handleStart = useCallback(async () => {
+    if (onBeforeStart && !onBeforeStart()) return;
+    try {
+      await startRecording();
     } catch {
       showToast(
         "Could not access the microphone. Please grant the necessary permissions.",
-        "error"
+        "error",
       );
     }
-  }, [onRecordingComplete, showToast]);
-
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
-    }
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    if (audioContextRef.current) audioContextRef.current.close();
-    setIsRecording(false);
-    setVisualizerData(Array(36).fill(8));
-  }, [isRecording]);
+  }, [onBeforeStart, startRecording, showToast]);
 
   const resetRecording = useCallback(() => {
-    if (audioUrl && audioUrl !== initialUrl) URL.revokeObjectURL(audioUrl);
-    setAudioBlob(null);
-    setAudioUrl(null);
-    setRecordingTime(0);
+    audioRef.current?.pause();
     setIsPlaying(false);
     onReset?.();
-  }, [audioUrl, initialUrl, onReset]);
+  }, [onReset]);
 
   const togglePlay = () => {
     if (audioRef.current) {
       if (isPlaying) audioRef.current.pause();
-      else audioRef.current.play();
+      else void audioRef.current.play();
       setIsPlaying(!isPlaying);
     }
   };
 
-  const hasRecording = (audioUrl || initialUrl) && !isRecording;
-  const playbackUrl = audioUrl || initialUrl;
+  const hasRecording = !!recordingUrl && !isRecording;
+  const playbackUrl = recordingUrl;
+  const recordingTime = isRecording ? elapsed : (recordingDuration ?? 0);
 
   return (
     <div className="card relative overflow-hidden flex flex-col justify-between min-h-[300px]">
@@ -222,7 +157,9 @@ export default function AudioRecorder({
                 </div>
                 <div className="text-left">
                   <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Recording Finished</div>
-                  <div className="text-sm font-semibold text-foreground font-mono mt-0.5">{formatDuration(recordingTime)}</div>
+                  <div className="text-sm font-semibold text-foreground font-mono mt-0.5">
+                    {recordingDuration ? formatDuration(recordingTime) : "—"}
+                  </div>
                 </div>
               </div>
 
@@ -238,7 +175,7 @@ export default function AudioRecorder({
                   </button>
                   <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Listen to audio</span>
                 </div>
-                <span className="text-xs text-muted-foreground font-mono bg-[var(--accordion-bg)] px-2.5 py-1 rounded-md">WAV</span>
+                <span className="text-xs text-muted-foreground font-mono bg-[var(--accordion-bg)] px-2.5 py-1 rounded-md">AUDIO</span>
               </div>
             </motion.div>
           ) : (
@@ -261,7 +198,8 @@ export default function AudioRecorder({
           {!isRecording && !hasRecording && (
             <motion.button
               key="btn-start"
-              onClick={startRecording}
+              onClick={handleStart}
+              aria-label="Start recording"
               style={{ 
                 background: "var(--record-btn-bg)",
                 boxShadow: "var(--record-shadow)"
@@ -285,6 +223,7 @@ export default function AudioRecorder({
               
               <button
                 onClick={stopRecording}
+                aria-label="Stop recording"
                 className="relative z-10 w-16 h-16 rounded-full bg-accent text-background flex items-center justify-center hover:scale-105 hover:bg-accent/90 transition-all shadow-[0_0_20px_rgba(52,211,153,0.45)] focus:outline-none"
               >
                 <Square className="w-5 h-5 fill-accent-foreground stroke-none" />
@@ -299,16 +238,18 @@ export default function AudioRecorder({
               animate={{ opacity: 1, scale: 1 }}
               className="flex items-center gap-3.5 w-full max-w-sm justify-center px-4"
             >
-              <button 
-                onClick={resetRecording} 
-                className="btn-secondary flex-1 py-3 px-4 flex items-center justify-center gap-2"
+              <button
+                onClick={resetRecording}
+                disabled={busy}
+                className="btn-secondary flex-1 py-3 px-4 flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <RefreshCw className="w-4 h-4 text-muted-foreground" />
                 Re-record
               </button>
-              <button 
-                onClick={onProcess} 
-                className="btn-accent flex-1 py-3 px-4 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(52,211,153,0.25)]"
+              <button
+                onClick={onProcess}
+                disabled={busy}
+                className="btn-accent flex-1 disabled:opacity-50 py-3 px-4 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(52,211,153,0.25)]"
               >
                 <FileMusic className="w-4 h-4 text-accent-foreground" />
                 Process

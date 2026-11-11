@@ -14,6 +14,7 @@ import { Route as NotesRouteImport } from './routes/notes'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as NotesFilenameRouteImport } from './routes/notes.$filename'
 import { Route as ApiOllamaChatCompletionsRouteImport } from './routes/api/ollama/chat/completions'
+import { Route as ApiZaiChatCompletionsRouteImport } from './routes/api/zai/chat/completions'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -41,6 +42,11 @@ const ApiOllamaChatCompletionsRoute =
     path: '/api/ollama/chat/completions',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiZaiChatCompletionsRoute = ApiZaiChatCompletionsRouteImport.update({
+  id: '/api/zai/chat/completions',
+  path: '/api/zai/chat/completions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -48,6 +54,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/notes/$filename': typeof NotesFilenameRoute
   '/api/ollama/chat/completions': typeof ApiOllamaChatCompletionsRoute
+  '/api/zai/chat/completions': typeof ApiZaiChatCompletionsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -55,6 +62,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/notes/$filename': typeof NotesFilenameRoute
   '/api/ollama/chat/completions': typeof ApiOllamaChatCompletionsRoute
+  '/api/zai/chat/completions': typeof ApiZaiChatCompletionsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -63,6 +71,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/notes/$filename': typeof NotesFilenameRoute
   '/api/ollama/chat/completions': typeof ApiOllamaChatCompletionsRoute
+  '/api/zai/chat/completions': typeof ApiZaiChatCompletionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -72,6 +81,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/notes/$filename'
     | '/api/ollama/chat/completions'
+    | '/api/zai/chat/completions'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -79,6 +89,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/notes/$filename'
     | '/api/ollama/chat/completions'
+    | '/api/zai/chat/completions'
   id:
     | '__root__'
     | '/'
@@ -86,6 +97,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/notes/$filename'
     | '/api/ollama/chat/completions'
+    | '/api/zai/chat/completions'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -93,6 +105,7 @@ export interface RootRouteChildren {
   NotesRoute: typeof NotesRouteWithChildren
   SettingsRoute: typeof SettingsRoute
   ApiOllamaChatCompletionsRoute: typeof ApiOllamaChatCompletionsRoute
+  ApiZaiChatCompletionsRoute: typeof ApiZaiChatCompletionsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -132,6 +145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOllamaChatCompletionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/zai/chat/completions': {
+      id: '/api/zai/chat/completions'
+      path: '/api/zai/chat/completions'
+      fullPath: '/api/zai/chat/completions'
+      preLoaderRoute: typeof ApiZaiChatCompletionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -150,6 +170,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotesRoute: NotesRouteWithChildren,
   SettingsRoute: SettingsRoute,
   ApiOllamaChatCompletionsRoute: ApiOllamaChatCompletionsRoute,
+  ApiZaiChatCompletionsRoute: ApiZaiChatCompletionsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

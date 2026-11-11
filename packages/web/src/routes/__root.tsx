@@ -9,7 +9,8 @@ import { useEffect, useState } from "react";
 import { FileText, Mic, Moon, Settings, Sun } from "lucide-react";
 import Logo from "@/components/Logo";
 import ToastProvider from "@/components/ToastProvider";
-import RecordingDraftProvider from "@/components/RecordingDraftProvider";
+import RecordingDraftProvider, { useRecordingDraft } from "@/components/RecordingDraftProvider";
+import { formatDuration } from "@/lib/utils";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -89,6 +90,27 @@ const NAV = [
 /** Fixed navbar is h-16; content offset = navbar height + breathing room. */
 const NAV_H = "pt-24 lg:pt-28";
 
+/**
+ * Live "REC" pill in the navbar: the recording keeps going on other pages, so
+ * the user always sees it and can jump back to stop it.
+ */
+function RecordingIndicator() {
+  const { isRecording, elapsed } = useRecordingDraft();
+  if (!isRecording) return null;
+  return (
+    <Link
+      to="/"
+      className="flex items-center gap-2 px-3 min-h-11 rounded-full text-xs font-bold tracking-wider text-danger border border-danger-border bg-danger-light"
+      aria-label={`Recording in progress, ${formatDuration(elapsed)}. Go to the recorder`}
+      title="Recording in progress — click to go back to the recorder"
+    >
+      <span className="w-2 h-2 rounded-full bg-danger animate-pulse" aria-hidden />
+      <span>REC</span>
+      <span className="font-mono tabular-nums">{formatDuration(elapsed)}</span>
+    </Link>
+  );
+}
+
 function RootComponent() {
   const { theme, toggle } = useTheme();
   const scrolled = useScrolled();
@@ -109,6 +131,7 @@ function RootComponent() {
               <Logo size={34} />
             </Link>
             <nav className="flex items-center gap-1 sm:gap-1.5" aria-label="Main">
+              <RecordingIndicator />
               {NAV.map((item) => (
                 <Link
                   key={item.to}

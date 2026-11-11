@@ -333,26 +333,35 @@ class HttpError extends Error {
   }
 }
 
+/** Pull the human-readable message out of a provider error body. */
+function errorMessage(body: unknown, res: Response): string {
+  const b = body as { error?: { message?: unknown } | string; message?: unknown; detail?: unknown };
+  // Providers nest the human message differently; try the common shapes.
+  const msg =
+    (typeof b?.error === "object" ? b.error?.message : b?.error) || b?.message || b?.detail;
+  return typeof msg === "string" && msg ? msg : `Error ${res.status}: ${res.statusText}`;
+}
+
 async function readError(res: Response): Promise<string> {
-  try {
-    const body = await res.json();
-    // All three providers nest the human message differently; try common shapes.
-    const msg =
-      body?.error?.message || body?.error || body?.message || body?.detail;
-    if (typeof msg === "string") return msg;
-  } catch {
-    // not JSON
-  }
-  return `Error ${res.status}: ${res.statusText}`;
+  return errorMessage(await res.json().catch(() => null), res);
+}
+
+/**
+ * Reasoning models (OpenAI o-series, GPT-5 family) reject any non-default
+ * `temperature` with a 400 ("Unsupported value: 'temperature'"), so it is only
+ * sent to models known to accept it. Custom names typed by the user follow the
+ * same rule by prefix.
+ */
+function acceptsTemperature(model: string): boolean {
+  return !/^(o\d|gpt-5)/i.test(model.trim());
 }
 
 /**
  * OpenAI-compatible Chat Completions with native Structured Outputs.
  *
  * Works for any provider whose API mirrors OpenAI's `/chat/completions` (same body,
- * Bearer auth). This covers OpenAI itself plus Z.ai and Moonshot/Kimi, which are
- * drop-in compatible and CORS-enabled for direct browser calls. Ollama Cloud shares
- * the same wire format but is CORS-blocked, so it needs a proxy (see roadmap).
+ * Bearer auth): OpenAI and Moonshot/Kimi are called directly (CORS-enabled); Z.ai and
+ * Ollama Cloud are not CORS-enabled, so they go through same-origin Worker relays.
  *
  * Tries strict `json_schema` first (token-level constrained decoding); falls back to
  * `json_object` for models/providers that reject strict mode — the tolerant parser
@@ -373,7 +382,7 @@ async function callOpenAICompatible(
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: buildInsightsPrompt(truncate(transcript, maxChars), lang) },
     ],
-    temperature: 0.1,
+    ...(acceptsTemperature(model) ? { temperature: 0.1 } : {}),
     response_format: responseFormat,
   });
 
@@ -382,7 +391,7 @@ async function callOpenAICompatible(
     Authorization: `Bearer ${apiKey}`,
   };
 
-  const strictRes = await fetch(endpoint, {
+  let res = await fetch(endpoint, {
     method: "POST",
     headers,
     body: JSON.stringify(
@@ -396,18 +405,19 @@ async function callOpenAICompatible(
       }),
     ),
   });
-  let res = strictRes;
-  if (strictRes.status === 400) {
-    const errBody = await strictRes.json().catch(() => ({}));
-    const code: string = errBody?.error?.code ?? "";
-    const msg: string = errBody?.error?.message ?? "";
-    if (code.includes("unsupported") || msg.toLowerCase().includes("json_schema") || msg.toLowerCase().includes("response_format")) {
-      res = await fetch(endpoint, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload({ type: "json_object" })),
-      });
-    }
+  if (res.status === 400) {
+    // The body can only be read once: keep it for the error path.
+    const errBody = await res.json().catch(() => null);
+    const code = String(errBody?.error?.code ?? "");
+    const msg = String(errBody?.error?.message ?? "").toLowerCase();
+    const formatRejected =
+      code.includes("unsupported") || msg.includes("json_schema") || msg.includes("response_format");
+    if (!formatRejected) throw new HttpError(errorMessage(errBody, res), res.status);
+    res = await fetch(endpoint, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload({ type: "json_object" })),
+    });
   }
   if (!res.ok) throw new HttpError(await readError(res), res.status);
   const body = await res.json();
@@ -415,22 +425,28 @@ async function callOpenAICompatible(
 }
 
 // Provider base URLs and per-provider transcript char caps (mirror the Python defaults).
-// Ollama Cloud is CORS-blocked, so it routes through the same-origin Pages Function
-// proxy at /api/ollama (functions/api/ollama.ts) instead of calling ollama.com directly.
+// Z.ai and Ollama Cloud are CORS-blocked, so they route through same-origin Worker
+// relays (src/routes/api/{zai,ollama}/chat/completions.ts) instead of direct calls.
 const OPENAI_COMPATIBLE: Record<string, { baseUrl: string; maxChars: number }> = {
   openai: { baseUrl: "https://api.openai.com/v1", maxChars: 8000 },
-  zai: { baseUrl: "https://api.z.ai/api/paas/v4", maxChars: 8000 },
+  zai: { baseUrl: "/api/zai", maxChars: 8000 },
   kimi: { baseUrl: "https://api.moonshot.ai/v1", maxChars: 8000 },
   ollama: { baseUrl: "/api/ollama", maxChars: 8000 },
 };
 
 /**
- * Anthropic Messages API with forced tool-use (native structured-output path).
+ * Anthropic Messages API with tool-use as the structured-output path.
  *
- * Anthropic doesn't offer OpenAI-style strict json_schema, but forcing a single tool
- * with our schema as its input_schema constrains the model to emit exactly that shape
+ * Anthropic doesn't offer OpenAI-style strict json_schema here, but a single tool
+ * with our schema as its input_schema makes the model emit exactly that shape
  * inside a tool_use block. We extract the tool input directly — no prompt-hack JSON
- * parsing. Falls back to text JSON if the model ignores the forced tool.
+ * parsing.
+ *
+ * Forcing the tool (`tool_choice: {type: "tool"}`) is the most reliable option on
+ * Claude 4.x, but newer models (Claude Opus 5.5, Sonnet 5.5, Fable 5.x) reject a
+ * forced tool_choice with a 400. In that case we retry once with `auto` plus an
+ * explicit instruction to call the tool. Falls back to text JSON if the model still
+ * answers in plain text.
  */
 async function callAnthropic(
   transcript: string,
@@ -438,36 +454,51 @@ async function callAnthropic(
   model: string,
   lang: string,
 ): Promise<string> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      // Anthropic blocks browser calls by default; this opts in (the key is the user's own).
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 8192,
-      system: SYSTEM_PROMPT,
-      messages: [
-        { role: "user", content: buildInsightsPrompt(truncate(transcript, MAX_CHARS.anthropic), lang) },
-      ],
-      tools: [
-        {
-          name: "emit_insights",
-          description: "Emit the structured meeting insights extracted from the transcript.",
-          input_schema: INSIGHTS_RESPONSE_SCHEMA,
-        },
-      ],
-      // Force the model to call this specific tool, so the output is the tool input.
-      tool_choice: { type: "tool", name: "emit_insights" },
-    }),
-  });
+  const request = (forceTool: boolean) =>
+    fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        // Anthropic blocks browser calls by default; this opts in (the key is the user's own).
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model,
+        // Room for adaptive thinking on newer models plus the full insights payload.
+        max_tokens: 16000,
+        system: forceTool
+          ? SYSTEM_PROMPT
+          : `${SYSTEM_PROMPT}\n\nReturn your answer by calling the emit_insights tool exactly once.`,
+        messages: [
+          { role: "user", content: buildInsightsPrompt(truncate(transcript, MAX_CHARS.anthropic), lang) },
+        ],
+        tools: [
+          {
+            name: "emit_insights",
+            description: "Emit the structured meeting insights extracted from the transcript.",
+            input_schema: INSIGHTS_RESPONSE_SCHEMA,
+          },
+        ],
+        tool_choice: forceTool ? { type: "tool", name: "emit_insights" } : { type: "auto" },
+      }),
+    });
+
+  let res = await request(true);
+  if (res.status === 400) {
+    const errBody = await res.json().catch(() => null);
+    if (!/tool_choice/i.test(errorMessage(errBody, res))) {
+      throw new HttpError(errorMessage(errBody, res), res.status);
+    }
+    res = await request(false);
+  }
   if (!res.ok) throw new HttpError(await readError(res), res.status);
   const body = await res.json();
-  // Prefer the tool_use block (structured); fall back to any text block (older models).
+  if (body?.stop_reason === "refusal") {
+    throw new Error("Claude declined to process this transcript (refusal). Try another model.");
+  }
+  // Prefer the tool_use block (structured); fall back to any text block.
   const toolInput = Array.isArray(body?.content)
     ? body.content.find((b: { type?: string }) => b?.type === "tool_use")?.input
     : undefined;
@@ -519,7 +550,7 @@ function toGoogleSchema(node: unknown): unknown {
   return out;
 }
 
-/** Google Gemini (Generative Language API; key passed in the query string). */
+/** Google Gemini (Generative Language API; key sent in the x-goog-api-key header). */
 async function callGoogle(
   transcript: string,
   apiKey: string,
