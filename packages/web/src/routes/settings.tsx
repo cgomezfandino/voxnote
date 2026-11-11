@@ -1,9 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { CheckCircle2, Circle } from "lucide-react";
 import ConfigPanel from "@/components/ConfigPanel";
 import ModelManager from "@/components/ModelManager";
 import { useConfig } from "@/hooks/useConfig";
 import type { AppConfig } from "@/types";
+import { hasUsableWebGPU } from "@/lib/capabilities";
+import { chromeAiAvailability, PROVIDER_NAMES, type LlmProvider } from "@/lib/insights";
 
 export const Route = createFileRoute("/settings")({
   ssr: false,
@@ -20,28 +23,40 @@ const KEY_FIELDS: Record<string, keyof AppConfig> = {
 };
 
 function ReadyChecklist({ config }: { config: AppConfig }) {
-  const isChrome = config.llm_provider === "chrome";
-  const keyField = KEY_FIELDS[config.llm_provider];
-  const hasKey = isChrome || (!!keyField && !!String(config[keyField]).trim());
+  const [webgpu, setWebgpu] = useState<boolean | null>(null);
+  const [chromeAi, setChromeAi] = useState<string | null>(null);
+  useEffect(() => {
+    void hasUsableWebGPU().then(setWebgpu);
+    void chromeAiAvailability().then(setChromeAi);
+  }, []);
+
+  const provider = config.llm_provider;
+  const providerName = PROVIDER_NAMES[provider as LlmProvider] ?? provider;
+  const keyField = KEY_FIELDS[provider];
+  const hasKey = !!keyField && !!String(config[keyField]).trim();
+  const turboNoGpu = webgpu === false && config.whisper_model === "turbo";
+
+  let engine: { ok: boolean; label: string };
+  if (provider === "chrome") {
+    engine =
+      chromeAi === "unavailable"
+        ? { ok: false, label: "Chrome built-in AI isn't available here — choose another provider below" }
+        : { ok: true, label: "Note AI: Chrome built-in AI on this device (no key needed)" };
+  } else if (provider === "ollama_local") {
+    engine = config.ollama_local_model.trim()
+      ? { ok: true, label: `Note AI: Ollama on this computer (${config.ollama_local_model})` }
+      : { ok: false, label: "Choose your local Ollama model below (Test connection lists them)" };
+  } else {
+    engine = hasKey
+      ? { ok: true, label: `Note AI: ${providerName} — API key saved in this browser` }
+      : { ok: false, label: `Add your ${providerName} API key below so notes can be created` };
+  }
+
   const items = [
-    {
-      ok: true,
-      label: `Transcription model: ${config.whisper_model} (downloads once, then offline)`,
-    },
-    {
-      ok: true,
-      label: isChrome
-        ? "Note AI: Chrome built-in AI on this device (no key needed)"
-        : `Note AI provider: ${config.llm_provider}`,
-    },
-    {
-      ok: hasKey,
-      label: isChrome
-        ? "No API key needed"
-        : hasKey
-          ? "API key saved in this browser"
-          : "Add your API key below so notes can be created",
-    },
+    turboNoGpu
+      ? { ok: false, label: "Turbo needs WebGPU, which this browser lacks — switch to Small below" }
+      : { ok: true, label: `Transcription model: ${config.whisper_model} (downloads once, then offline)` },
+    engine,
   ];
   return (
     <div className="card">

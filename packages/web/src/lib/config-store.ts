@@ -32,13 +32,17 @@ const KEY_FIELDS = [
 export const DEFAULT_CONFIG: AppConfig = {
   whisper_model: "turbo",
   language: "es",
-  llm_provider: "openai",
+  // On-device and keyless: works out of the box in desktop Chrome. Other
+  // browsers are told to pick a provider (Settings checks availability).
+  llm_provider: "chrome",
   openai_model: "gpt-4o-mini",
   google_model: "gemini-2.5-flash",
-  anthropic_model: "claude-opus-4-8",
+  anthropic_model: "claude-sonnet-5-5",
   zai_model: "glm-4.6",
   kimi_model: "kimi-k2.6",
   ollama_model: "gemma4:31b",
+  ollama_local_url: "http://localhost:11434",
+  ollama_local_model: "",
   api_key_openai: "",
   api_key_anthropic: "",
   api_key_google: "",

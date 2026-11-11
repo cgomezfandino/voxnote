@@ -135,17 +135,28 @@ responde, Turbo q4 con voz/silencio/tono, grabación → Notes → Settings → 
 recuperación tras recarga a mitad de grabación (y su transcripción), confirmaciones.
 No verificado: OpenAI/Anthropic con clave real (no se usan claves en pruebas).
 
-### Pendiente de la auditoría (bloque 2)
+### Bloque 2 (rama `feat/web-audit-block2`, apilada sobre el bloque 1)
 
-- onnxruntime se carga de jsDelivr en runtime (sin SRI) aunque hay copia propia en
-  `dist/`; fijar `env.backends.onnx.wasm.wasmPaths` y quitar jsDelivr de la CSP.
-- Sugerencias de modelos: añadir Claude 5.5, quitar `gemini-2.0-flash`, `glm-4-plus`,
-  `glm-4-flash`, `moonshot-v1-*`; pista de Kimi apunta a `platform.moonshot.cn` (es `.ai`).
-- Sin WebGPU, recomendar Small automáticamente en vez de Turbo.
-- “Delete all notes” no borra el borrador; no hay “borrar todos los datos locales”.
-- El botón “Forget all API keys” se oculta con el proveedor Chrome.
-- Chrome built-in AI: sin progreso de descarga, sin `responseConstraint`.
-- Worker de transcripción sin IDs de petición (dos peticiones simultáneas se cruzan).
+Hecho y verificado en local (`wrangler dev` sobre el build, Chrome real):
+
+- **Chrome built-in AI por defecto** (sin clave, en el dispositivo); salida
+  estructurada con `responseConstraint`; progreso de descarga de Gemini Nano.
+  Nota completa probada: ~25 s. La primera carga en frío de Nano puede tardar ~30 s.
+- **«Test connection»** en Settings para todos los proveedores; errores claros
+  (clave rechazada, modelo inexistente, organización que bloquea CORS — el caso de
+  Anthropic de Carlos —, cuota, Ollama no accesible con instrucciones `OLLAMA_ORIGINS`).
+- **Ollama en este ordenador** (`ollama_local`), solo loopback; «Test connection»
+  lista los modelos instalados. No probado contra un Ollama real (no instalado aquí).
+- **onnxruntime self-hosted** (sin jsDelivr; CSP sin CDN).
+- Sugerencias de modelos al día (Claude 5.5; fuera `gemini-2.0-flash`, `glm-4-plus`,
+  `glm-4-flash`), pista de Kimi → `platform.moonshot.ai`, Anthropic por defecto
+  `claude-sonnet-5-5`.
+- Aviso + botón «Use Small» si no hay WebGPU real con Turbo.
+- «Erase all local data» (notas, borrador, claves, ajustes, modelos).
+- «Forget all API keys» siempre visible; texto del modo sesión corregido.
+- Worker de transcripción con IDs de petición y cola; `navigator.storage.persist()`.
+
+Sigue pendiente: diarización, búsqueda semántica, transcripción en vivo (roadmap).
 
 ## Pendiente
 

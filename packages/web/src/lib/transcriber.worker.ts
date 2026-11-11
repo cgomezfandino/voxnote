@@ -14,6 +14,13 @@
 /// <reference lib="webworker" />
 
 import { pipeline, env, type ProgressInfo } from "@huggingface/transformers";
+// Self-hosted onnxruntime-web runtime (emitted by Vite into /assets). Without
+// this, transformers.js fetches the runtime JS + WASM from cdn.jsdelivr.net at
+// run time — third-party code with no integrity check executing in our origin.
+// (Imported by path: the package's "exports" map doesn't expose these files.
+// Keep onnxruntime-web pinned with @huggingface/transformers — see handoff.)
+import ortMjsUrl from "../../node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.mjs?url";
+import ortWasmUrl from "../../node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.wasm?url";
 import {
   ENGLISH_ONLY,
   MODEL_DTYPES,
@@ -45,8 +52,13 @@ interface ASRTranscriber {
 // Pull model weights from the HF Hub. There are no local models bundled with the app.
 env.allowLocalModels = false;
 env.allowRemoteModels = true;
+if (env.backends.onnx.wasm) {
+  env.backends.onnx.wasm.wasmPaths = { mjs: ortMjsUrl, wasm: ortWasmUrl };
+}
 
 export interface TranscribeRequest {
+  /** Echoed back on every message so concurrent callers can't cross results. */
+  id: number;
   audio: Float32Array;
   model: string; // base | small | turbo
   language: string; // ISO code, e.g. "es"
@@ -54,6 +66,7 @@ export interface TranscribeRequest {
 
 export interface WorkerProgress {
   type: "progress";
+  id: number;
   file: string;
   progress: number; // 0..100
   /** True when this file is being read from the on-device cache, not the network. */
@@ -102,12 +115,14 @@ async function evictStaleWeights(modelKey: string, revision: string): Promise<vo
 
 export interface WorkerResult {
   type: "result";
+  id: number;
   text: string;
   chunks: { start: number; end: number; text: string }[];
 }
 
 export interface WorkerError {
   type: "error";
+  id: number;
   message: string;
 }
 
@@ -186,6 +201,7 @@ async function getTranscriber(modelKey: string, forceWasm = false) {
     if (info.status === "progress") {
       const msg: WorkerProgress = {
         type: "progress",
+        id: currentId,
         file: info.file,
         // transformers.js already reports progress in the 0..100 range.
         progress: Math.round(info.progress ?? 0),
@@ -217,8 +233,17 @@ async function getTranscriber(modelKey: string, forceWasm = false) {
   }
 }
 
-self.onmessage = async (e: MessageEvent<TranscribeRequest>) => {
-  const { audio, model, language } = e.data;
+/** Id of the request being processed (progress events are tagged with it). */
+let currentId = 0;
+/** Requests run one at a time: two pipelines at once would fight over the GPU. */
+let queue: Promise<void> = Promise.resolve();
+
+self.onmessage = (e: MessageEvent<TranscribeRequest>) => {
+  queue = queue.then(() => handleRequest(e.data));
+};
+
+async function handleRequest({ id, audio, model, language }: TranscribeRequest): Promise<void> {
+  currentId = id;
   try {
     // return_timestamps gives segment-level chunk boundaries, which we map to the
     // Segment shape the rest of the app expects. We run the full audio at once since the
@@ -249,6 +274,7 @@ self.onmessage = async (e: MessageEvent<TranscribeRequest>) => {
       cache = null;
       postMessage({
         type: "progress",
+        id,
         file: "WebGPU unavailable — switching to CPU",
         progress: 0,
       } satisfies WorkerProgress);
@@ -276,13 +302,14 @@ self.onmessage = async (e: MessageEvent<TranscribeRequest>) => {
           }))
         : [];
 
-    const msg: WorkerResult = { type: "result", text: text.trim(), chunks };
+    const msg: WorkerResult = { type: "result", id, text: text.trim(), chunks };
     postMessage(msg);
   } catch (err) {
     const msg: WorkerError = {
       type: "error",
+      id,
       message: err instanceof Error ? err.message : "Transcription failed",
     };
     postMessage(msg);
   }
-};
+}

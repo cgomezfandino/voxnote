@@ -35,9 +35,7 @@ export async function getCapabilities(): Promise<Capabilities> {
     modelCacheNames = [];
   }
   return {
-    webgpu:
-      typeof navigator !== "undefined" &&
-      "gpu" in (navigator as Navigator & { gpu?: unknown }),
+    webgpu: await hasUsableWebGPU(),
     crossOriginIsolated:
       typeof window !== "undefined" && window.crossOriginIsolated === true,
     secureContext: typeof window !== "undefined" && window.isSecureContext,
@@ -92,4 +90,58 @@ export function formatBytes(bytes: number): string {
   if (!bytes) return "0 MB";
   const mb = bytes / (1024 * 1024);
   return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${Math.round(mb)} MB`;
+}
+
+let webgpuProbe: Promise<boolean> | null = null;
+
+/**
+ * True only when a real GPU adapter can be obtained — `navigator.gpu` existing
+ * is not enough (blocked drivers, VMs, some Linux setups return no adapter).
+ * Mirrors the worker's own preflight. Turbo needs this; without it, Small is
+ * the practical choice.
+ */
+export function hasUsableWebGPU(): Promise<boolean> {
+  if (webgpuProbe) return webgpuProbe;
+  webgpuProbe = (async () => {
+    try {
+      const gpu = (navigator as Navigator & { gpu?: { requestAdapter: () => Promise<unknown> } }).gpu;
+      return !!gpu && !!(await gpu.requestAdapter());
+    } catch {
+      return false;
+    }
+  })();
+  return webgpuProbe;
+}
+
+/**
+ * Erase everything voxnote keeps in this browser: settings and API keys
+ * (local + session storage), notes, the draft and any half-saved recording
+ * (IndexedDB), and downloaded models (Cache API). The page should be reloaded
+ * afterwards so in-memory state is dropped too.
+ */
+export async function eraseAllLocalData(): Promise<void> {
+  for (const store of [window.localStorage, window.sessionStorage]) {
+    try {
+      for (const k of Object.keys(store)) if (k.startsWith("voxnote:")) store.removeItem(k);
+    } catch {
+      // storage unavailable
+    }
+  }
+  await new Promise<void>((resolve) => {
+    try {
+      const req = indexedDB.deleteDatabase("voxnote");
+      req.onsuccess = req.onerror = req.onblocked = () => resolve();
+    } catch {
+      resolve();
+    }
+  });
+  try {
+    if (typeof caches !== "undefined") {
+      for (const name of await caches.keys()) {
+        if (/transformers|onnx|whisper|hf|huggingface/i.test(name)) await caches.delete(name);
+      }
+    }
+  } catch {
+    // Cache API unavailable
+  }
 }

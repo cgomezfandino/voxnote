@@ -26,6 +26,7 @@ import {
 } from "./notes-db";
 import { markdownToDocxBlob } from "./docx";
 import { getStoredConfig } from "./config-store";
+import type { ConnectionCheck, LlmProvider } from "./insights";
 
 // --- Health -----------------------------------------------------------------
 
@@ -56,10 +57,8 @@ export async function transcribeAudio(
 
 // --- Insights ---------------------------------------------------------------
 
-export async function extractInsights(
-  text: string,
-  provider: string = "openai",
-): Promise<InsightsResult> {
+/** Key + model + endpoint for a provider, read from the stored config. */
+function providerSettings(provider: string) {
   const cfg = getStoredConfig();
   const keyForProvider: Record<string, string> = {
     openai: cfg.api_key_openai,
@@ -76,23 +75,36 @@ export async function extractInsights(
     zai: cfg.zai_model,
     kimi: cfg.kimi_model,
     ollama: cfg.ollama_model,
+    ollama_local: cfg.ollama_local_model,
   };
-  const key = keyForProvider[provider] ?? "";
-  const model = modelForProvider[provider] ?? "";
+  return {
+    provider: provider as LlmProvider,
+    apiKey: keyForProvider[provider] ?? "",
+    model: modelForProvider[provider] ?? "",
+    language: cfg.language,
+    baseUrl: provider === "ollama_local" ? cfg.ollama_local_url : undefined,
+  };
+}
+
+export async function extractInsights(
+  text: string,
+  provider: string = "chrome",
+  onChromeDownloadProgress?: (pct: number) => void,
+): Promise<InsightsResult> {
   const { extractInsightsInBrowser } = await import("./insights");
   return extractInsightsInBrowser(text, {
-    provider: provider as
-      | "openai"
-      | "anthropic"
-      | "google"
-      | "zai"
-      | "kimi"
-      | "ollama"
-      | "chrome",
-    apiKey: key,
-    model,
-    language: cfg.language,
+    ...providerSettings(provider),
+    onChromeDownloadProgress,
   });
+}
+
+/** Check provider + key + model with a tiny request (see testProviderConnection). */
+export async function testConnection(
+  provider: string,
+  onChromeDownloadProgress?: (pct: number) => void,
+): Promise<ConnectionCheck> {
+  const { testProviderConnection } = await import("./insights");
+  return testProviderConnection({ ...providerSettings(provider), onChromeDownloadProgress });
 }
 
 // --- Export -----------------------------------------------------------------
@@ -102,7 +114,7 @@ export async function exportNote(
   insights: InsightsResult,
   audio_filename?: string,
 ): Promise<ExportResult> {
-  const note = buildNote(transcript, insights, audio_filename || "recording.wav");
+  const note = buildNote(transcript, insights, audio_filename || "recording.webm");
   // Persist to IndexedDB so the History tab picks it up.
   await saveNote(note.filename, note.content).catch(() => {
     // Non-fatal: the note is still returned to the caller for immediate preview.

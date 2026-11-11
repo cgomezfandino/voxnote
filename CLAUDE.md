@@ -145,6 +145,20 @@ packages/api/voxnote_api/
 - **fp16 is avoided** — known precision bug on WebGPU for Whisper encoder (#1590).
 - **Distil-Whisper was removed** — q8 quantization returns empty text for non-English; same
   download size as Turbo which works for all languages.
+- **Chrome built-in AI (Gemini Nano) is the default insights provider** — keyless and on-device.
+  Settings checks availability and points other browsers to a provider. Uses
+  `responseConstraint` (structured output) and `expectedInputs/Outputs` for en/es/ja.
+- **"Test connection"** in Settings (`testProviderConnection`) sends a few tokens to check
+  key + model, lists installed models for local Ollama, and starts the Gemini Nano download
+  inside the click (Chrome requires a user gesture). Errors go through
+  `explainProviderError` (bad key, unknown model, org blocking browser CORS, rate limit…).
+- **Local Ollama (`ollama_local`)** is called directly from the browser — no relay. Only
+  loopback is allowed (`normalizeOllamaUrl` + CSP `http://localhost:* http://127.0.0.1:*`); the
+  user must set `OLLAMA_ORIGINS=<site origin>`.
+- **onnxruntime-web is self-hosted**: the worker sets `env.backends.onnx.wasm.wasmPaths` to the
+  Vite-emitted `ort-wasm-simd-threaded.asyncify.{mjs,wasm}` (imported by path — the package's
+  `exports` doesn't list them). No CDN in the CSP. The wasm is ~23.5 MB, under the 25 MiB
+  Workers asset limit — keep `@huggingface/transformers`/`onnxruntime-web` pinned.
 - **Service worker is network-first** for JS/HTML — prevents stale JS after deploys (was a
   recurring problem with precache-only strategy).
 - **Ollama Cloud and Z.ai need a relay** — neither sends CORS headers (Z.ai's preflight has

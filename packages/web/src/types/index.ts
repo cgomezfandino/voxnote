@@ -78,13 +78,16 @@ export interface NoteDetail {
 export interface AppConfig {
   whisper_model: string; // base | small | turbo
   language: string; // ISO code, e.g. "es"
-  llm_provider: string; // openai | anthropic | google | zai | kimi | ollama
+  llm_provider: string; // chrome | openai | anthropic | google | zai | kimi | ollama | ollama_local
   openai_model: string;
   google_model: string;
   anthropic_model: string;
   zai_model: string;
   kimi_model: string;
   ollama_model: string;
+  /** Local Ollama server (loopback only) and the installed model to use. */
+  ollama_local_url: string;
+  ollama_local_model: string;
   api_key_openai: string;
   api_key_anthropic: string;
   api_key_google: string;

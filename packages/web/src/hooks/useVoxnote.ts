@@ -86,12 +86,20 @@ export function useVoxnote() {
   const extractInsights = useCallback(
     async (
       text: string,
-      provider: string = "ollama"
+      provider: string = "chrome"
     ): Promise<InsightsResult> => {
       updateStep(2, { status: "active" });
 
       try {
-        const result = await apiExtractInsights(text, provider);
+        const result = await apiExtractInsights(text, provider, (pct) => {
+          // First use of Chrome built-in AI downloads Gemini Nano (managed by Chrome).
+          updateStep(2, {
+            description:
+              pct < 100
+                ? `Chrome is downloading its on-device model… ${pct}%`
+                : "Preparing the on-device model…",
+          });
+        });
 
         updateStep(2, {
           status: "completed",

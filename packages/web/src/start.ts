@@ -11,7 +11,9 @@ import { createMiddleware, createStart } from "@tanstack/react-start";
  * so 'unsafe-inline' is not needed in script-src. 'wasm-unsafe-eval' +
  * blob: are required by onnxruntime-web (Whisper). connect-src is the real
  * exfiltration guard for the BYO API keys in localStorage: only the LLM
- * providers + Hugging Face. style-src keeps 'unsafe-inline' because
+ * providers + Hugging Face, plus plain-http loopback (localhost/127.0.0.1)
+ * for a local Ollama server. The onnxruntime runtime is self-hosted, so no
+ * CDN is allowed. style-src keeps 'unsafe-inline' because
  * Tailwind/framer-motion set inline styles at runtime.
  */
 
@@ -38,7 +40,7 @@ function securityHeaders(nonce: string): Record<string, string> {
       "font-src 'self' data:",
       "img-src 'self' data: blob:",
       "media-src 'self' blob:",
-      "connect-src 'self' blob: https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://api.moonshot.ai https://huggingface.co https://*.hf.co https://cdn.jsdelivr.net",
+      "connect-src 'self' blob: https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://api.moonshot.ai https://huggingface.co https://*.hf.co http://localhost:* http://127.0.0.1:*",
       "worker-src 'self' blob:",
       "frame-ancestors 'none'",
       "base-uri 'self'",

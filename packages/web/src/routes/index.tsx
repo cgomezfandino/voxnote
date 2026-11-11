@@ -29,6 +29,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   zai: "Z.ai",
   kimi: "Kimi",
   ollama: "Ollama Cloud",
+  ollama_local: "Ollama on this computer",
   chrome: "Chrome local AI",
 };
 
@@ -110,7 +111,8 @@ function HomePage() {
 
   const providerLabel =
     PROVIDER_LABELS[config.llm_provider] ?? config.llm_provider;
-  const insightsLocal = config.llm_provider === "chrome";
+  const insightsLocal =
+    config.llm_provider === "chrome" || config.llm_provider === "ollama_local";
   const keyField = KEY_FIELDS[config.llm_provider];
   const needsKey =
     !insightsLocal &&
@@ -312,7 +314,7 @@ function HomePage() {
             </div>
             <p className="text-xs text-muted-foreground">
               {insightsLocal
-                ? "Insights will be generated on this device with Chrome built-in AI. Nothing is sent anywhere."
+                ? `Insights will be generated on this device with ${providerLabel}. Nothing is sent to the internet.`
                 : `When you continue, this text (not the audio) is sent to ${providerLabel} with your API key. Edit or remove anything sensitive first.`}
             </p>
             <textarea
