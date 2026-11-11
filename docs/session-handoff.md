@@ -1,8 +1,8 @@
 # Session Handoff — Voxnote Web
 
 **Última actualización:** 2026-11-11
-**Estado:** Migrado a TanStack Start en Cloudflare Workers, en producción en https://voxnote.cgomezfandino.workers.dev (proyecto Pages antiguo eliminado 2026-11-04)
-**HEAD:** `9f7ca77` en `main` (limpio, sync con `origin/main`)
+**Estado:** En producción en https://voxnote.cgomezfandino.workers.dev (Cloudflare Worker, TanStack Start). Auditoría 2026-11-11 completa: bloques 1 y 2 mergeados (#60, #61), desplegados y verificados en producción.
+**HEAD:** `6a9fc87` en `main` + este commit de docs (limpio; sin ramas de trabajo ni worktrees; en remoto solo `main` + ramas de Dependabot)
 **Auto-deploy:** GitHub Action `.github/workflows/deploy-web.yml` → `wrangler deploy -c dist/server/wrangler.json` en cada push a `main` que toque `packages/web/`
 
 Documento para retomar el trabajo en una futura sesión sin rediscover el contexto.
@@ -106,6 +106,8 @@ Todo el ML sigue en el navegador; el Worker nunca recibe audio, transcripciones 
 - `bdba3b4` feat(web): migrate to TanStack Start on Cloudflare Workers
 - `6afbb69` docs: session handoff + runbook SSD
 - `9f7ca77` fix(web): resolve all Dependabot vulnerabilities (npm audit 0)
+- `aae8931` fix(web): audit block 1 — Turbo q4, Z.ai relay, proxy hardening, persistent recording (PR #60, merge `f0ec626`)
+- `b272e94` feat(web): audit block 2 — Chrome AI default, connection test, local Ollama, clear errors (PR #61, merge `6a9fc87`)
 
 ## Auditoría y arreglos 2026-11-11
 
@@ -135,7 +137,7 @@ responde, Turbo q4 con voz/silencio/tono, grabación → Notes → Settings → 
 recuperación tras recarga a mitad de grabación (y su transcripción), confirmaciones.
 No verificado: OpenAI/Anthropic con clave real (no se usan claves en pruebas).
 
-### Bloque 2 (rama `feat/web-audit-block2`, apilada sobre el bloque 1)
+### Bloque 2 (PR #61, mergeado y desplegado 2026-11-11)
 
 Hecho y verificado en local (`wrangler dev` sobre el build, Chrome real):
 
@@ -158,6 +160,29 @@ Hecho y verificado en local (`wrangler dev` sobre el build, Chrome real):
 
 Sigue pendiente: diarización, búsqueda semántica, transcripción en vivo (roadmap).
 
+### Verificación en producción (2026-11-11, tras el deploy de #61)
+
+- CSP sin jsDelivr ni `api.z.ai`, con `http://localhost:*`/`127.0.0.1:*` para Ollama local.
+- Relays: Z.ai mismo origen → 401 de Z.ai (llega); origen ajeno / sin `Origin` → 403.
+- Runtime ONNX servido desde `/assets` (`.mjs` text/javascript, `.wasm` application/wasm).
+- Turbo q4 en WebGPU desde caché: ~29 s (crear sesión + inferencia). Los q8 antiguos se
+  borraron solos de la caché; IndexedDB migrada a v3 sin tocar notas/borrador.
+- Chrome built-in AI: `available`.
+- Aprobado por Carlos en los previews antes del merge (incluido micro real).
+
+### Cómo se trabajó (repetible)
+
+1. Rama + PR contra `main` (CI: `ci.yml` solo corre en PRs a `main`; un PR apilado
+   necesita un push tras cambiar la base para que arranque).
+2. Preview sin tocar producción:
+   `cd packages/web && npm run build && npx wrangler versions upload -c dist/server/wrangler.json --preview-alias <alias>`
+   → `https://<alias>-voxnote.cgomezfandino.workers.dev`. Ojo: otro origen = sin claves,
+   notas ni modelos de producción.
+3. Merge → el Action despliega → verificar producción → borrar ramas.
+
+Los previews `audit-block1-…` y `audit-block2-…` siguen accesibles (Cloudflare conserva
+las versiones); no exponen nada sensible y el de bloque 2 = producción actual.
+
 ## Pendiente
 
 - **Corte de producción:** hecho 2026-11-04 — proyecto Pages `voxnote` eliminado,
@@ -165,6 +190,11 @@ Sigue pendiente: diarización, búsqueda semántica, transcripción en vivo (roa
   ante un problema se revierte el Worker con `wrangler rollback`.
 - `public/favicon.ico` viejo y generico; el lockup usa `logo.svg` + `icon-*.png`.
 - Diarización en navegador, búsqueda semántica, live transcription (ver roadmap).
+- 11 PRs de Dependabot abiertos (#39–#59). Varios apuntan a `next` (15.5.25, 16.3.0),
+  que ya no se usa desde la migración a TanStack: cerrar esos; revisar el resto
+  (cuidado con subir `@huggingface/transformers`/`onnxruntime-web`: límite 25 MiB del wasm).
+- Ollama local no probado contra un servidor real; mensaje de CORS de organización
+  (Anthropic) mapeado por regex pero no reproducido.
 - La lista web de alertas Dependabot tarda en reflejar cierres (todas constan
   `fixed` en la API).
 
