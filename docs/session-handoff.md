@@ -2,7 +2,7 @@
 
 **Última actualización:** 2026-11-11
 **Estado:** En producción en https://voxnote.cgomezfandino.workers.dev (Cloudflare Worker, TanStack Start). Auditoría 2026-11-11 completa: bloques 1 y 2 mergeados (#60, #61), desplegados y verificados en producción.
-**HEAD:** `6a9fc87` en `main` + este commit de docs (limpio; sin ramas de trabajo ni worktrees; en remoto solo `main` + ramas de Dependabot)
+**HEAD:** `539cb5e` en `main` (+ commits de docs) (limpio; sin ramas de trabajo ni worktrees; en remoto solo `main` + ramas de Dependabot)
 **Auto-deploy:** GitHub Action `.github/workflows/deploy-web.yml` → `wrangler deploy -c dist/server/wrangler.json` en cada push a `main` que toque `packages/web/`
 
 Documento para retomar el trabajo en una futura sesión sin rediscover el contexto.
@@ -190,14 +190,16 @@ las versiones); no exponen nada sensible y el de bloque 2 = producción actual.
   ante un problema se revierte el Worker con `wrangler rollback`.
 - `public/favicon.ico` viejo y generico; el lockup usa `logo.svg` + `icon-*.png`.
 - Diarización en navegador, búsqueda semántica, live transcription (ver roadmap).
-- Dependabot (revisado 2026-11-11): cerrados #44/#53 (`next`, ya no se usa). Rama
-  `chore/deps-refresh` aplica lo vigente: minors (react 19.3, docx 9.15, lucide 1.72,
-  @types, postcss), `tailwind-merge` 3 (#41), `eslint` 10 (#40) y Actions v7 en el
-  deploy (#50); `jszip` pasa a dependencia directa (docx 9.15 dejó de traerlo).
-  **TypeScript 7 (#39) descartado por ahora**: `typescript-eslint` exige TS < 6.1.
+- Dependabot (revisado y cerrado 2026-11-11): PR #62 (merge `539cb5e`, desplegado con
+  Actions v7 y verificado) aplicó minors (react 19.3, docx 9.15, lucide 1.72, @types,
+  postcss), `tailwind-merge` 3, `eslint` 10, Actions v7 en el deploy, y `jszip` como
+  dependencia directa (docx 9.15 dejó de traerlo; sin él falla el build). Cerrados:
+  #44/#53 (`next`, ya no se usa), #59/#57/#52 (ya resueltos), #54/#58 (incluían
+  transformers), #40/#41 (cubiertos por #62); Dependabot cerró #39/#50 solo.
+  **TypeScript 7 descartado por ahora** (`typescript-eslint` exige TS < 6.1).
   `dependabot.yml` ignora `@huggingface/transformers`, `onnxruntime-web` (límite 25 MiB
-  del wasm) y los majors de `typescript`. #59/#57/#52 ya resueltos en el lockfile y
-  #54/#58 obsoletos (incluyen transformers): pendientes de cerrar con el OK de Carlos.
+  del wasm) y majors de `typescript`. Abierto: #63 (parches de tanstack/tailwind/vite/
+  wrangler), pendiente de decisión.
 - Ollama local no probado contra un servidor real; mensaje de CORS de organización
   (Anthropic) mapeado por regex pero no reproducido.
 - La lista web de alertas Dependabot tarda en reflejar cierres (todas constan
