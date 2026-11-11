@@ -87,6 +87,24 @@ function getWorker(): Worker {
   return worker;
 }
 
+let nextRequestId = 1;
+let persistRequested = false;
+
+/**
+ * Ask the browser to keep our storage (the ~0.1–0.8 GB model cache, notes,
+ * drafts) instead of evicting it under disk pressure. Chrome decides silently
+ * from site engagement; Firefox may show a one-time prompt. Best-effort.
+ */
+function requestPersistentStorage(): void {
+  if (persistRequested) return;
+  persistRequested = true;
+  try {
+    void navigator.storage?.persist?.().catch(() => {});
+  } catch {
+    // unsupported — nothing to do
+  }
+}
+
 export interface TranscribeInBrowserOptions {
   model?: string;
   language?: string;
@@ -106,12 +124,16 @@ export async function transcribeInBrowser(
   const samples = await blobToFloat32(audio);
   options.onProgress?.(1, "Preparing audio");
 
+  requestPersistentStorage();
+  const id = nextRequestId++;
+
   return new Promise<TranscriptionResult>((resolve, reject) => {
     const w = getWorker();
     const cleanup = () => w.removeEventListener("message", handler);
     const handler = (event: MessageEvent) => {
       const data = event.data;
-      if (!data || typeof data !== "object") return;
+      // Ignore messages that belong to another (concurrent) request.
+      if (!data || typeof data !== "object" || data.id !== id) return;
       if (data.type === "progress") {
         options.onProgress?.(
           data.progress as number,
@@ -143,6 +165,6 @@ export async function transcribeInBrowser(
       }
     };
     w.addEventListener("message", handler);
-    w.postMessage({ audio: samples, model, language }, [samples.buffer]);
+    w.postMessage({ id, audio: samples, model, language }, [samples.buffer]);
   });
 }

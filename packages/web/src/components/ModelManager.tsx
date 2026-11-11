@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { Cpu, HardDrive, ShieldCheck, Trash2 } from "lucide-react";
+import { Cpu, HardDrive, ShieldAlert, ShieldCheck, Trash2 } from "lucide-react";
 import { WHISPER_MODELS } from "@/lib/whisper";
 import {
   clearModelCache,
+  eraseAllLocalData,
   formatBytes,
   getCapabilities,
   getDownloadedModels,
@@ -26,6 +27,18 @@ export default function ModelManager() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const [erasing, setErasing] = useState(false);
+
+  const handleEraseAll = async () => {
+    const ok = window.confirm(
+      "Erase ALL voxnote data in this browser? This deletes your notes, the current recording and transcript, any API keys, your settings and the downloaded models. It can't be undone.",
+    );
+    if (!ok) return;
+    setErasing(true);
+    await eraseAllLocalData();
+    window.location.assign("/");
+  };
 
   const handleClear = async () => {
     setClearing(true);
@@ -83,7 +96,7 @@ export default function ModelManager() {
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-accent shrink-0" />
             <span>
-              WebGPU: {caps.webgpu ? "available" : "not available (CPU/WASM will be used)"}
+              WebGPU: {caps.webgpu ? "available" : "not available (CPU only — use the Small or Base model)"}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -126,6 +139,21 @@ export default function ModelManager() {
           {clearing ? "Clearing…" : "Delete downloaded model"}
         </button>
         {cleared && <span className="text-xs text-muted-foreground">{cleared}</span>}
+      </div>
+
+      <div className="pt-3 border-t border-border space-y-2">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Everything voxnote keeps lives only in this browser. To remove it all
+          (notes, current recording, API keys, settings and models):
+        </p>
+        <button
+          onClick={handleEraseAll}
+          disabled={erasing}
+          className="btn-secondary flex items-center gap-2 text-[var(--danger)] disabled:opacity-50"
+        >
+          <ShieldAlert className="w-4 h-4" />
+          {erasing ? "Erasing…" : "Erase all local data"}
+        </button>
       </div>
     </div>
   );
