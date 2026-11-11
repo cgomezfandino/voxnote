@@ -88,7 +88,6 @@ function HomePage() {
     extractInsights,
     generateNote,
     steps,
-    isLoading,
     error,
     reset,
   } = useVoxnote();
@@ -118,20 +117,39 @@ function HomePage() {
     !!keyField &&
     !(config[keyField as keyof typeof config] as string)?.trim();
 
+  // Destructive actions on an existing draft always ask first: audio,
+  // transcript edits, insights and note are all lost and can't be undone.
+  const confirmDiscard = useCallback(
+    (question: string) => !draft.blob || window.confirm(question),
+    [draft.blob],
+  );
+
   const clearAudio = useCallback(() => {
+    if (!confirmDiscard("Discard this recording and everything made from it (transcript, edits, note)? This can't be undone.")) {
+      return;
+    }
     draft.clear();
     reset();
-  }, [draft, reset]);
+  }, [confirmDiscard, draft, reset]);
 
-  const handleRecordingComplete = (blob: Blob) => {
-    draft.setAudio(blob, "recording.wav", "recorded");
-  };
+  const confirmNewRecording = useCallback(() => {
+    if (!confirmDiscard("Start a new recording? The current audio and its transcript will be discarded.")) {
+      return false;
+    }
+    draft.clear();
+    reset();
+    return true;
+  }, [confirmDiscard, draft, reset]);
 
   const handleFileSelected = useCallback(
     (file: File) => {
+      if (!confirmDiscard("Replace the current audio with this file? Its transcript and note will be discarded.")) {
+        return;
+      }
+      reset();
       draft.setAudio(file, file.name, "uploaded");
     },
-    [draft],
+    [confirmDiscard, draft, reset],
   );
 
   const audioBlob = draft.blob;
@@ -173,7 +191,7 @@ function HomePage() {
       const generated = await generateNote(
         editedText,
         result,
-        draft.filename || "recording.wav",
+        draft.filename || "recording.webm",
       );
       setNote({ content: generated.content, filename: generated.filename });
     } catch {
@@ -211,10 +229,12 @@ function HomePage() {
         </div>
       </div>
 
-      {draft.restored && audioBlob && (
+      {draft.restored && audioBlob && !draft.isRecording && (
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg bg-accent-light border border-accent/30 text-sm">
           <span>
-            Welcome back — your recording is still here, exactly where you left it.
+            {draft.restored === "interrupted"
+              ? "Your last recording was interrupted (the tab was closed or reloaded). We recovered it up to the last few seconds."
+              : "Welcome back — your recording is still here, exactly where you left it."}
           </span>
           <button
             onClick={clearAudio}
@@ -227,20 +247,22 @@ function HomePage() {
 
       <div className="max-w-2xl mx-auto">
         <AudioRecorder
-          onRecordingComplete={handleRecordingComplete}
-          initialBlob={recordedBlob}
-          initialUrl={recordedBlob ? recordedUrl : null}
+          recordingUrl={recordedBlob ? recordedUrl : null}
+          recordingDuration={draft.duration}
+          onBeforeStart={confirmNewRecording}
           onReset={clearAudio}
           onProcess={handleTranscribe}
+          busy={busy}
         />
       </div>
 
       <div className="max-w-3xl mx-auto space-y-4">
         {!recordedBlob &&
+          !draft.isRecording &&
           (recordedUrl ? (
             <AudioVisualizer
               audioUrl={recordedUrl}
-              fileName={draft.filename || "recording.wav"}
+              fileName={draft.filename || "recording.webm"}
             />
           ) : (
             <FileUpload onFileSelected={handleFileSelected} disabled={busy} />
@@ -250,7 +272,7 @@ function HomePage() {
           <div className="flex justify-center gap-3">
             <button
               onClick={handleTranscribe}
-              disabled={busy || isLoading}
+              disabled={busy}
               className="btn-primary gap-2 disabled:opacity-50"
             >
               <FileMusic className="w-4 h-4" />

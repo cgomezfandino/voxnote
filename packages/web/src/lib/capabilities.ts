@@ -3,6 +3,8 @@
  * Everything here is read-only except clearModelCache().
  */
 
+import { DTYPE_SUFFIX, MODEL_DTYPES, MODEL_REVISIONS } from "./whisper-catalog";
+
 export interface Capabilities {
   webgpu: boolean;
   crossOriginIsolated: boolean;
@@ -60,17 +62,10 @@ export async function clearModelCache(): Promise<string[]> {
  *
  * transformers.js stores model files in the Cache API under
  * "transformers-cache", keyed by their full Hugging Face URL — which includes
- * the pinned revision SHA. A model counts as downloaded when a weight file
- * (.onnx) for its revision is present, not just its config files.
- * Revisions mirror MODEL_REVISIONS in transcriber.worker.ts.
+ * the pinned revision SHA. A model counts as downloaded when an encoder weight
+ * file for its revision is present, not just its config files. For Turbo the
+ * dtype matters (only q4 is used now; a leftover q8 download doesn't count).
  */
-const MODEL_REVISIONS: Record<string, string> = {
-  base: "27a07b4b52b3a4c5886134bb4320e93e1a4bbc7c",
-  small: "36050c46d777d46dc4b5f43f6d90574fc38f8732",
-  turbo: "360ebcde2559d60bb474678be3c1de9ef347d01a",
-  moonshine: "a6da1241cd305dcd64eab1edbd615f2bb9aabb95",
-};
-
 export async function getDownloadedModels(): Promise<Set<string>> {
   const found = new Set<string>();
   if (typeof caches === "undefined") return found;
@@ -79,7 +74,11 @@ export async function getDownloadedModels(): Promise<Set<string>> {
     const keys = await cache.keys();
     const urls = keys.map((k) => k.url);
     for (const [model, revision] of Object.entries(MODEL_REVISIONS)) {
-      if (urls.some((u) => u.includes(`/${revision}/`) && u.includes(".onnx"))) {
+      const weight =
+        model === "turbo"
+          ? (u: string) => u.endsWith(`encoder_model${DTYPE_SUFFIX[MODEL_DTYPES.turbo]}`)
+          : (u: string) => u.includes(".onnx");
+      if (urls.some((u) => u.includes(`/${revision}/`) && weight(u))) {
         found.add(model);
       }
     }

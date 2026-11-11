@@ -15,9 +15,11 @@ import type {
 } from "@/types";
 
 const DB_NAME = "voxnote";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE = "notes";
 const DRAFT_STORE = "drafts";
+/** Audio chunks of the recording in progress (v3), flushed every few seconds. */
+const CHUNK_STORE = "recording_chunks";
 
 interface NoteRecord {
   filename: string;
@@ -44,9 +46,23 @@ function openDb(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(DRAFT_STORE)) {
         db.createObjectStore(DRAFT_STORE, { keyPath: "id" });
       }
+      if (!db.objectStoreNames.contains(CHUNK_STORE)) {
+        db.createObjectStore(CHUNK_STORE, { autoIncrement: true });
+      }
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => {
+      const db = req.result;
+      // Another tab is upgrading the schema: let it, and reopen lazily next time.
+      db.onversionchange = () => {
+        db.close();
+        dbPromise = null;
+      };
+      resolve(db);
+    };
+    req.onerror = () => {
+      dbPromise = null;
+      reject(req.error);
+    };
   });
   return dbPromise;
 }
@@ -180,6 +196,8 @@ export interface DraftRecord {
   editedText: string;
   insights: InsightsResult | null;
   note: { content: string; filename: string } | null;
+  /** Recording length in seconds (recordings only; uploads leave it undefined). */
+  duration?: number;
   updatedAt: string;
 }
 
@@ -209,6 +227,49 @@ export async function loadDraft(): Promise<DraftRecord | null> {
 
 export async function clearDraft(): Promise<void> {
   await tx("readwrite", (store) => store.delete("current"), DRAFT_STORE);
+}
+
+// --- Recording in progress ------------------------------------------------
+//
+// While recording, MediaRecorder emits a chunk every few seconds; each one is
+// appended here so a reload, a closed tab or a crash in the middle of a
+// meeting loses at most the last few seconds instead of everything. The
+// chunks are folded into the draft (and this store emptied) when recording
+// stops, or on the next app start if it never stopped cleanly.
+
+interface ChunkRecord {
+  chunk: Blob;
+  mimeType: string;
+  startedAt: number; // epoch ms when the recording started
+  at: number; // epoch ms when this chunk was emitted
+}
+
+export async function appendRecordingChunk(record: ChunkRecord): Promise<void> {
+  await tx("readwrite", (store) => store.add(record), CHUNK_STORE);
+}
+
+/** All chunks of an unfinished recording, in order (null when there is none). */
+export async function loadRecordingChunks(): Promise<
+  { blob: Blob; startedAt: number; endedAt: number } | null
+> {
+  const records = await tx<ChunkRecord[]>(
+    "readonly",
+    (store) => store.getAll() as IDBRequest<ChunkRecord[]>,
+    CHUNK_STORE,
+  );
+  if (!records.length) return null;
+  return {
+    blob: new Blob(
+      records.map((r) => r.chunk),
+      { type: records[0].mimeType || "audio/webm" },
+    ),
+    startedAt: records[0].startedAt,
+    endedAt: records[records.length - 1].at,
+  };
+}
+
+export async function clearRecordingChunks(): Promise<void> {
+  await tx("readwrite", (store) => store.clear(), CHUNK_STORE);
 }
 
 function previewFromContent(content: string): string {

@@ -38,7 +38,7 @@ function securityHeaders(nonce: string): Record<string, string> {
       "font-src 'self' data:",
       "img-src 'self' data: blob:",
       "media-src 'self' blob:",
-      "connect-src 'self' blob: https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://api.z.ai https://api.moonshot.ai https://huggingface.co https://*.hf.co https://cdn.jsdelivr.net",
+      "connect-src 'self' blob: https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://api.moonshot.ai https://huggingface.co https://*.hf.co https://cdn.jsdelivr.net",
       "worker-src 'self' blob:",
       "frame-ancestors 'none'",
       "base-uri 'self'",

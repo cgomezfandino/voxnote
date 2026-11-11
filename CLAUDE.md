@@ -39,7 +39,7 @@ npm run lint         # eslint
 npm run deploy       # vite build && wrangler deploy -c dist/server/wrangler.json
 
 # Test transcription offline (Node script, mirrors the worker pipeline)
-# Create a temp script importing @huggingface/transformers, dtype "q8"
+# Create a temp script importing @huggingface/transformers (dtypes: src/lib/whisper-catalog.ts)
 ```
 
 ### Python (local CLI / API)
@@ -89,14 +89,16 @@ packages/web/
 │   ├── lib/
 │   │   ├── api.ts                  # Public client surface (used by hooks/components)
 │   │   ├── whisper.ts              # Worker wrapper + audio resampling to 16 kHz
-│   │   ├── transcriber.worker.ts   # Whisper inference (transformers.js, q8 dtype)
+│   │   ├── transcriber.worker.ts   # Whisper inference (transformers.js)
+│   │   ├── whisper-catalog.ts      # Model ids, pinned revisions, dtypes (single source)
+│   │   ├── llm-proxy.server.ts     # Same-origin relay used by the server routes
 │   │   ├── insights.ts             # BYO-key LLM calls (6 providers, structured output)
 │   │   ├── exporter.ts             # Markdown note generator
 │   │   ├── docx.ts                 # Markdown → .docx in-browser
 │   │   ├── notes-db.ts             # IndexedDB persistence + export-all ZIP
 │   │   └── config-store.ts         # localStorage read/patch helpers
 │   └── types/index.ts              # Shared TypeScript types
-├── routes/api/ollama/chat/completions.ts   # TanStack server route (Ollama CORS proxy)
+├── src/routes/api/{ollama,zai}/chat/completions.ts   # Server routes: CORS relays
 ├── public/
 │   ├── _headers                    # COOP/COEP for crossOriginIsolated
 │   └── manifest.webmanifest        # PWA manifest
@@ -107,8 +109,8 @@ packages/web/
 └── package.json
 ```
 
-**Browser pipeline:** `AudioRecorder (MediaRecorder) → blobToFloat32 (16 kHz mono PCM) →
-transcriber.worker.ts (transformers.js, q8, WebGPU/WASM) → insights.ts (fetch to user's
+**Browser pipeline:** `RecordingDraftProvider (MediaRecorder, global) → blobToFloat32 (16 kHz
+mono PCM) → transcriber.worker.ts (transformers.js, WebGPU/WASM) → insights.ts (fetch to user's
 LLM) → exporter.ts (Markdown) → notes-db.ts (IndexedDB)`.
 
 ### Python (local CLI) — for reference
@@ -130,22 +132,35 @@ packages/api/voxnote_api/
 
 ## Key technical decisions (web mode)
 
-- **Whisper dtype MUST be a string `"q8"`**, not an object `{ encoder: ... }`. transformers.js
+- **Whisper dtype MUST be a string** (`"q4"` for Turbo, `"q8"` for base/small), not an object
+  `{ encoder: ... }`. transformers.js
   looks up per-file dtypes by session key (`"model"`, `"decoder_model_merged"`), not by role
   name. Object keys with wrong names silently fall through to fp32 (WebGPU default), which
   loads `encoder_model.onnx_data` (>2 GB split file) and throws `Module.MountedFiles is not
   available` (onnxruntime-web can't mount external data — microsoft/onnxruntime#19752, unfixed).
+- **Turbo is q4, not q8** (2026-11-11). Its q8 files (`*_quantized.onnx`) have no WebGPU kernels
+  for the quantized MatMuls and run on CPU: slow on speech, and on non-speech audio (silence,
+  muted mic) the decoder never finished in >3 min. q4 (`*_q4.onnx`, MatMulNBits) ran the same
+  input in ~8 s, ~760 MB. Turbo on WASM is impractically slow — it needs WebGPU.
 - **fp16 is avoided** — known precision bug on WebGPU for Whisper encoder (#1590).
 - **Distil-Whisper was removed** — q8 quantization returns empty text for non-English; same
   download size as Turbo which works for all languages.
 - **Service worker is network-first** for JS/HTML — prevents stale JS after deploys (was a
   recurring problem with precache-only strategy).
-- **Ollama Cloud needs a proxy** — CORS-blocked; routed through a TanStack server route
-  at `/api/ollama/chat/completions` that forwards with the user's Bearer key (never stored).
+- **Ollama Cloud and Z.ai need a relay** — neither sends CORS headers (Z.ai's preflight has
+  no `Access-Control-Allow-Origin`). Server routes `/api/{ollama,zai}/chat/completions` forward
+  to ONE fixed upstream each with the user's Bearer key (never stored/logged), and reject any
+  request whose `Origin` isn't the Worker's own origin (403).
 - **OpenAI-compatible providers** (OpenAI, Z.ai, Kimi, Ollama) share `callOpenAICompatible`
-  with a baseUrl map. Adding a new one is one line in `OPENAI_COMPATIBLE`.
-- **AudioRecorder produces WebM**, not WAV, despite the `.wav` label — `decodeAudioData`
-  handles it transparently.
+  with a baseUrl map. Adding a new one is one line in `OPENAI_COMPATIBLE`. `temperature` is
+  omitted for reasoning models (`o*`, `gpt-5*`), which reject it.
+- **Anthropic forced `tool_choice` → 400 on Claude Opus/Sonnet 5.5 and Fable**; `callAnthropic`
+  retries once with `tool_choice: auto` + an instruction to call the tool.
+- **Recording lives in `RecordingDraftProvider`** (above the routes), so it keeps recording on
+  Notes/Settings (navbar shows "REC mm:ss"). MediaRecorder emits a chunk every 5 s, appended
+  to IndexedDB `recording_chunks` (DB v3); a crash/reload mid-recording is recovered on next
+  start. A Web Lock (`voxnote-recording`) stops other tabs from "recovering" a live recording.
+  Discard / Re-record / replacing audio always ask for confirmation. Output is WebM/Opus.
 
 ## Configuration
 

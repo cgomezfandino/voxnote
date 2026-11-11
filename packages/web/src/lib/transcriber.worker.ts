@@ -14,6 +14,13 @@
 /// <reference lib="webworker" />
 
 import { pipeline, env, type ProgressInfo } from "@huggingface/transformers";
+import {
+  ENGLISH_ONLY,
+  MODEL_DTYPES,
+  MODEL_IDS,
+  MODEL_REVISIONS,
+  STALE_WEIGHTS,
+} from "./whisper-catalog";
 
 /** Minimal structural type for the ASR pipeline instance we use. */
 interface ASRTranscriber {
@@ -38,55 +45,6 @@ interface ASRTranscriber {
 // Pull model weights from the HF Hub. There are no local models bundled with the app.
 env.allowLocalModels = false;
 env.allowRemoteModels = true;
-
-/** Maps the short label used in the UI to the Hugging Face model id. */
-const MODEL_IDS: Record<string, string> = {
-  base: "onnx-community/whisper-base",
-  small: "onnx-community/whisper-small",
-  turbo: "onnx-community/whisper-large-v3-turbo",
-  // Moonshine Tiny (27M): English-only, real-time-capable on modest hardware.
-  moonshine: "onnx-community/moonshine-tiny-ONNX",
-};
-
-/**
- * Pinned Hub revisions (commit SHAs, verified against the HF API). Without a
- * pin, transformers.js would silently download whatever `main` points to on
- * first run — a supply-chain risk for a model that processes private audio.
- * Bump deliberately, after re-validating quality in Spanish.
- */
-const MODEL_REVISIONS: Record<string, string> = {
-  base: "27a07b4b52b3a4c5886134bb4320e93e1a4bbc7c",
-  small: "36050c46d777d46dc4b5f43f6d90574fc38f8732",
-  turbo: "360ebcde2559d60bb474678be3c1de9ef347d01a",
-  moonshine: "a6da1241cd305dcd64eab1edbd615f2bb9aabb95",
-};
-
-/**
- * Per-model ONNX dtype, passed as a STRING so it applies to every weight file
- * (encoder + decoder) uniformly.
- *
- * Why a string and not an object like { encoder: ..., decoder: ... }: transformers.js
- * looks up per-file dtypes by the session key, which for Seq2Seq models (Whisper) is
- * "model" (the encoder) and "decoder_model_merged" — NOT "encoder"/"decoder". Using the
- * wrong keys silently falls through to the device default, which on WebGPU is fp32.
- * fp32 encoder weights exceed the 2 GB single-file ONNX limit, so the model is split
- * into encoder_model.onnx + encoder_model.onnx_data, and onnxruntime-web cannot mount
- * external data ("Module.MountedFiles is not available", microsoft/onnxruntime#19752,
- * closed unfixed). A string dtype avoids the key mismatch entirely.
- *
- * q8 (8-bit quantized → *_quantized.onnx) keeps near-fp32 quality while staying
- * single-file and avoiding the fp16-on-WebGPU precision bug (#1590). Moonshine is tiny
- * (27M) so fp32 single-file is fine.
- */
-const MODEL_DTYPES: Record<string, "fp32" | "fp16" | "q8" | "q4"> = {
-  base: "q8",
-  small: "q8",
-  turbo: "q8",
-  moonshine: "fp32",
-};
-
-/** English-only models that must not receive a `language` option. */
-const ENGLISH_ONLY = new Set(["moonshine"]);
 
 export interface TranscribeRequest {
   audio: Float32Array;
@@ -122,6 +80,24 @@ async function cachedFileSet(revision: string): Promise<Set<string>> {
     // cache unavailable — everything will be labelled as a download
   }
   return found;
+}
+
+/**
+ * Evict weight files of an older dtype for this model+revision (Turbo moved
+ * q8 → q4), so users who already downloaded the old ~1.1 GB don't keep it
+ * forever. Best-effort; only runs after the new weights loaded successfully.
+ */
+async function evictStaleWeights(modelKey: string, revision: string): Promise<void> {
+  const stale = STALE_WEIGHTS[modelKey];
+  if (!stale || typeof caches === "undefined") return;
+  try {
+    const cache = await caches.open("transformers-cache");
+    for (const req of await cache.keys()) {
+      if (req.url.includes(`/${revision}/`) && stale.test(req.url)) await cache.delete(req);
+    }
+  } catch {
+    // cache unavailable — nothing to evict
+  }
 }
 
 export interface WorkerResult {
@@ -198,8 +174,9 @@ async function getTranscriber(modelKey: string, forceWasm = false) {
   // current onnxruntime-web ("TransposeDQWeightsForMatMulNBits Missing
   // required scale" at session creation, reproduced in headless Chrome).
   // Small models use fp32 on WASM (single-file, fine at this size); Turbo
-  // keeps q8 because its fp32 encoder exceeds the 2 GB single-file limit —
-  // meaning Turbo effectively requires WebGPU, which the UI should surface.
+  // keeps its q4 weights because its fp32 encoder exceeds the 2 GB
+  // single-file limit. Turbo on WASM did not finish 12 s of audio in >3 min
+  // (2026-11-11), so it effectively requires WebGPU — the UI says so.
   const dtype =
     device === "wasm" && modelKey !== "turbo"
       ? "fp32"
@@ -226,6 +203,7 @@ async function getTranscriber(modelKey: string, forceWasm = false) {
       progress_callback,
     })) as unknown as ASRTranscriber;
     cache = { key, transcriber, device };
+    void evictStaleWeights(modelKey, revision);
     return cache;
   } catch (err) {
     if (device === "webgpu" && isGpuError(err)) {

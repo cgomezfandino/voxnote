@@ -1,6 +1,6 @@
 # Session Handoff — Voxnote Web
 
-**Última actualización:** 2026-11-04
+**Última actualización:** 2026-11-11
 **Estado:** Migrado a TanStack Start en Cloudflare Workers, en producción en https://voxnote.cgomezfandino.workers.dev (proyecto Pages antiguo eliminado 2026-11-04)
 **HEAD:** `9f7ca77` en `main` (limpio, sync con `origin/main`)
 **Auto-deploy:** GitHub Action `.github/workflows/deploy-web.yml` → `wrangler deploy -c dist/server/wrangler.json` en cada push a `main` que toque `packages/web/`
@@ -107,14 +107,51 @@ Todo el ML sigue en el navegador; el Worker nunca recibe audio, transcripciones 
 - `6afbb69` docs: session handoff + runbook SSD
 - `9f7ca77` fix(web): resolve all Dependabot vulnerabilities (npm audit 0)
 
+## Auditoría y arreglos 2026-11-11
+
+Auditoría completa de la UI en producción (Chrome real) + revisión estática. Arreglado
+(bloque 1):
+
+- **Turbo q8 → q4.** Con q8 la inferencia caía a CPU en WebGPU: con voz iba, pero con
+  audio sin voz (silencio, micro silenciado, tono) no terminaba en >3 min. q4: ~20 s
+  incluyendo crear sesión, ~760 MB. Calidad en español equivalente (alguna tilde menos).
+  La caché antigua q8 de Turbo se borra sola tras cargar q4. Turbo en WASM no termina
+  (>3 min para 12 s) → necesita WebGPU.
+- **Z.ai no funcionaba desde el navegador** (preflight CORS sin `Allow-Origin`). Ahora va
+  por `/api/zai/chat/completions`, igual que Ollama. `api.z.ai` sale de la CSP.
+- **Proxy endurecido** (`src/lib/llm-proxy.server.ts`): antes aceptaba cualquier origen
+  y su allowlist solo tenía `voxnote.pages.dev` (dominio ya no nuestro). Ahora 403 si
+  `Origin` ≠ origen propio o `Sec-Fetch-Site` cross-site; solo devuelve `Content-Type`.
+- **OpenAI `o4-mini`/`gpt-5*`** fallaban por `temperature: 0.1`; ahora se omite.
+  Arreglado también el error que se leía dos veces (mensaje vacío en 400).
+- **Claude 5.5 / Fable** rechazan `tool_choice` forzado; reintento con `auto`.
+- **Grabación:** vive en el provider global (sigue grabando en Notes/Settings, indicador
+  REC en la barra), trozos a IndexedDB cada 5 s con recuperación tras cierre/crash,
+  aviso `beforeunload`, confirmación en Discard/Re-record/Clear/sustituir audio,
+  duración guardada en el borrador, guardado del borrador con debounce.
+
+Verificado en local (`wrangler dev` sobre el build): proxy 403/401/413, Z.ai vía relay
+responde, Turbo q4 con voz/silencio/tono, grabación → Notes → Settings → Stop,
+recuperación tras recarga a mitad de grabación (y su transcripción), confirmaciones.
+No verificado: OpenAI/Anthropic con clave real (no se usan claves en pruebas).
+
+### Pendiente de la auditoría (bloque 2)
+
+- onnxruntime se carga de jsDelivr en runtime (sin SRI) aunque hay copia propia en
+  `dist/`; fijar `env.backends.onnx.wasm.wasmPaths` y quitar jsDelivr de la CSP.
+- Sugerencias de modelos: añadir Claude 5.5, quitar `gemini-2.0-flash`, `glm-4-plus`,
+  `glm-4-flash`, `moonshot-v1-*`; pista de Kimi apunta a `platform.moonshot.cn` (es `.ai`).
+- Sin WebGPU, recomendar Small automáticamente en vez de Turbo.
+- “Delete all notes” no borra el borrador; no hay “borrar todos los datos locales”.
+- El botón “Forget all API keys” se oculta con el proveedor Chrome.
+- Chrome built-in AI: sin progreso de descarga, sin `responseConstraint`.
+- Worker de transcripción sin IDs de petición (dos peticiones simultáneas se cruzan).
+
 ## Pendiente
 
 - **Corte de producción:** hecho 2026-11-04 — proyecto Pages `voxnote` eliminado,
   producción = https://voxnote.cgomezfandino.workers.dev. Sin rollback de Pages;
   ante un problema se revierte el Worker con `wrangler rollback`.
-- **CLAUDE.md desactualizado:** sigue describiendo Next.js + Pages + paths viejos
-  (whisper “q8 string”, COOP/COEP en `_headers`, proxy en `functions/`, comandos).
-  Reescribir la sección web antes de que confunda a la próxima sesión.
 - `public/favicon.ico` viejo y generico; el lockup usa `logo.svg` + `icon-*.png`.
 - Diarización en navegador, búsqueda semántica, live transcription (ver roadmap).
 - La lista web de alertas Dependabot tarda en reflejar cierres (todas constan
