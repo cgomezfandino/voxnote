@@ -129,8 +129,9 @@ export async function getNote(filename: string): Promise<NoteDetail> {
  * named after its stored filename. Includes a manifest with created_at timestamps.
  */
 export async function exportAllNotes(): Promise<Blob> {
-  // jszip is a transitive dep of @huggingface/transformers; load it dynamically so it
-  // is only pulled into the bundle when the user actually triggers "Download all".
+  // Declared as a direct dependency (it used to arrive transitively via docx, which
+  // dropped it in 9.15). Loaded dynamically so it is only pulled into the bundle when
+  // the user actually triggers "Download all".
   const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
   const all = await tx<NoteRecord[]>("readonly", (store) => store.getAll());

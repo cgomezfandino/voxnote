@@ -24,7 +24,7 @@ updates:
         patterns: ["*"]
         update-types: ["minor", "patch"]
 
-  # Node — Next.js frontend
+  # Node — web app (TanStack Start on Cloudflare Workers)
   - package-ecosystem: "npm"
     directory: "/packages/web"
     schedule:
@@ -34,6 +34,15 @@ updates:
       web-minor:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+    ignore:
+      # Pinned on purpose: newer releases ship an onnxruntime-web WASM larger than
+      # Cloudflare Workers' 25 MiB per-asset limit, which breaks the deploy. Bump by
+      # hand after checking dist/client/assets/*.wasm (see docs/session-handoff.md).
+      - dependency-name: "@huggingface/transformers"
+      - dependency-name: "onnxruntime-web"
+      # typescript-eslint supports TypeScript < 6.1 only; revisit TS 7 when it does.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   # GitHub Actions used in CI
   - package-ecosystem: "github-actions"

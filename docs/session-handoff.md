@@ -190,9 +190,14 @@ las versiones); no exponen nada sensible y el de bloque 2 = producción actual.
   ante un problema se revierte el Worker con `wrangler rollback`.
 - `public/favicon.ico` viejo y generico; el lockup usa `logo.svg` + `icon-*.png`.
 - Diarización en navegador, búsqueda semántica, live transcription (ver roadmap).
-- 11 PRs de Dependabot abiertos (#39–#59). Varios apuntan a `next` (15.5.25, 16.3.0),
-  que ya no se usa desde la migración a TanStack: cerrar esos; revisar el resto
-  (cuidado con subir `@huggingface/transformers`/`onnxruntime-web`: límite 25 MiB del wasm).
+- Dependabot (revisado 2026-11-11): cerrados #44/#53 (`next`, ya no se usa). Rama
+  `chore/deps-refresh` aplica lo vigente: minors (react 19.3, docx 9.15, lucide 1.72,
+  @types, postcss), `tailwind-merge` 3 (#41), `eslint` 10 (#40) y Actions v7 en el
+  deploy (#50); `jszip` pasa a dependencia directa (docx 9.15 dejó de traerlo).
+  **TypeScript 7 (#39) descartado por ahora**: `typescript-eslint` exige TS < 6.1.
+  `dependabot.yml` ignora `@huggingface/transformers`, `onnxruntime-web` (límite 25 MiB
+  del wasm) y los majors de `typescript`. #59/#57/#52 ya resueltos en el lockfile y
+  #54/#58 obsoletos (incluyen transformers): pendientes de cerrar con el OK de Carlos.
 - Ollama local no probado contra un servidor real; mensaje de CORS de organización
   (Anthropic) mapeado por regex pero no reproducido.
 - La lista web de alertas Dependabot tarda en reflejar cierres (todas constan
